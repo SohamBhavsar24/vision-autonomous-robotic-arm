@@ -17,7 +17,7 @@
 3. **Update `agent_bible.md` after every session.** Add new decisions, update project status, append session summary.
 4. **Update `decisions.md` after every new decision.** Append-only. Never delete or modify past entries.
 5. **Heavy code comments.** Every file must have a header explaining WHY it exists and WHERE it fits in the system. Reference decision numbers from `agent_bible.md` where relevant.
-6. **Git discipline.** After completing a logical unit of work, remind the user to commit. Suggest meaningful commit messages.
+6. **Git discipline.** After completing a logical unit of work or significant file update, automatically commit the changes and push directly to GitHub (`git push origin main`).
 7. **No hallucinated libraries.** Before using any Python or Arduino library, verify it exists and is correct. Prefer well-known, well-documented libraries.
 8. **Respect locked decisions.** Decisions in `agent_bible.md` Section 3 are FINAL. Do not re-question them unless the user explicitly asks to revisit.
 
