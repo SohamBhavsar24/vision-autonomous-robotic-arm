@@ -13,6 +13,7 @@
 - **Team Members:** Soham Bhavsar, Divyansh Dewangan, Toshal Kumbhar
 - **Type:** College Capstone Project (6-month timeline)
 - **Workspace Path:** `/Users/sohambhavsar/Desktop/Autonomoous arm`
+- **GitHub Repository:** `https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git`
 
 ---
 
@@ -123,10 +124,10 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 
 ## 6. Next Steps (Immediate)
 
-1. **Create dashboard implementation plan** (current task — plan only, do NOT build yet)
-2. **Wait for user to assemble the robot** (flash calibration script → build arm → measure links)
-3. **Write IK solver** once measurements are provided
-4. **Build the dashboard** once the plan is approved
+1. **Push to GitHub** — Set up GitHub remote repository and push local git history.
+2. **Physical Hardware Assembly** — Flash calibration sketch → assemble 6-DOF arm at midpoint angles → measure links (L1–L4).
+3. **Write IK Solver** — Implement Python Cartesian IK solver once measurements are provided.
+4. **Dashboard Phase A Build** — Build control interface after hardware pre-assembly.
 
 ---
 
