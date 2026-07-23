@@ -32,8 +32,10 @@
 |---|---|
 | `firmware/servo_calibration/servo_calibration.ino` | ✅ Written, NOT flashed |
 | `firmware/robot_driver/robot_driver.ino` | ✅ Written, NOT tested |
+| `ps5_controller_test.html` | ✅ Written, tested & validated |
 | `architecture.md` | ✅ Written |
 | `agent_bible.md` | ✅ This file |
+| `decisions.md` | ✅ Written |
 | `robotic arm synopsis.pdf` | ✅ Completed, submitted to college |
 
 ### What Does NOT Exist Yet
@@ -113,9 +115,9 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - Proposed 8 dashboard modules: Robot Control, Camera Feeds, Perception, Teleoperation, Dataset, Training, Autonomous Execution, System Health.
 - User approved web-based approach (HTML/CSS/JS + Python WebSocket backend).
 - Resolved open questions: Arduino CLI for port management, no auth, laptop+tablet only.
-- Created `architecture.md` and `agent_bible.md`.
-- Created `architecture.md` and `agent_bible.md`.
-- Dashboard is in PLANNING phase. Implementation plan to follow.
+- Created `architecture.md`, `agent_bible.md`, `decisions.md`, `.gemini/rules.md`.
+- Created `ps5_controller_test.html` — User tested and confirmed PS5 controller teleoperation via browser Gamepad API is 100% working.
+- Dashboard Implementation Plan created & finalized. Ready for Phase A build.
 
 ---
 
@@ -134,6 +136,8 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 /Users/sohambhavsar/Desktop/Autonomoous arm/
 ├── architecture.md                        ← System architecture document
 ├── agent_bible.md                         ← THIS FILE (context continuity)
+├── decisions.md                           ← Append-only decision log
+├── ps5_controller_test.html              ← PS5 controller test & PoC
 ├── robotic arm synopsis.pdf               ← Submitted to college
 ├── firmware/
 │   ├── servo_calibration/
