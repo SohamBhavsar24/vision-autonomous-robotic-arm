@@ -118,16 +118,16 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - Resolved open questions: Arduino CLI for port management, no auth, laptop+tablet only.
 - Created `architecture.md`, `agent_bible.md`, `decisions.md`, `.gemini/rules.md`.
 - Created `ps5_controller_test.html` — User tested and confirmed PS5 controller teleoperation via browser Gamepad API is 100% working.
+- Configured GitHub remote & created classic PAT authentication. Successfully pushed project to `https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git`.
 - Dashboard Implementation Plan created & finalized. Ready for Phase A build.
 
 ---
 
 ## 6. Next Steps (Immediate)
 
-1. **Push to GitHub** — Set up GitHub remote repository and push local git history.
-2. **Physical Hardware Assembly** — Flash calibration sketch → assemble 6-DOF arm at midpoint angles → measure links (L1–L4).
-3. **Write IK Solver** — Implement Python Cartesian IK solver once measurements are provided.
-4. **Dashboard Phase A Build** — Build control interface after hardware pre-assembly.
+1. **Physical Hardware Assembly** — Flash calibration sketch (`servo_calibration.ino`) → assemble 6-DOF arm at midpoint angles → measure links (L1–L4).
+2. **Write IK Solver** — Implement Python Cartesian IK solver once physical link measurements are provided by user.
+3. **Dashboard Phase A Build** — Build control interface (FastAPI + WebSocket + Servo Control Panel).
 
 ---
 
