@@ -74,15 +74,16 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 | 16 | Dashboard Auth | No authentication — local network only |
 | 17 | Dashboard Responsiveness | Laptop + Tablet (min 768px width). Phone NOT supported |
 | 18 | Dashboard Theme | Warm light mode — cream/linen/sand palette. NO white, NO dark mode, NO neon/electric colors. Fonts: DM Serif Display (headings), Source Sans 3 (body), IBM Plex Mono (data). NO generic vibe-coded fonts like Inter/Roboto |
+| 19 | Assembly Strategy | Build Dashboard Phase A first so it serves as the live interactive tool for testing, locking at 90°, and testing range during physical assembly |
 
 ---
 
 ## 4. Important Context the Agent Must Remember
 
 1. **The user prefers to build incrementally.** Never jump ahead. Always validate the current step before moving to the next.
-2. **The user will push back if I get ahead of myself.** I was corrected for writing `robot_driver.ino` before even testing the servos. Respect the user's pace.
-3. **The user thinks like an engineer.** They caught that mounting the elbow horizontally at 90° would waste half the range of motion. They also correctly identified this is NOT an EEZYbotARM MK2 (it's a true 6-DOF serial arm). Take their mechanical intuition seriously.
-4. **The arm is NOT assembled yet.** I am waiting for: (a) the user to flash the calibration script, (b) physically assemble the arm, (c) provide the 4 link measurements (L1–L4), and (d) describe the Home Pose.
+2. **The user will push back if I get ahead of myself.** Respect the user's pace and engineering intuition.
+3. **Dashboard Phase A is an active assembly tool.** The user wants to use the dashboard sliders, "Lock at 90°" button, and "Home" button while physically assembling the 6-DOF arm.
+4. **The arm is NOT assembled yet.** We will build Dashboard Phase A first to assist in assembly, then assemble, then measure links (L1–L4).
 5. **Variable lighting.** The workspace does NOT have fixed/controlled lighting. This is why ArUco markers are critical for Stage 1.
 6. **The synopsis PDF is done.** It has been submitted. The user also created a PPT for it using Manus AI.
 7. **The user has 3 team members** with distinct roles: Soham (software/integration), Divyansh (dataset/training), Toshal (CAD/digital twin).
@@ -97,37 +98,29 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - Reviewed architecture and raised critical issues: servo feedback problem, perception robustness, coordinate frames, control loop latency.
 - **Decisions made:** ArUco for Stage 1, real-world coordinates, IK for teleoperation, emergency stop.
 - Wrote `servo_calibration.ino` and `robot_driver.ino`.
-- User corrected me for jumping ahead to `robot_driver.ino` before testing servos.
-- User corrected me that this is NOT an MK2 arm (it's true 6-DOF).
 - Discussed optimal assembly angles: mount at midpoint of mechanical range, not necessarily 90° = straight up.
 - Discussed sponge blocks with cardboard-backed ArUco markers.
 - Clarified Camera 2 (side) is only for dataset recording, not for the neural network.
-- Created and updated the project synopsis (markdown version).
-- Added block diagram and flowchart (Mermaid) — user was unhappy with Mermaid rendering quality.
-- Provided prompts for external tools (Manus AI for PPT, image generators for setup render).
 
 ### Session 2 (2026-07-16)
 - User requested PPT generation prompt for Manus AI.
 - User requested image generation prompt for setup visualization.
-- Iteratively refined the image prompt (added boxes, electronics, proper wiring).
 
 ### Session 3 (2026-07-23) — CURRENT
 - User requested a web-based dashboard for the entire project lifecycle.
-- Proposed 8 dashboard modules: Robot Control, Camera Feeds, Perception, Teleoperation, Dataset, Training, Autonomous Execution, System Health.
-- User approved web-based approach (HTML/CSS/JS + Python WebSocket backend).
-- Resolved open questions: Arduino CLI for port management, no auth, laptop+tablet only.
+- Resolved open questions: Arduino CLI for port management, no auth, laptop+tablet only, warm light theme.
 - Created `architecture.md`, `agent_bible.md`, `decisions.md`, `.gemini/rules.md`.
 - Created `ps5_controller_test.html` — User tested and confirmed PS5 controller teleoperation via browser Gamepad API is 100% working.
-- Configured GitHub remote & created classic PAT authentication. Successfully pushed project to `https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git`.
-- Dashboard Implementation Plan created & finalized. Ready for Phase A build.
+- Configured GitHub remote & classic PAT. Successfully pushed project to `https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git`.
+- Decision #19: User clarified Dashboard Phase A will be built first as the live physical assembly & testing tool.
 
 ---
 
 ## 6. Next Steps (Immediate)
 
-1. **Physical Hardware Assembly** — Flash calibration sketch (`servo_calibration.ino`) → assemble 6-DOF arm at midpoint angles → measure links (L1–L4).
-2. **Write IK Solver** — Implement Python Cartesian IK solver once physical link measurements are provided by user.
-3. **Dashboard Phase A Build** — Build control interface (FastAPI + WebSocket + Servo Control Panel).
+1. **Build Dashboard Phase A** — Construct FastAPI backend + WebSockets + Warm light UI shell + Robot Control Panel (6 sliders, Lock at 90°, Home button, E-stop, Arduino CLI port auto-connect).
+2. **Physical Hardware Assembly (assisted by Dashboard)** — Connect Arduino + PCA9685, use Dashboard to lock servos at 90°, mount 3D parts at midpoints, test range using dashboard sliders, measure links (L1–L4).
+3. **Write IK Solver** — Implement Python Cartesian IK solver once physical link measurements are provided by user.
 
 ---
 

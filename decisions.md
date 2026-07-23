@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #17 — Dashboard Design Theme
+## Decision #19 — Dashboard Phase A as Hardware Assembly & Testing Tool
 - **Date:** 2026-07-23
-- **Decision:** Warm light mode with cream/linen/sand palette. Fonts: DM Serif Display (headings), Source Sans 3 (body), IBM Plex Mono (data/logs).
-- **Alternatives Rejected:** Dark mode with electric blue accents and Inter/Roboto fonts (generic "vibecoded" look).
-- **Rationale:** User explicitly requested warm light tones, no pure white, no dark mode, no neon colors, and no generic overused fonts.
+- **Decision:** Build Dashboard Phase A (Robot Control Panel) BEFORE physical assembly so it serves as the live assembly, calibration, and testing interface.
+- **Alternatives Rejected:** Relying solely on static Arduino sketches (`servo_calibration.ino`) uploaded via Arduino IDE.
+- **Rationale:** The interactive Web UI with 6 live sliders, "Lock at 90°" button, "Home" button, and manual sweep buttons allows the user to test servos, verify mechanical limits, check for plastic collisions, and lock servos during physical assembly directly from a laptop or tablet without re-flashing Arduino code.
