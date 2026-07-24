@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #25 — Calibration ArUco Marker Corner Placement & Coordinate Geometry
+## Decision #26 — World Frame Corner Origin (Marker 2 at 0,0)
 - **Date:** 2026-07-24
-- **Decision:** Mount Camera Pole at Side B Center (opposite Robot Base on Side A Center). Place Calibration ArUco Marker ID 2 at the Right Corner of Side B $(+20\text{cm}, +45\text{cm})$, maintaining strictly positive $(+X, +Y)$ coordinates across the platform.
-- **Alternatives Rejected:** Left corner placement (which would introduce negative X coordinates).
-- **Rationale:** Ensures all real-world platform coordinates are positive $(+X, +Y)$. In the overhead camera video feed looking down from Side B toward Side A, the Robot Base appears at the top of the frame, and Marker ID 2 appears in the bottom-left of the image frame, completely free from arm shadows.
+- **Decision:** Define the platform corner (where ArUco Marker 2 sits) as the World Origin $(X_w=0, Y_w=0)$. The entire $50\text{cm} \times 50\text{cm}$ board operates strictly in positive coordinates ($X_w \in [0, 50]$, $Y_w \in [0, 50]$). The Robot Base sits at fixed location $(25\text{cm}, 5\text{cm})$ in World Frame.
+- **Alternatives Rejected:** Defining the centered Robot Base as $(0, 0)$ which created negative $X$ values for the left side of the platform.
+- **Rationale:** Standard dual-frame robotics transformation: Vision detects all objects in positive World Coordinates $(X_w, Y_w)$, and Python converts to Robot Base coordinates ($X_r = X_w - 25$, $Y_r = Y_w - 5$) before passing to the Inverse Kinematics solver.
