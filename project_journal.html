@@ -64,6 +64,7 @@
       padding: 32px;
       margin-bottom: 32px;
       box-shadow: 0 4px 12px rgba(42, 38, 36, 0.03);
+      position: relative;
     }
 
     .entry-date {
@@ -95,7 +96,13 @@
       margin-bottom: 0;
     }
 
-    .print-btn {
+    .header-btns {
+      float: right;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
       background: var(--accent-primary);
       color: white;
       border: none;
@@ -104,16 +111,132 @@
       font-family: var(--font-body);
       font-weight: 600;
       cursor: pointer;
-      float: right;
+      font-size: 0.9rem;
     }
 
-    .print-btn:hover {
+    .btn-secondary {
+      background: #EFE8DE;
+      color: var(--text-main);
+      border: 1px solid var(--border-card);
+    }
+
+    .btn:hover {
       opacity: 0.9;
+    }
+
+    /* Floating + Button */
+    .fab-btn {
+      position: fixed;
+      bottom: 36px;
+      right: 36px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      color: white;
+      border: none;
+      font-size: 2rem;
+      line-height: 60px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(196, 120, 74, 0.4);
+      z-index: 100;
+      transition: transform 0.2s ease, background 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fab-btn:hover {
+      transform: scale(1.08);
+      background: #b0683b;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(42, 38, 36, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 650px;
+      padding: 32px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+      animation: modalFadeIn 0.25s ease;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-title {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      margin-bottom: 20px;
+      color: var(--text-main);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .form-input, .form-textarea {
+      width: 100%;
+      background: var(--bg-page);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .form-input:focus, .form-textarea:focus {
+      outline: 2px solid var(--accent-primary);
+      border-color: transparent;
+    }
+
+    .form-textarea {
+      height: 180px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
     }
 
     @media print {
       body { background: white; padding: 0; }
-      .print-btn { display: none; }
+      .header-btns, .fab-btn, .modal-overlay { display: none !important; }
       .journal-entry { border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; }
     }
   </style>
@@ -121,53 +244,209 @@
 <body>
   <div class="container">
     <header>
-      <button class="print-btn" onclick="window.print()">Print Journal</button>
+      <div class="header-btns">
+        <button class="btn btn-secondary" onclick="exportJournalJSON()">Backup JSON</button>
+        <button class="btn" onclick="window.print()">Print / Save PDF</button>
+      </div>
       <h1 class="journal-title">Project Engineering Journal</h1>
       <div class="journal-subtitle">Vision-Based Autonomous Pick-and-Place Robotic Arm Using Imitation Learning</div>
     </header>
 
     <main id="journalContainer">
-
-      <!-- Entry 4 -->
-      <article class="journal-entry">
-        <div class="entry-date">Friday, 24th July 2026</div>
-        <h2 class="entry-title">Physical Workspace Geometry & Dual-Frame Calibration Decision</h2>
-        <div class="entry-content">
-          <p>In this session, we finalized the physical workspace geometry and perception pipeline in preparation for hardware assembly. We established persistent REST endpoints for saving physical link measurements and servo zero offsets to a persistent configuration file. The Web Dashboard layout was further refined by placing the 3D Digital Twin tab in the final sidebar position, updating its sync status to "Standing By (Awaiting URDF)", and anonymizing all interface text to ensure a clean, presentation-ready capstone interface. Additionally, we added individual "Test Solo" diagnostic buttons to each servo card for single-joint assembly testing and configured Uvicorn live auto-reload on port 8050.</p>
-          <p>A major focus of this session was resolving the physical workspace coordinate system for the 50cm x 50cm wooden platform. We finalized a dual-frame transformation architecture: ArUco Marker ID 2 is placed at the corner of the platform near the overhead camera pole, establishing a rock-solid World Frame Origin (0,0). This design ensures that every point on the platform map has strictly positive coordinates (X, Y from 0 to 50cm) and prevents the robot arm from casting shadows over the calibration marker. The Robot Base is anchored at a fixed offset of (25cm, 5cm) in World Frame, allowing Python to convert vision coordinates into robot-centric vectors before executing Inverse Kinematics calculations. We also generated vector SVG ArUco markers, created a printable 4cm x 4cm HTML sheet, and compiled a step-by-step physical assembly guide.</p>
-        </div>
-      </article>
-
-      <!-- Entry 3 -->
-      <article class="journal-entry">
-        <div class="entry-date">Thursday, 23rd July 2026</div>
-        <h2 class="entry-title">Web Dashboard Construction & Pre-Assembly Preparation Decision</h2>
-        <div class="entry-content">
-          <p>This session focused on transforming the control software into a full-featured, web-based robotic dashboard to support the entire project lifecycle, starting with physical hardware assembly. Built with FastAPI, WebSockets, and a custom warm linen design system, the dashboard provides live joint sliders, zero-jerk S-curve automated routines, and automated serial port detection via the Arduino CLI tool. We integrated live PS5 DualSense controller teleoperation directly into the web browser via the Gamepad API and added a dedicated Kinematic Calibration panel to tune physical link lengths and servo zero offsets in real-time.</p>
-          <p>To support team integration, a dedicated top-level 3D Digital Twin tab was created to host the 3D URDF simulation model. We implemented individual "Test Solo" diagnostic buttons for single-joint physical assembly testing and generated vector SVG ArUco markers alongside a printable HTML sheet. Finally, we confirmed the Stage 1 environment design—keeping the destination box fixed while randomly placing the sponge block—to establish a clean, high-accuracy baseline before introducing multi-object complexity in Stage 2.</p>
-        </div>
-      </article>
-
-      <!-- Entry 2 -->
-      <article class="journal-entry">
-        <div class="entry-date">Thursday, 16th July 2026</div>
-        <h2 class="entry-title">Capstone Documentation & Setup Visualizations Decision</h2>
-        <div class="entry-content">
-          <p>During this session, attention shifted toward project documentation and presentation materials. We drafted comprehensive prompts for AI generation tools to produce a professional presentation slide deck for the college synopsis defense. Visual design specifications were defined for creating high-impact 3D render prompts depicting the complete dual-camera robotic workbench setup. The synopsis PDF was finalized and submitted to the university department, establishing a clear project schedule across the six-month development timeline.</p>
-        </div>
-      </article>
-
-      <!-- Entry 1 -->
-      <article class="journal-entry">
-        <div class="entry-date">Monday, 06th July 2026</div>
-        <h2 class="entry-title">Architecture Definition & Firmware Foundation Decision</h2>
-        <div class="entry-content">
-          <p>The project began with a thorough architectural review of the 6-DOF robotic arm capstone project. We established the core hybrid perception and control strategy, deciding to isolate vision feature extraction using OpenCV before passing compact coordinate data into a neural network trained via Behavior Cloning. To ensure human teleoperation produces clean, natural motion, we agreed to implement Cartesian Inverse Kinematics driven by a PS5 DualSense controller rather than relying on direct joint manipulation. On the hardware front, we selected lightweight sponge cubes with cardboard-backed ArUco markers to prevent servo stall and eliminate surface warping under variable room lighting.</p>
-          <p>For safety and embedded control, we designed a dual-layer safety mechanism featuring a physical emergency stop switch alongside a 500ms serial watchdog on the Arduino Uno. Firmware scripts were developed for initial servo zeroing and production binary packet driver execution. Additionally, we resolved a key mechanical assembly strategy: rather than mounting joints strictly straight up at 90 degrees, we decided to mount hardware at physical midpoints to maximize workspace reach, allowing software joint offsets to handle the mathematical mapping seamlessly.</p>
-        </div>
-      </article>
-
+      <!-- Dynamic and Default Entries will render here -->
     </main>
   </div>
+
+  <!-- Floating + Button -->
+  <button class="fab-btn" id="btnOpenModal" title="Add New Journal Entry">+</button>
+
+  <!-- Add Entry Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card">
+      <h2 class="modal-title">New Engineering Journal Entry</h2>
+      
+      <form id="journalForm">
+        <div class="form-group">
+          <label class="form-label">Auto-Detected Live Date</label>
+          <input type="text" class="form-input" id="inputDate" readonly style="font-family: var(--font-mono); color: var(--accent-primary); font-weight: 600;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Session Header Title (Optional)</label>
+          <input type="text" class="form-input" id="inputTitle" placeholder="e.g. Physical Workspace Geometry & Dual-Frame Calibration Decision">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Journal Narrative Story (Paragraphs)</label>
+          <textarea class="form-textarea" id="inputText" placeholder="Write the detailed session narrative story here..." required></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btnCloseModal">Cancel</button>
+          <button type="submit" class="btn">Submit Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Initial Seed Journal Entries
+    const DEFAULT_ENTRIES = [
+      {
+        id: 'entry-4',
+        date: 'Friday, 24th July 2026',
+        title: 'Physical Workspace Geometry & Dual-Frame Calibration Decision',
+        paragraphs: [
+          'In this session, we finalized the physical workspace geometry and perception pipeline in preparation for hardware assembly. We established persistent REST endpoints for saving physical link measurements and servo zero offsets to a persistent configuration file. The Web Dashboard layout was further refined by placing the 3D Digital Twin tab in the final sidebar position, updating its sync status to "Standing By (Awaiting URDF)", and anonymizing all interface text to ensure a clean, presentation-ready capstone interface. Additionally, we added individual "Test Solo" diagnostic buttons to each servo card for single-joint assembly testing and configured Uvicorn live auto-reload on port 8050.',
+          'A major focus of this session was resolving the physical workspace coordinate system for the 50cm x 50cm wooden platform. We finalized a dual-frame transformation architecture: ArUco Marker ID 2 is placed at the corner of the platform near the overhead camera pole, establishing a rock-solid World Frame Origin (0,0). This design ensures that every point on the platform map has strictly positive coordinates (X, Y from 0 to 50cm) and prevents the robot arm from casting shadows over the calibration marker. The Robot Base is anchored at a fixed offset of (25cm, 5cm) in World Frame, allowing Python to convert vision coordinates into robot-centric vectors before executing Inverse Kinematics calculations. We also generated vector SVG ArUco markers, created a printable 4cm x 4cm HTML sheet, and compiled a step-by-step physical assembly guide.'
+        ]
+      },
+      {
+        id: 'entry-3',
+        date: 'Thursday, 23rd July 2026',
+        title: 'Web Dashboard Construction & Pre-Assembly Preparation Decision',
+        paragraphs: [
+          'This session focused on transforming the control software into a full-featured, web-based robotic dashboard to support the entire project lifecycle, starting with physical hardware assembly. Built with FastAPI, WebSockets, and a custom warm linen design system, the dashboard provides live joint sliders, zero-jerk S-curve automated routines, and automated serial port detection via the Arduino CLI tool. We integrated live PS5 DualSense controller teleoperation directly into the web browser via the Gamepad API and added a dedicated Kinematic Calibration panel to tune physical link lengths and servo zero offsets in real-time.',
+          'To support team integration, a dedicated top-level 3D Digital Twin tab was created to host the 3D URDF simulation model. We implemented individual "Test Solo" diagnostic buttons for single-joint physical assembly testing and generated vector SVG ArUco markers alongside a printable HTML sheet. Finally, we confirmed the Stage 1 environment design—keeping the destination box fixed while randomly placing the sponge block—to establish a clean, high-accuracy baseline before introducing multi-object complexity in Stage 2.'
+        ]
+      },
+      {
+        id: 'entry-2',
+        date: 'Thursday, 16th July 2026',
+        title: 'Capstone Documentation & Setup Visualizations Decision',
+        paragraphs: [
+          'During this session, attention shifted toward project documentation and presentation materials. We drafted comprehensive prompts for AI generation tools to produce a professional presentation slide deck for the college synopsis defense. Visual design specifications were defined for creating high-impact 3D render prompts depicting the complete dual-camera robotic workbench setup. The synopsis PDF was finalized and submitted to the university department, establishing a clear project schedule across the six-month development timeline.'
+        ]
+      },
+      {
+        id: 'entry-1',
+        date: 'Monday, 06th July 2026',
+        title: 'Architecture Definition & Firmware Foundation Decision',
+        paragraphs: [
+          'The project began with a thorough architectural review of the 6-DOF robotic arm capstone project. We established the core hybrid perception and control strategy, deciding to isolate vision feature extraction using OpenCV before passing compact coordinate data into a neural network trained via Behavior Cloning. To ensure human teleoperation produces clean, natural motion, we agreed to implement Cartesian Inverse Kinematics driven by a PS5 DualSense controller rather than relying on direct joint manipulation. On the hardware front, we selected lightweight sponge cubes with cardboard-backed ArUco markers to prevent servo stall and eliminate surface warping under variable room lighting.',
+          'For safety and embedded control, we designed a dual-layer safety mechanism featuring a physical emergency stop switch alongside a 500ms serial watchdog on the Arduino Uno. Firmware scripts were developed for initial servo zeroing and production binary packet driver execution. Additionally, we resolved a key mechanical assembly strategy: rather than mounting joints strictly straight up at 90 degrees, we decided to mount hardware at physical midpoints to maximize workspace reach, allowing software joint offsets to handle the mathematical mapping seamlessly.'
+        ]
+      }
+    ];
+
+    // Format ordinal numbers (1st, 2nd, 3rd, 4th, etc.)
+    function getOrdinalSuffix(day) {
+      if (day > 3 && day < 21) return 'th';
+      switch (day % 10) {
+        case 1:  return 'st';
+        case 2:  return 'nd';
+        case 3:  return 'rd';
+        default: return 'th';
+      }
+    }
+
+    // Format date string as: "Friday, 24th July 2026"
+    function formatExactDate(d = new Date()) {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      
+      const dayName = days[d.getDay()];
+      const dayNum = d.getDate();
+      const monthName = months[d.getMonth()];
+      const year = d.getFullYear();
+
+      const padDay = dayNum < 10 ? `0${dayNum}` : `${dayNum}`;
+      return `${dayName}, ${padDay}${getOrdinalSuffix(dayNum)} ${monthName} ${year}`;
+    }
+
+    // Load entries from localStorage or fallback to default
+    function getStoredEntries() {
+      const saved = localStorage.getItem('robotic_arm_journal_entries');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+      return DEFAULT_ENTRIES;
+    }
+
+    function saveEntries(entries) {
+      localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
+    }
+
+    // Render entries to HTML
+    function renderJournal() {
+      const container = document.getElementById('journalContainer');
+      const entries = getStoredEntries();
+      
+      container.innerHTML = entries.map(item => `
+        <article class="journal-entry">
+          <div class="entry-date">${item.date}</div>
+          <h2 class="entry-title">${item.title}</h2>
+          <div class="entry-content">
+            ${item.paragraphs.map(p => `<p>${p}</p>`).join('')}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // Modal Control
+    const modalOverlay = document.getElementById('modalOverlay');
+    const btnOpenModal = document.getElementById('btnOpenModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const inputDate = document.getElementById('inputDate');
+    const journalForm = document.getElementById('journalForm');
+
+    btnOpenModal.addEventListener('click', () => {
+      inputDate.value = formatExactDate();
+      document.getElementById('inputTitle').value = '';
+      document.getElementById('inputText').value = '';
+      modalOverlay.style.display = 'flex';
+    });
+
+    btnCloseModal.addEventListener('click', () => {
+      modalOverlay.style.display = 'none';
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) modalOverlay.style.display = 'none';
+    });
+
+    // Handle Form Submit
+    journalForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const date = inputDate.value;
+      let title = document.getElementById('inputTitle').value.trim();
+      const rawText = document.getElementById('inputText').value.trim();
+
+      if (!title) {
+        title = 'Engineering Progress & Decision Updates';
+      }
+      if (!title.toLowerCase().endsWith('decision')) {
+        title += ' Decision';
+      }
+
+      const paragraphs = rawText.split('\n\n').map(p => p.trim()).filter(p => p.length > 0);
+
+      const newEntry = {
+        id: `entry-${Date.now()}`,
+        date,
+        title,
+        paragraphs
+      };
+
+      const entries = getStoredEntries();
+      entries.unshift(newEntry); // Add to top
+      saveEntries(entries);
+      renderJournal();
+
+      modalOverlay.style.display = 'none';
+    });
+
+    function exportJournalJSON() {
+      const entries = getStoredEntries();
+      const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'project_journal_backup.json';
+      a.click();
+    }
+
+    // Initial Render
+    renderJournal();
+  </script>
 </body>
 </html>
