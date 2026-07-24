@@ -34,6 +34,7 @@
 | `firmware/servo_calibration/servo_calibration.ino` | ✅ Written, NOT flashed |
 | `firmware/robot_driver/robot_driver.ino` | ✅ Written, NOT tested |
 | `ps5_controller_test.html` | ✅ Written, tested & validated |
+| `start_dashboard.sh` | ✅ Created (one-click launcher) |
 | `dashboard/backend/main.py` | ✅ Phase A complete (FastAPI + WS) |
 | `dashboard/backend/serial_manager.py` | ✅ Phase A complete (Arduino Serial + E-Stop) |
 | `dashboard/backend/requirements.txt` | ✅ Created |

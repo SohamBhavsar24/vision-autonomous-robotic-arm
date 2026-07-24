@@ -18,6 +18,9 @@ A vision-guided autonomous 6-DOF robotic arm that learns pick-and-place tasks fr
 ├── data/                        ← Dataset recording & storage (NOT YET BUILT)
 ├── models/                      ← Imitation learning models (NOT YET BUILT)
 ├── digital_twin/                ← Simulation environment (NOT YET BUILT)
+├── ps5_controller_test.html              ← PS5 controller test & PoC
+├── start_dashboard.sh                    ← One-click dashboard launcher
+├── robotic arm synopsis.pdf               ← Submitted to collegext (updated every session)
 ├── architecture.md              ← System architecture document
 ├── agent_bible.md               ← Persistent AI context (updated every session)
 ├── decisions.md                 ← Append-only decision log with rationale
