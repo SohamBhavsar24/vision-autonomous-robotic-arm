@@ -51,6 +51,10 @@ const TeleopPanel = {
     this.r1Val = document.getElementById('ps5R1Val');
     this.buttonsGrid = document.getElementById('ps5ButtonsGrid');
     this.axesList = document.getElementById('ps5AxesList');
+
+    if (this.axesList) {
+      this.axesList.innerHTML = '<div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); padding: 12px 0;">No controller connected.<br>Press any button on PS5 DualSense to display live axes.</div>';
+    }
   },
 
   buildButtonIndicators() {
