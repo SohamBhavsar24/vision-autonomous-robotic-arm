@@ -218,7 +218,11 @@
 
             <!-- Serial Connection Controls -->
             <h3 class="card-title" style="margin-top: 28px;">Serial Connection</h3>
-            <p class="card-subtitle">Arduino CLI port auto-detection (Decision #15)</p>
+            <p class="card-subtitle">Arduino CLI board list detection (Decision #15)</p>
+            
+            <div id="cliStatusBadge" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); background: var(--bg-page); border: 1px solid var(--border-subtle); padding: 6px 10px; border-radius: 6px; margin-bottom: 12px;">
+              Arduino CLI: Checking...
+            </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
               <select id="portSelect" class="btn btn-secondary" style="width: 100%; text-align: left; background: var(--bg-page);">

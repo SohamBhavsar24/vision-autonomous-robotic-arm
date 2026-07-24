@@ -165,12 +165,12 @@ const ServoPanel = {
           data.ports.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.port;
-            opt.textContent = `${p.port} (${p.description})`;
+            opt.textContent = `${p.port} (${p.board_name})`;
             if (p.is_arduino) opt.selected = true;
             this.portSelect.appendChild(opt);
           });
         } else {
-          this.portSelect.innerHTML = '<option value="">No serial ports found</option>';
+          this.portSelect.innerHTML = '<option value="">No Arduino ports detected</option>';
         }
       }
     } catch (e) {

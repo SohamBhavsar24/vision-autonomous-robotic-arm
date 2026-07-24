@@ -131,9 +131,18 @@ const App = {
       if (btnResetEstop) btnResetEstop.style.display = 'none';
     }
 
-    // Trigger Servo Panel UI update if available
-    if (window.ServoPanel && data.angles) {
-      ServoPanel.updateSlidersFromBackend(data.angles);
+    // Update Arduino CLI status badge (Decision #15)
+    const cliBadge = document.getElementById('cliStatusBadge');
+    if (cliBadge) {
+      if (data.has_arduino_cli) {
+        cliBadge.style.borderColor = 'var(--accent-success)';
+        cliBadge.style.color = 'var(--accent-success)';
+        cliBadge.textContent = `Arduino CLI: Installed (${data.arduino_cli_info})`;
+      } else {
+        cliBadge.style.borderColor = 'var(--border-subtle)';
+        cliBadge.style.color = 'var(--text-muted)';
+        cliBadge.textContent = `Arduino CLI: Not Installed (Falling back to PySerial)`;
+      }
     }
   },
 

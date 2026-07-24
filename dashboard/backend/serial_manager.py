@@ -12,11 +12,11 @@ PURPOSE:
     (FastAPI / host machine) and the Arduino Uno firmware (robot_driver.ino).
 
 KEY FEATURES:
-    - Auto-detects connected Arduino Uno serial ports
+    - Integrates with `arduino-cli board list --json` to detect genuine Arduinos (Decision #15)
+    - Filters out macOS system virtual ports (debug-console, Bluetooth ports)
     - Transmits binary 6-byte command packets at 115200 baud (Decision #6)
     - Enforces 0–180 degree clamping per servo
     - Provides instant "Lock at 90°", "Home", and "Emergency Stop" routines
-    - Thread-safe state tracking for low-latency WebSocket broadcasting
 
 RELATED DECISIONS (from decisions.md):
     - Decision #5: Safety System (Emergency Stop + Watchdog)
@@ -27,6 +27,9 @@ RELATED DECISIONS (from decisions.md):
 """
 
 import time
+import json
+import shutil
+import subprocess
 import threading
 import logging
 from typing import List, Dict, Optional, Tuple
@@ -39,6 +42,15 @@ logger = logging.getLogger("SerialManager")
 NUM_SERVOS = 6
 DEFAULT_BAUD = 115200
 DEFAULT_HOME_ANGLES = [90, 90, 90, 90, 90, 10]
+
+# List of macOS/Linux system virtual ports that must NEVER be auto-opened
+IGNORED_PORT_KEYWORDS = [
+    "debug-console",
+    "bluetooth-incoming",
+    "wlan-debug",
+    "soc",
+    "tty.Bluetooth"
+]
 
 
 class SerialManager:
@@ -55,39 +67,112 @@ class SerialManager:
         # Thread lock for serial writing
         self._lock = threading.Lock()
 
+    def check_arduino_cli(self) -> Tuple[bool, str]:
+        """Checks if `arduino-cli` is installed and available in PATH."""
+        cli_path = shutil.which("arduino-cli")
+        if cli_path:
+            try:
+                res = subprocess.run(["arduino-cli", "version"], capture_output=True, text=True, timeout=2)
+                return True, res.stdout.strip()
+            except Exception as e:
+                return False, f"arduino-cli error: {e}"
+        return False, "arduino-cli is NOT installed. (Run: `brew install arduino-cli`)"
+
     def list_available_ports(self) -> List[Dict[str, str]]:
-        """Scans for available serial ports on macOS/Linux/Windows."""
+        """
+        Scans for available serial ports using both `arduino-cli` (if available)
+        and `pyserial.tools.list_ports`. Filters out macOS virtual debug ports.
+        """
+        arduino_cli_boards = {}
+        has_cli, _ = self.check_arduino_cli()
+
+        # Try query via arduino-cli JSON output first (Decision #15)
+        if has_cli:
+            try:
+                res = subprocess.run(
+                    ["arduino-cli", "board", "list", "--json"],
+                    capture_output=True, text=True, timeout=3
+                )
+                if res.returncode == 0:
+                    data = json.loads(res.stdout)
+                    # arduino-cli board list JSON structure
+                    detected_list = data if isinstance(data, list) else data.get("detected_ports", [])
+                    for entry in detected_list:
+                        port_info = entry.get("port", {})
+                        port_address = port_info.get("address", "")
+                        boards = entry.get("matching_boards", [])
+                        if port_address:
+                            board_name = boards[0].get("name") if boards else "Unknown Board"
+                            arduino_cli_boards[port_address] = {
+                                "is_arduino": len(boards) > 0 or "arduino" in port_info.get("protocol_label", "").lower(),
+                                "board_name": board_name
+                            }
+            except Exception as e:
+                logger.warning(f"arduino-cli query failed: {e}")
+
         ports = serial.tools.list_ports.comports()
         result = []
+
         for p in ports:
+            dev = p.device
+            dev_lower = dev.lower()
+            
+            # Skip system virtual ports that are not physical USB devices
+            if any(k in dev_lower for k in IGNORED_PORT_KEYWORDS):
+                continue
+
+            desc = p.description or ""
+            desc_lower = desc.lower()
+
+            # Check if identified by arduino-cli or pyserial keywords
+            cli_info = arduino_cli_boards.get(dev, {})
+            is_arduino = (
+                cli_info.get("is_arduino", False) or
+                "arduino" in desc_lower or
+                "usbmodem" in dev_lower or
+                "ttyacm" in dev_lower or
+                "ch340" in desc_lower or
+                "ftdi" in desc_lower
+            )
+
+            board_name = cli_info.get("board_name") or (desc if desc and desc != "n/a" else "USB Serial Device")
+
             result.append({
-                "port": p.device,
-                "description": p.description,
-                "hwid": p.hwid,
-                "is_arduino": "arduino" in p.description.lower() or "usbmodem" in p.device.lower() or "ttyACM" in p.device.lower()
+                "port": dev,
+                "description": desc,
+                "board_name": board_name,
+                "is_arduino": is_arduino
             })
+
         return result
 
     def auto_connect(self) -> Tuple[bool, str]:
-        """Attempts to auto-detect and connect to the Arduino Uno."""
+        """
+        Attempts to auto-detect and connect to a genuine Arduino Uno.
+        Refuses to connect to virtual macOS system ports.
+        """
         ports = self.list_available_ports()
         if not ports:
-            return False, "No serial ports found."
+            return False, "No physical USB serial devices detected. Please plug in your Arduino Uno."
 
-        # Prioritize ports identified as Arduino / USB Modem
+        # Prioritize ports identified as genuine Arduino / USB Modem
         target_port = None
         for p in ports:
             if p["is_arduino"]:
                 target_port = p["port"]
                 break
         
-        if not target_port and ports:
-            target_port = ports[0]["port"]
+        if not target_port:
+            return False, "No genuine Arduino detected. Please connect your Arduino Uno via USB cable."
 
         return self.connect(target_port)
 
     def connect(self, port: str, baudrate: int = DEFAULT_BAUD) -> Tuple[bool, str]:
-        """Establishes connection to specified serial port."""
+        """Establishes serial connection to specified port."""
+        dev_lower = port.lower()
+        if any(k in dev_lower for k in IGNORED_PORT_KEYWORDS):
+            return False, f"Refusing to connect to virtual system port '{port}'."
+
         with self._lock:
             if self.is_connected:
                 self._disconnect_internal()
@@ -205,12 +290,15 @@ class SerialManager:
 
     def get_status(self) -> Dict:
         """Returns complete serial connection & servo state for WebSocket broadcast."""
+        has_cli, cli_msg = self.check_arduino_cli()
         return {
             "is_connected": self.is_connected,
             "port": self.port,
             "baudrate": self.baudrate,
             "is_estop": self.is_estop,
-            "angles": self.current_angles
+            "angles": self.current_angles,
+            "has_arduino_cli": has_cli,
+            "arduino_cli_info": cli_msg
         }
 
 
