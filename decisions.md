@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #25 — Calibration ArUco Marker Corner Placement
+## Decision #25 — Calibration ArUco Marker Corner Placement & Coordinate Geometry
 - **Date:** 2026-07-24
-- **Decision:** Place Calibration ArUco Marker ID 2 in the corner near the camera pole (away from the robot arm) at a fixed offset $(X = -20\text{cm}, Y = 40\text{cm})$ from the robot base.
-- **Alternatives Rejected:** Placing Marker ID 2 right under the robot base or under the gripper path (which leads to shadow/occlusion during picking).
-- **Rationale:** Placing the calibration marker in the camera-side corner guarantees the robot arm links never shadow or block the marker, giving 100% un-interrupted camera calibration throughout all movements.
+- **Decision:** Mount Camera Pole at Side B Center (opposite Robot Base on Side A Center). Place Calibration ArUco Marker ID 2 at the Right Corner of Side B $(+20\text{cm}, +45\text{cm})$, maintaining strictly positive $(+X, +Y)$ coordinates across the platform.
+- **Alternatives Rejected:** Left corner placement (which would introduce negative X coordinates).
+- **Rationale:** Ensures all real-world platform coordinates are positive $(+X, +Y)$. In the overhead camera video feed looking down from Side B toward Side A, the Robot Base appears at the top of the frame, and Marker ID 2 appears in the bottom-left of the image frame, completely free from arm shadows.
