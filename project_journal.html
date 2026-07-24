@@ -458,6 +458,17 @@
       modalOverlay.style.display = 'none';
     });
 
+    // Auto-Sync with GitHub Pages when app is opened or brought to foreground
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        renderJournal();
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      renderJournal();
+    });
+
     renderJournal();
   </script>
 </body>
