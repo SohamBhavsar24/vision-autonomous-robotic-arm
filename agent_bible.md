@@ -34,6 +34,14 @@
 | `firmware/servo_calibration/servo_calibration.ino` | ✅ Written, NOT flashed |
 | `firmware/robot_driver/robot_driver.ino` | ✅ Written, NOT tested |
 | `ps5_controller_test.html` | ✅ Written, tested & validated |
+| `dashboard/backend/main.py` | ✅ Phase A complete (FastAPI + WS) |
+| `dashboard/backend/serial_manager.py` | ✅ Phase A complete (Arduino Serial + E-Stop) |
+| `dashboard/backend/requirements.txt` | ✅ Created |
+| `dashboard/frontend/index.html` | ✅ Phase A Warm Cream UI shell |
+| `dashboard/frontend/css/styles.css` | ✅ Phase A Warm Cream design system |
+| `dashboard/frontend/js/app.js` | ✅ Phase A WS & Tab router |
+| `dashboard/frontend/js/servo_panel.js` | ✅ Phase A Sliders, Lock 90°, Home, E-stop |
+| `dashboard/README.md` | ✅ Created |
 | `architecture.md` | ✅ Written |
 | `agent_bible.md` | ✅ This file |
 | `decisions.md` | ✅ Written |
