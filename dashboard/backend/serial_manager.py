@@ -23,10 +23,12 @@ RELATED DECISIONS (from decisions.md):
     - Decision #6: Serial Protocol (Binary 6-byte packets at 115200 baud)
     - Decision #14: Arduino Port Management (`arduino-cli` / port scan)
     - Decision #19: Dashboard Phase A as Hardware Assembly Tool
+    - Decision #20: S-Curve Cosine Interpolation for Smooth Motion
 ==============================================================================
 """
 
 import time
+import math
 import json
 import shutil
 import subprocess
@@ -41,7 +43,12 @@ logger = logging.getLogger("SerialManager")
 
 NUM_SERVOS = 6
 DEFAULT_BAUD = 115200
-DEFAULT_HOME_ANGLES = [90, 90, 90, 90, 90, 10]
+
+# Gripper Angle Calibration Constants (User will calibrate post-assembly)
+GRIPPER_CLOSED_ANGLE = 10
+GRIPPER_OPEN_ANGLE = 90
+
+DEFAULT_HOME_ANGLES = [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE]
 
 # List of macOS/Linux system virtual ports that must NEVER be auto-opened
 IGNORED_PORT_KEYWORDS = [
@@ -67,13 +74,49 @@ class SerialManager:
         # Thread lock for serial writing
         self._lock = threading.Lock()
         self.is_sweeping: bool = False
-        self._sweep_thread: Optional[threading.Thread] = None
+        self._motion_thread: Optional[threading.Thread] = None
+
+    def smooth_transition_to_angles(self, target_angles: List[int], duration_sec: float = 1.2, broadcast_callback=None) -> Tuple[bool, str]:
+        """
+        Executes Cosine S-Curve minimum-jerk trajectory interpolation to transition smoothly
+        from current_angles to target_angles. Ramps acceleration from zero to prevent mechanical jerks.
+        (Decision #20)
+        """
+        if self.is_estop:
+            return False, "Transition aborted: Emergency Stop is active."
+
+        start_angles = list(self.current_angles)
+        target_clamped = [max(0, min(180, int(a))) for a in target_angles]
+
+        steps = max(10, int(duration_sec * 30)) # 30Hz target update rate
+        dt = duration_sec / steps
+
+        for step in range(1, steps + 1):
+            if self.is_estop:
+                logger.warning("Smooth transition cancelled due to E-Stop.")
+                return False, "Cancelled by E-Stop"
+
+            # Cosine S-Curve blending factor t_factor in [0, 1]
+            t = step / steps
+            s_factor = (1.0 - math.cos(math.pi * t)) / 2.0  # Zero velocity at t=0 and t=1
+
+            interpolated = [
+                int(start_angles[i] + (target_clamped[i] - start_angles[i]) * s_factor)
+                for i in range(NUM_SERVOS)
+            ]
+
+            self.send_angles(interpolated)
+            if broadcast_callback:
+                broadcast_callback()
+            time.sleep(dt)
+
+        return True, "Smooth transition completed"
 
     def run_joint_sweep_test(self, broadcast_callback=None) -> Tuple[bool, str]:
         """
-        Executes a smooth non-blocking joint sweep test across all 6 servos to verify
+        Executes a smooth Cosine S-Curve joint sweep test across all 6 servos to verify
         mechanical assembly and check for physical plastic collisions.
-        Automatically returns to Home Position upon completion.
+        Automatically returns smoothly to Home Position upon completion. (Decision #20)
         """
         if self.is_estop:
             return False, "Cannot sweep: Emergency Stop is active."
@@ -83,55 +126,36 @@ class SerialManager:
 
         def sweep_worker():
             self.is_sweeping = True
-            logger.info("Starting Joint Sweep Test...")
+            logger.info("Starting Zero-Jerk Joint Sweep Test...")
 
             # Define sweep waypoints: (Base, Shoulder, Elbow, WristPitch, WristRoll, Gripper)
             waypoints = [
-                [90, 90, 90, 90, 90, 10],   # Start Home
-                [45, 90, 90, 90, 90, 10],   # Base left
-                [135, 90, 90, 90, 90, 10],  # Base right
-                [90, 60, 120, 90, 90, 10],  # Shoulder/Elbow flex
-                [90, 120, 60, 90, 90, 10],  # Shoulder/Elbow extend
-                [90, 90, 90, 45, 45, 10],   # Wrist pitch/roll min
-                [90, 90, 90, 135, 135, 10], # Wrist pitch/roll max
-                [90, 90, 90, 90, 90, 90],   # Gripper open
-                [90, 90, 90, 90, 90, 10],   # Gripper close
+                [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Start Home
+                [45, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Base left
+                [135, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],   # Base right
+                [90, 60, 120, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow flex
+                [90, 120, 60, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow extend
+                [90, 90, 90, 45, 45, GRIPPER_CLOSED_ANGLE],    # Wrist pitch/roll min
+                [90, 90, 90, 135, 135, GRIPPER_CLOSED_ANGLE],  # Wrist pitch/roll max
+                [90, 90, 90, 90, 90, GRIPPER_OPEN_ANGLE],      # Gripper open
+                [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Gripper close
             ]
-
-            curr = list(self.current_angles)
-            step_delay = 0.03 # 30Hz step rate
 
             for target in waypoints:
                 if self.is_estop or not self.is_sweeping:
                     logger.warning("Sweep aborted due to E-Stop or cancel signal.")
                     break
 
-                # Interpolate smoothly from current to target
-                steps = 25
-                for s in range(1, steps + 1):
-                    if self.is_estop or not self.is_sweeping:
-                        break
-                    interpolated = [
-                        int(curr[i] + (target[i] - curr[i]) * (s / steps))
-                        for i in range(NUM_SERVOS)
-                    ]
-                    self.send_angles(interpolated)
-                    if broadcast_callback:
-                        broadcast_callback()
-                    time.sleep(step_delay)
-
-                curr = list(target)
+                self.smooth_transition_to_angles(target, duration_sec=1.0, broadcast_callback=broadcast_callback)
                 time.sleep(0.15) # Pause briefly at each waypoint
 
-            # Final return to Home Position
-            logger.info("Sweep completed. Returning to Home Position.")
-            self.move_to_home()
-            if broadcast_callback:
-                broadcast_callback()
+            # Final smooth return to Home Position
+            logger.info("Sweep completed. Returning smoothly to Home Position.")
+            self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
             self.is_sweeping = False
 
-        self._sweep_thread = threading.Thread(target=sweep_worker, daemon=True)
-        self._sweep_thread.start()
+        self._motion_thread = threading.Thread(target=sweep_worker, daemon=True)
+        self._motion_thread.start()
         return True, "Joint Sweep Test started."
 
     def check_arduino_cli(self) -> Tuple[bool, str]:
@@ -319,16 +343,16 @@ class SerialManager:
             self.is_connected = False
             return False, f"Write error: {e}"
 
-    def lock_all_90(self) -> Tuple[bool, str]:
-        """Locks all 6 servos to exactly 90 degrees for mechanical assembly."""
+    def lock_all_90(self, broadcast_callback=None) -> Tuple[bool, str]:
+        """Locks all 6 servos smoothly to 90 degrees for mechanical assembly."""
         self.is_estop = False
         angles = [90, 90, 90, 90, 90, 90]
-        return self.send_angles(angles)
+        return self.smooth_transition_to_angles(angles, duration_sec=1.0, broadcast_callback=broadcast_callback)
 
-    def move_to_home(self) -> Tuple[bool, str]:
-        """Moves all servos to predefined Home Position angles."""
+    def move_to_home(self, broadcast_callback=None) -> Tuple[bool, str]:
+        """Moves all servos smoothly to predefined Home Position angles (Decision #20)."""
         self.is_estop = False
-        return self.send_angles(DEFAULT_HOME_ANGLES)
+        return self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
 
     def emergency_stop(self) -> Tuple[bool, str]:
         """

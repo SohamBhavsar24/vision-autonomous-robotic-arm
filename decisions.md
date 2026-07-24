@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #19 — Dashboard Phase A as Hardware Assembly & Testing Tool
-- **Date:** 2026-07-23
-- **Decision:** Build Dashboard Phase A (Robot Control Panel) BEFORE physical assembly so it serves as the live assembly, calibration, and testing interface.
-- **Alternatives Rejected:** Relying solely on static Arduino sketches (`servo_calibration.ino`) uploaded via Arduino IDE.
-- **Rationale:** The interactive Web UI with 6 live sliders, "Lock at 90°" button, "Home" button, and manual sweep buttons allows the user to test servos, verify mechanical limits, check for plastic collisions, and lock servos during physical assembly directly from a laptop or tablet without re-flashing Arduino code.
+## Decision #20 — Smooth S-Curve Trajectory Interpolation & Zero-Jerk Motion
+- **Date:** 2026-07-24
+- **Decision:** All automated joint transitions (Move to Home, Lock at 90°, Sweep Test, and automated motions) must pass through a smooth S-curve / Cosine minimum-jerk interpolator.
+- **Alternatives Rejected:** Direct instantaneous step changes (causes mechanical shock, gear stripping, current spikes, and sudden jerks).
+- **Rationale:** Open-loop servos do not have internal velocity control. Software-side S-curve interpolation ramps acceleration smoothly from zero, preventing gear damage and physical instability. Gripper open/closed calibration angles will be configured post-assembly.
