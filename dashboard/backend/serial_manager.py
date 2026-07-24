@@ -76,6 +76,30 @@ class SerialManager:
         self._lock = threading.Lock()
         self.is_sweeping: bool = False
 
+        # Cached CLI check to avoid subprocess slowdowns during 30Hz WebSocket streaming
+        self._has_cli_cache: Optional[bool] = None
+        self._cli_msg_cache: str = ""
+
+    def check_arduino_cli(self, force_refresh: bool = False) -> Tuple[bool, str]:
+        """Checks if `arduino-cli` is installed and available in PATH (cached)."""
+        if self._has_cli_cache is not None and not force_refresh:
+            return self._has_cli_cache, self._cli_msg_cache
+
+        cli_path = shutil.which("arduino-cli")
+        if cli_path:
+            try:
+                res = subprocess.run(["arduino-cli", "version"], capture_output=True, text=True, timeout=2)
+                self._has_cli_cache = True
+                self._cli_msg_cache = res.stdout.strip()
+                return True, self._cli_msg_cache
+            except Exception as e:
+                self._has_cli_cache = False
+                self._cli_msg_cache = f"arduino-cli error: {e}"
+                return False, self._cli_msg_cache
+        self._has_cli_cache = False
+        self._cli_msg_cache = "arduino-cli is NOT installed. (Run: `brew install arduino-cli`)"
+        return False, self._cli_msg_cache
+
     async def smooth_transition_to_angles(self, target_angles: List[int], duration_sec: float = 1.2, broadcast_callback=None) -> Tuple[bool, str]:
         """
         Executes Cosine S-Curve minimum-jerk trajectory interpolation to transition smoothly
@@ -140,8 +164,7 @@ class SerialManager:
 
         # Define sweep waypoints: (Base, Shoulder, Elbow, WristPitch, WristRoll, Gripper)
         waypoints = [
-            [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Start Home
-            [45, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Base left
+            [45, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Base left (start sweeping immediately)
             [135, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],   # Base right
             [90, 60, 120, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow flex
             [90, 120, 60, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow extend
