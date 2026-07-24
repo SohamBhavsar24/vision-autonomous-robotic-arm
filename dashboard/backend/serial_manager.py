@@ -31,6 +31,7 @@ import time
 import math
 import json
 import shutil
+import asyncio
 import subprocess
 import threading
 import logging
@@ -74,9 +75,8 @@ class SerialManager:
         # Thread lock for serial writing
         self._lock = threading.Lock()
         self.is_sweeping: bool = False
-        self._motion_thread: Optional[threading.Thread] = None
 
-    def smooth_transition_to_angles(self, target_angles: List[int], duration_sec: float = 1.2, broadcast_callback=None) -> Tuple[bool, str]:
+    async def smooth_transition_to_angles(self, target_angles: List[int], duration_sec: float = 1.2, broadcast_callback=None) -> Tuple[bool, str]:
         """
         Executes Cosine S-Curve minimum-jerk trajectory interpolation to transition smoothly
         from current_angles to target_angles. Ramps acceleration from zero to prevent mechanical jerks.
@@ -107,12 +107,23 @@ class SerialManager:
 
             self.send_angles(interpolated)
             if broadcast_callback:
-                broadcast_callback()
-            time.sleep(dt)
+                await broadcast_callback()
+            await asyncio.sleep(dt)
 
         return True, "Smooth transition completed"
 
-    def run_joint_sweep_test(self, broadcast_callback=None) -> Tuple[bool, str]:
+    async def lock_all_90(self, broadcast_callback=None) -> Tuple[bool, str]:
+        """Locks all 6 servos smoothly to 90 degrees for mechanical assembly."""
+        self.is_estop = False
+        angles = [90, 90, 90, 90, 90, 90]
+        return await self.smooth_transition_to_angles(angles, duration_sec=1.0, broadcast_callback=broadcast_callback)
+
+    async def move_to_home(self, broadcast_callback=None) -> Tuple[bool, str]:
+        """Moves all servos smoothly to predefined Home Position angles (Decision #20)."""
+        self.is_estop = False
+        return await self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
+
+    async def run_joint_sweep_test(self, broadcast_callback=None) -> Tuple[bool, str]:
         """
         Executes a smooth Cosine S-Curve joint sweep test across all 6 servos to verify
         mechanical assembly and check for physical plastic collisions.
@@ -124,39 +135,38 @@ class SerialManager:
         if self.is_sweeping:
             return False, "Sweep test is already running."
 
-        def sweep_worker():
-            self.is_sweeping = True
-            logger.info("Starting Zero-Jerk Joint Sweep Test...")
+        self.is_sweeping = True
+        logger.info("Starting Zero-Jerk Joint Sweep Test...")
 
-            # Define sweep waypoints: (Base, Shoulder, Elbow, WristPitch, WristRoll, Gripper)
-            waypoints = [
-                [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Start Home
-                [45, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Base left
-                [135, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],   # Base right
-                [90, 60, 120, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow flex
-                [90, 120, 60, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow extend
-                [90, 90, 90, 45, 45, GRIPPER_CLOSED_ANGLE],    # Wrist pitch/roll min
-                [90, 90, 90, 135, 135, GRIPPER_CLOSED_ANGLE],  # Wrist pitch/roll max
-                [90, 90, 90, 90, 90, GRIPPER_OPEN_ANGLE],      # Gripper open
-                [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Gripper close
-            ]
+        # Define sweep waypoints: (Base, Shoulder, Elbow, WristPitch, WristRoll, Gripper)
+        waypoints = [
+            [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Start Home
+            [45, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Base left
+            [135, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],   # Base right
+            [90, 60, 120, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow flex
+            [90, 120, 60, 90, 90, GRIPPER_CLOSED_ANGLE],   # Shoulder/Elbow extend
+            [90, 90, 90, 45, 45, GRIPPER_CLOSED_ANGLE],    # Wrist pitch/roll min
+            [90, 90, 90, 135, 135, GRIPPER_CLOSED_ANGLE],  # Wrist pitch/roll max
+            [90, 90, 90, 90, 90, GRIPPER_OPEN_ANGLE],      # Gripper open
+            [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE],    # Gripper close
+        ]
 
+        try:
             for target in waypoints:
                 if self.is_estop or not self.is_sweeping:
                     logger.warning("Sweep aborted due to E-Stop or cancel signal.")
                     break
 
-                self.smooth_transition_to_angles(target, duration_sec=1.0, broadcast_callback=broadcast_callback)
-                time.sleep(0.15) # Pause briefly at each waypoint
+                await self.smooth_transition_to_angles(target, duration_sec=1.0, broadcast_callback=broadcast_callback)
+                await asyncio.sleep(0.15) # Pause briefly at each waypoint
 
             # Final smooth return to Home Position
             logger.info("Sweep completed. Returning smoothly to Home Position.")
-            self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
+            await self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
+        finally:
             self.is_sweeping = False
 
-        self._motion_thread = threading.Thread(target=sweep_worker, daemon=True)
-        self._motion_thread.start()
-        return True, "Joint Sweep Test started."
+        return True, "Joint Sweep Test completed."
 
     def check_arduino_cli(self) -> Tuple[bool, str]:
         """Checks if `arduino-cli` is installed and available in PATH."""

@@ -128,21 +128,22 @@ async def set_servo_angles(req: ServoAnglesRequest):
 @app.post("/api/lock90")
 async def lock_all_90():
     """Locks all servos at 90° for assembly (Decision #19)."""
-    success, msg = serial_manager.lock_all_90()
-    await broadcast_status()
-    return {"status": "success", "message": msg, "angles": serial_manager.current_angles}
+    asyncio.create_task(serial_manager.lock_all_90(broadcast_callback=broadcast_status))
+    return {"status": "success", "message": "Locking all servos at 90°"}
+
+
+@app.post("/api/home")
+async def move_home():
+    """Moves all servos to Home Position."""
+    asyncio.create_task(serial_manager.move_to_home(broadcast_callback=broadcast_status))
+    return {"status": "success", "message": "Moving to Home Position"}
 
 
 @app.post("/api/sweep")
 async def run_joint_sweep():
     """Executes joint sweep test across all 6 servos to verify mechanical assembly."""
-    loop = asyncio.get_running_loop()
-    def sync_broadcast():
-        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
-    success, msg = serial_manager.run_joint_sweep_test(broadcast_callback=sync_broadcast)
-    if not success:
-        raise HTTPException(status_code=400, detail=msg)
-    return {"status": "success", "message": msg}
+    asyncio.create_task(serial_manager.run_joint_sweep_test(broadcast_callback=broadcast_status))
+    return {"status": "success", "message": "Joint sweep test started"}
 
 
 @app.post("/api/estop")
@@ -185,22 +186,13 @@ async def websocket_endpoint(websocket: WebSocket):
                     await broadcast_status()
 
                 elif action_type == "lock90":
-                    loop = asyncio.get_running_loop()
-                    def sync_broadcast():
-                        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
-                    serial_manager.lock_all_90(broadcast_callback=sync_broadcast)
+                    asyncio.create_task(serial_manager.lock_all_90(broadcast_callback=broadcast_status))
 
                 elif action_type == "home":
-                    loop = asyncio.get_running_loop()
-                    def sync_broadcast():
-                        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
-                    serial_manager.move_to_home(broadcast_callback=sync_broadcast)
+                    asyncio.create_task(serial_manager.move_to_home(broadcast_callback=broadcast_status))
 
                 elif action_type == "sweep":
-                    loop = asyncio.get_running_loop()
-                    def sync_broadcast():
-                        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
-                    serial_manager.run_joint_sweep_test(broadcast_callback=sync_broadcast)
+                    asyncio.create_task(serial_manager.run_joint_sweep_test(broadcast_callback=broadcast_status))
 
                 elif action_type == "estop":
                     serial_manager.emergency_stop()
