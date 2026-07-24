@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #23 — Dedicated 3D Digital Twin Sidebar Tab
+## Decision #24 — Origin ArUco Marker for Auto Camera Calibration
 - **Date:** 2026-07-24
-- **Decision:** Provide a dedicated top-level sidebar tab `Digital Twin` (`#panel-digital-twin`) with a large 3D viewport canvas (Baby ROS / URDF / WebGL integration) for Toshal's simulation model.
-- **Alternatives Rejected:** Small widget card embedded inside the Servo Control panel.
-- **Rationale:** A dedicated full-page 3D viewport allows for a much larger 3D workspace rendering, interactive 360° camera controls, live joint telemetry overlays, and a far more impressive capstone presentation.
+- **Decision:** Place 1 ArUco Marker (ID 2) permanently flat on the table surface at the robot base origin $(0,0)$.
+- **Alternatives Rejected:** Manual pixel-to-cm calibration by measuring pixel distances by hand.
+- **Rationale:** An ArUco marker at $(0,0)$ automatically establishes the real-world coordinate origin and pixel-to-cm scaling factor every frame, making the vision system robust even if the camera is bumped or re-positioned.
