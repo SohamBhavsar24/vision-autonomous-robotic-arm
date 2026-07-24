@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #24 — Origin ArUco Marker for Auto Camera Calibration
+## Decision #25 — Calibration ArUco Marker Corner Placement
 - **Date:** 2026-07-24
-- **Decision:** Place 1 ArUco Marker (ID 2) permanently flat on the table surface at the robot base origin $(0,0)$.
-- **Alternatives Rejected:** Manual pixel-to-cm calibration by measuring pixel distances by hand.
-- **Rationale:** An ArUco marker at $(0,0)$ automatically establishes the real-world coordinate origin and pixel-to-cm scaling factor every frame, making the vision system robust even if the camera is bumped or re-positioned.
+- **Decision:** Place Calibration ArUco Marker ID 2 in the corner near the camera pole (away from the robot arm) at a fixed offset $(X = -20\text{cm}, Y = 40\text{cm})$ from the robot base.
+- **Alternatives Rejected:** Placing Marker ID 2 right under the robot base or under the gripper path (which leads to shadow/occlusion during picking).
+- **Rationale:** Placing the calibration marker in the camera-side corner guarantees the robot arm links never shadow or block the marker, giving 100% un-interrupted camera calibration throughout all movements.
