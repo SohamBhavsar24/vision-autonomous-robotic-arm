@@ -32,6 +32,7 @@ const TeleopPanel = {
     this.buildButtonIndicators();
     this.bindEvents();
     this.startLoop();
+    this.loadKinematicsConfig();
   },
 
   cacheDOM() {
@@ -51,6 +52,7 @@ const TeleopPanel = {
     this.r1Val = document.getElementById('ps5R1Val');
     this.buttonsGrid = document.getElementById('ps5ButtonsGrid');
     this.axesList = document.getElementById('ps5AxesList');
+    this.btnSaveKinematics = document.getElementById('btnSaveKinematics');
 
     if (this.axesList) {
       this.axesList.innerHTML = '<div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); padding: 12px 0;">No controller connected.<br>Press any button on PS5 DualSense to display live axes.</div>';
@@ -70,6 +72,10 @@ const TeleopPanel = {
   },
 
   bindEvents() {
+    if (this.btnSaveKinematics) {
+      this.btnSaveKinematics.addEventListener('click', () => this.saveKinematicsConfig());
+    }
+
     window.addEventListener('gamepadconnected', (e) => {
       this.gamepadIndex = e.gamepad.index;
       if (this.statusPill && this.statusText) {
@@ -89,6 +95,64 @@ const TeleopPanel = {
         App.log('PS5 Controller Disconnected.');
       }
     });
+  },
+
+  async loadKinematicsConfig() {
+    try {
+      const res = await fetch('/api/kinematics');
+      if (!res.ok) return;
+      const cfg = await res.json();
+      
+      const l1 = document.getElementById('inputL1');
+      const l2 = document.getElementById('inputL2');
+      const l3 = document.getElementById('inputL3');
+      const l4 = document.getElementById('inputL4');
+      const gc = document.getElementById('angleGripperClosed');
+      const go = document.getElementById('angleGripperOpen');
+
+      if (l1 && cfg.L1) l1.value = cfg.L1;
+      if (l2 && cfg.L2) l2.value = cfg.L2;
+      if (l3 && cfg.L3) l3.value = cfg.L3;
+      if (l4 && cfg.L4) l4.value = cfg.L4;
+      if (gc && cfg.gripper_closed) gc.value = cfg.gripper_closed;
+      if (go && cfg.gripper_open) go.value = cfg.gripper_open;
+
+      if (cfg.offsets) {
+        for (let i = 0; i < 5; i++) {
+          const el = document.getElementById(`offsetServo${i}`);
+          if (el) el.value = cfg.offsets[i] || 0;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load kinematics config:', e);
+    }
+  },
+
+  async saveKinematicsConfig() {
+    const l1 = parseFloat(document.getElementById('inputL1')?.value || 10.0);
+    const l2 = parseFloat(document.getElementById('inputL2')?.value || 14.0);
+    const l3 = parseFloat(document.getElementById('inputL3')?.value || 12.0);
+    const l4 = parseFloat(document.getElementById('inputL4')?.value || 8.0);
+    const gc = parseInt(document.getElementById('angleGripperClosed')?.value || 10, 10);
+    const go = parseInt(document.getElementById('angleGripperOpen')?.value || 90, 10);
+
+    const offsets = [];
+    for (let i = 0; i < 5; i++) {
+      offsets.push(parseInt(document.getElementById(`offsetServo${i}`)?.value || 0, 10));
+    }
+
+    try {
+      const res = await fetch('/api/kinematics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ L1: l1, L2: l2, L3: l3, L4: l4, offsets, gripper_closed: gc, gripper_open: go })
+      });
+      if (res.ok) {
+        App.log(`Saved Kinematic Calibration: L1=${l1}cm, L2=${l2}cm, L3=${l3}cm, L4=${l4}cm`);
+      }
+    } catch (e) {
+      App.log(`Failed to save kinematic calibration: ${e.message}`);
+    }
   },
 
   applyDeadzone(val, deadzone = 0.08) {

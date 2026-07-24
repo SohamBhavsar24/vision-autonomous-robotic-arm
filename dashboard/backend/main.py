@@ -73,12 +73,41 @@ class ServoAnglesRequest(BaseModel):
     angles: List[int]
 
 
-# REST API Endpoints
+CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "kinematics_config.json"))
 
-@app.get("/api/status")
-async def get_status():
-    """Returns current system status."""
-    return serial_manager.get_status()
+class KinematicsConfigRequest(BaseModel):
+    L1: float = 10.0
+    L2: float = 14.0
+    L3: float = 12.0
+    L4: float = 8.0
+    offsets: List[int] = [0, 0, 0, 0, 0, 0]
+    gripper_closed: int = 10
+    gripper_open: int = 90
+
+
+@app.get("/api/kinematics")
+async def get_kinematics_config():
+    """Returns persistent Kinematic Calibration parameters."""
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "L1": 10.0, "L2": 14.0, "L3": 12.0, "L4": 8.0,
+        "offsets": [0, 0, 0, 0, 0, 0],
+        "gripper_closed": 10, "gripper_open": 90
+    }
+
+
+@app.post("/api/kinematics")
+async def save_kinematics_config(req: KinematicsConfigRequest):
+    """Saves updated Kinematic Calibration parameters (L1-L4, offsets, gripper angles)."""
+    data = req.model_dump()
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(data, f, indent=2)
+    return {"status": "saved", "config": data}
 
 
 @app.get("/api/ports")

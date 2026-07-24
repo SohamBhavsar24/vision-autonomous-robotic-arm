@@ -86,6 +86,7 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 | 18 | Dashboard Theme | Warm light mode — cream/linen/sand palette. NO white, NO dark mode, NO neon/electric colors. Fonts: DM Serif Display (headings), Source Sans 3 (body), IBM Plex Mono (data). NO generic vibe-coded fonts like Inter/Roboto |
 | 19 | Assembly Strategy | Build Dashboard Phase A first so it serves as the live interactive tool for testing, locking at 90°, and testing range during physical assembly |
 | 20 | Zero-Jerk Motion | All automated joint transitions (Home, Lock 90°, Sweep Test) use Cosine S-Curve trajectory interpolation to eliminate mechanical jerks and current spikes |
+| 21 | Kinematic Calibration | Provide web-based Kinematic Calibration fields ($L_1..L_4$, $\Delta\theta_{1..6}$, Gripper angles) in Teleoperation tab persisted to `kinematics_config.json` |
 
 ---
 

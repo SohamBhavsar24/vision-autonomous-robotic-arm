@@ -379,6 +379,88 @@
             </p>
           </div>
 
+          <!-- Kinematic Calibration & Physical Parameters Card (Decision #21) -->
+          <div class="card" style="grid-column: span 12; border-top: 3px solid var(--accent-primary);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div>
+                <h3 class="card-title">Arm Kinematic Calibration & Fine-Tuning</h3>
+                <p class="card-subtitle">Fine-tune physical link measurements (L1–L4), servo horn offsets, and gripper angles post-assembly.</p>
+              </div>
+              <button class="btn btn-primary" id="btnSaveKinematics">
+                Save Calibration
+              </button>
+            </div>
+
+            <!-- Link Lengths (L1 - L4) -->
+            <div style="margin-top: 16px;">
+              <h4 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-main); margin-bottom: 12px;">1. Physical Link Measurements (Centimeters)</h4>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Base Height (L1)</label>
+                  <input type="number" id="inputL1" step="0.1" value="10.0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                  <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 4px;">Base → Shoulder Axis</span>
+                </div>
+
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Upper Arm (L2)</label>
+                  <input type="number" id="inputL2" step="0.1" value="14.0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                  <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 4px;">Shoulder → Elbow Axis</span>
+                </div>
+
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Forearm (L3)</label>
+                  <input type="number" id="inputL3" step="0.1" value="12.0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                  <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 4px;">Elbow → Wrist Axis</span>
+                </div>
+
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">End-Effector (L4)</label>
+                  <input type="number" id="inputL4" step="0.1" value="8.0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                  <span style="font-size: 0.7rem; color: var(--text-muted); display: block; margin-top: 4px;">Wrist → Gripper Tip</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Servo Zero Offsets & Gripper Calibration -->
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--border-card);">
+              <h4 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-main); margin-bottom: 12px;">2. Servo Horn Offsets & Gripper Calibration (Degrees)</h4>
+              
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Base (Δθ1)</label>
+                  <input type="number" id="offsetServo0" step="1" value="0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                </div>
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Shoulder (Δθ2)</label>
+                  <input type="number" id="offsetServo1" step="1" value="0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                </div>
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Elbow (Δθ3)</label>
+                  <input type="number" id="offsetServo2" step="1" value="0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                </div>
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Wrist P. (Δθ4)</label>
+                  <input type="number" id="offsetServo3" step="1" value="0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                </div>
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Wrist R. (Δθ5)</label>
+                  <input type="number" id="offsetServo4" step="1" value="0" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                </div>
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Gripper Close</label>
+                  <input type="number" id="angleGripperClosed" step="1" value="10" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                </div>
+                <div>
+                  <label style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Gripper Open</label>
+                  <input type="number" id="angleGripperOpen" step="1" value="90" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 4px; background: var(--bg-page);">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
         </div>
       </main>
 

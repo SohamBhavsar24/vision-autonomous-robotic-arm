@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #20 — Smooth S-Curve Trajectory Interpolation & Zero-Jerk Motion
+## Decision #21 — Live Kinematic Calibration & DH Fine-Tuning Panel
 - **Date:** 2026-07-24
-- **Decision:** All automated joint transitions (Move to Home, Lock at 90°, Sweep Test, and automated motions) must pass through a smooth S-curve / Cosine minimum-jerk interpolator.
-- **Alternatives Rejected:** Direct instantaneous step changes (causes mechanical shock, gear stripping, current spikes, and sudden jerks).
-- **Rationale:** Open-loop servos do not have internal velocity control. Software-side S-curve interpolation ramps acceleration smoothly from zero, preventing gear damage and physical instability. Gripper open/closed calibration angles will be configured post-assembly.
+- **Decision:** Provide live interactive input fields in the Dashboard Teleoperation tab for link lengths ($L_1, L_2, L_3, L_4$), joint angle offsets ($\Delta \theta_1 .. \Delta \theta_6$), and Gripper Open/Close angles, persisted to a `kinematics_config.json` file.
+- **Alternatives Rejected:** Hardcoding DH parameters directly in Python code.
+- **Rationale:** Physical 3D prints, servo horn splines, and manual assembly tolerances have 1–3mm variances. Allowing real-time kinematic fine-tuning from the web dashboard lets the user eliminate Cartesian plane errors without editing backend code.
