@@ -262,9 +262,118 @@
       </main>
 
       <main class="content-panel" id="panel-teleop">
-        <div class="card">
-          <h3 class="card-title">PS5 Teleoperation (Phase C)</h3>
-          <p class="card-subtitle">Will provide live Cartesian IK visualization and PS5 DualSense inputs.</p>
+        
+        <!-- Status Pill -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+          <div>
+            <h3 class="card-title">PS5 DualSense Controller Live Tester</h3>
+            <p class="card-subtitle">Connect your PS5 controller via Bluetooth or USB and press any button to begin testing.</p>
+          </div>
+          <div class="status-pill" id="ps5StatusPill">
+            <span class="status-dot"></span>
+            <span id="ps5StatusText">Press any button on PS5 controller...</span>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          
+          <!-- Analog Joysticks -->
+          <div class="card" style="grid-column: span 6;">
+            <h3 class="card-title">Analog Joysticks</h3>
+            <p class="card-subtitle">Left Stick (X/Y workspace navigation) • Right Stick (Wrist Pitch/Roll)</p>
+            
+            <div style="display: flex; gap: 32px; justify-content: center; margin-top: 16px;">
+              
+              <!-- Left Stick -->
+              <div style="text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">Left Stick (X / Y)</div>
+                <div style="width: 130px; height: 130px; background: var(--bg-page); border: 2px solid var(--border-card); border-radius: 50%; position: relative; margin: 0 auto;">
+                  <div style="position: absolute; width: 1px; height: 100%; left: 50%; background: var(--border-card);"></div>
+                  <div style="position: absolute; height: 1px; width: 100%; top: 50%; background: var(--border-card);"></div>
+                  <div id="ps5LeftDot" style="width: 18px; height: 18px; background: var(--accent-primary); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: all 0.05s linear; box-shadow: 0 2px 8px rgba(196,120,74,0.3);"></div>
+                </div>
+                <div id="ps5LeftVal" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">X: 0.00 Y: 0.00</div>
+              </div>
+
+              <!-- Right Stick -->
+              <div style="text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">Right Stick (Pitch / Roll)</div>
+                <div style="width: 130px; height: 130px; background: var(--bg-page); border: 2px solid var(--border-card); border-radius: 50%; position: relative; margin: 0 auto;">
+                  <div style="position: absolute; width: 1px; height: 100%; left: 50%; background: var(--border-card);"></div>
+                  <div style="position: absolute; height: 1px; width: 100%; top: 50%; background: var(--border-card);"></div>
+                  <div id="ps5RightDot" style="width: 18px; height: 18px; background: var(--accent-primary); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: all 0.05s linear; box-shadow: 0 2px 8px rgba(196,120,74,0.3);"></div>
+                </div>
+                <div id="ps5RightVal" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">X: 0.00 Y: 0.00</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Triggers & Bumpers -->
+          <div class="card" style="grid-column: span 6;">
+            <h3 class="card-title">Triggers & Bumpers</h3>
+            <p class="card-subtitle">L2/R2 Analog Triggers (Z-height control) • L1/R1 Bumpers (Gripper Claw)</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">L2 Trigger</div>
+                <div style="height: 14px; background: var(--bg-page); border: 1px solid var(--border-card); border-radius: 6px; overflow: hidden;">
+                  <div id="ps5L2Fill" style="height: 100%; background: var(--accent-primary); width: 0%;"></div>
+                </div>
+                <div id="ps5L2Val" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">0%</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">R2 Trigger</div>
+                <div style="height: 14px; background: var(--bg-page); border: 1px solid var(--border-card); border-radius: 6px; overflow: hidden;">
+                  <div id="ps5R2Fill" style="height: 100%; background: var(--accent-primary); width: 0%;"></div>
+                </div>
+                <div id="ps5R2Val" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">0%</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">L1 Bumper</div>
+                <div style="height: 14px; background: var(--bg-page); border: 1px solid var(--border-card); border-radius: 6px; overflow: hidden;">
+                  <div id="ps5L1Fill" style="height: 100%; background: var(--accent-primary); width: 0%;"></div>
+                </div>
+                <div id="ps5L1Val" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">0%</div>
+              </div>
+
+              <div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">R1 Bumper</div>
+                <div style="height: 14px; background: var(--bg-page); border: 1px solid var(--border-card); border-radius: 6px; overflow: hidden;">
+                  <div id="ps5R1Fill" style="height: 100%; background: var(--accent-primary); width: 0%;"></div>
+                </div>
+                <div id="ps5R1Val" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Buttons Grid -->
+          <div class="card" style="grid-column: span 8;">
+            <h3 class="card-title">Digital Buttons & D-Pad</h3>
+            <div id="ps5ButtonsGrid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 12px;"></div>
+          </div>
+
+          <!-- Raw Axes -->
+          <div class="card" style="grid-column: span 4;">
+            <h3 class="card-title">Raw Analog Axes</h3>
+            <div id="ps5AxesList" style="margin-top: 12px;"></div>
+          </div>
+
+          <!-- Inverse Kinematics Pipeline Integration Note -->
+          <div class="card" style="grid-column: span 12; border-left: 4px solid var(--accent-primary);">
+            <h3 class="card-title">Cartesian Inverse Kinematics (IK) Teleoperation Architecture (Phase C)</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
+              <strong>How Teleoperation Demonstration Collection Will Work:</strong><br>
+              1. <strong>Left Stick (X / Y):</strong> Moves the end-effector in Cartesian table space (centimeters relative to base).<br>
+              2. <strong>R2 / L2 Triggers:</strong> Controls end-effector Z-height (raise / lower arm towards table).<br>
+              3. <strong>Right Stick & R1/L1:</strong> Controls Wrist Pitch/Roll orientation and Gripper open/close state.<br>
+              4. <strong>Python IK Engine (`ik_solver.py`):</strong> Receives the target $(X, Y, Z, \theta_{pitch}, \theta_{roll})$ from the PS5 controller, calculates exact joint angles $(\theta_1, \theta_2, \theta_3, \theta_4, \theta_5, \theta_6)$, and streams them at 30Hz to the Arduino.<br>
+              <em>This Cartesian control pipeline ensures human operators record smooth, high-quality trajectories for imitation learning.</em>
+            </p>
+          </div>
+
         </div>
       </main>
 
@@ -288,5 +397,6 @@
   <!-- Dashboard JavaScript -->
   <script src="js/app.js"></script>
   <script src="js/servo_panel.js"></script>
+  <script src="js/teleop_panel.js"></script>
 </body>
 </html>
