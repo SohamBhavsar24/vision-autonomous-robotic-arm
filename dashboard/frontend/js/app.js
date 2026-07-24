@@ -28,6 +28,7 @@ const App = {
 
     const titles = {
       'panel-control': 'Robot Servo Control & Assembly Helper',
+      'panel-digital-twin': '3D Digital Twin Simulation (Baby ROS / URDF)',
       'panel-camera': 'Live Dual-Camera Feeds',
       'panel-perception': 'OpenCV Perception & Coordinate Mapping',
       'panel-teleop': 'PS5 Controller Teleoperation & IK',
@@ -148,6 +149,14 @@ const App = {
     // Update Servo Control Sliders live from backend WebSocket telemetry
     if (window.ServoPanel && data.angles) {
       window.ServoPanel.updateSlidersFromBackend(data.angles);
+    }
+
+    // Update Digital Twin 3D Viewport Telemetry Overlay
+    if (data.angles) {
+      for (let i = 0; i < Math.min(data.angles.length, 6); i++) {
+        const el = document.getElementById(`dtVal${i}`);
+        if (el) el.textContent = `${data.angles[i]}°`;
+      }
     }
   },
 

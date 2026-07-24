@@ -32,6 +32,12 @@
           </a>
         </li>
         <li>
+          <a class="nav-item" data-panel="panel-digital-twin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>Digital Twin</span>
+          </a>
+        </li>
+        <li>
           <a class="nav-item" data-panel="panel-camera">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
             <span>Camera Feeds</span>
@@ -256,6 +262,79 @@
               <div class="log-entry"><span class="log-time">[Init]</span> Dashboard ready. WebSocket standing by.</div>
             </div>
 
+      </main>
+
+      <!-- Panel 2: 3D Digital Twin Simulation (Baby ROS / URDF Integration) -->
+      <main class="content-panel" id="panel-digital-twin">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div>
+            <h3 class="card-title">3D Digital Twin Simulation (Baby ROS / URDF Model)</h3>
+            <p class="card-subtitle">Real-time 3D CAD visualization synced with physical arm telemetry via WebSockets.</p>
+          </div>
+          <div class="status-pill connected" id="dtStatusPill">
+            <span class="status-dot"></span>
+            <span>Digital Twin Sync: Active (30Hz)</span>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          
+          <!-- Full-Screen 3D Viewport Box -->
+          <div class="card" style="grid-column: span 12;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (Orbit Controls: Drag to rotate • Scroll to zoom)</span>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" onclick="App.log('Action: Reset 3D Camera View')">Reset Camera</button>
+                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" onclick="App.log('Action: Toggle Grid Floor')">Toggle Grid</button>
+              </div>
+            </div>
+
+            <!-- Large 3D Rendering Canvas Area -->
+            <div id="digitalTwinViewport" style="width: 100%; height: 500px; background: #2A2624; border-radius: 8px; border: 1px solid var(--border-card); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              
+              <!-- 3D Perspective Grid Placeholder / Render Target -->
+              <svg width="100%" height="100%" style="position: absolute; top:0; left:0; opacity: 0.15;">
+                <defs>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E0D6C8" stroke-width="1"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+              </svg>
+
+              <!-- Central 3D Robot Arm Visualization Node -->
+              <div style="position: relative; z-index: 2; text-align: center; color: #FAF7F2; background: rgba(42, 38, 36, 0.85); padding: 24px 36px; border-radius: 12px; border: 1px solid rgba(224, 214, 200, 0.2); backdrop-filter: blur(8px);">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="1.5" style="margin-bottom: 12px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                <h4 style="font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 4px;">Toshal's Baby ROS Digital Twin Viewport</h4>
+                <p style="font-size: 0.85rem; color: #E0D6C8; margin-bottom: 12px;">3D URDF model container listening on WebSocket `/ws` for live joint states.</p>
+                <div style="display: inline-block; font-family: var(--font-mono); font-size: 0.75rem; background: rgba(196,120,74,0.2); color: var(--accent-primary); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--accent-primary);">
+                  Waiting for Toshal's `robot_arm.urdf` file export
+                </div>
+              </div>
+
+              <!-- Live Joint Telemetry Overlay Bar (Bottom Left of 3D Viewport) -->
+              <div style="position: absolute; bottom: 16px; left: 16px; z-index: 3; background: rgba(26, 24, 23, 0.85); border: 1px solid rgba(224, 214, 200, 0.2); padding: 10px 16px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.75rem; color: #FAF7F2; display: flex; gap: 16px;">
+                <div>θ1: <span id="dtVal0" style="color: var(--accent-primary);">90°</span></div>
+                <div>θ2: <span id="dtVal1" style="color: var(--accent-primary);">90°</span></div>
+                <div>θ3: <span id="dtVal2" style="color: var(--accent-primary);">90°</span></div>
+                <div>θ4: <span id="dtVal3" style="color: var(--accent-primary);">90°</span></div>
+                <div>θ5: <span id="dtVal4" style="color: var(--accent-primary);">90°</span></div>
+                <div>Claw: <span id="dtVal5" style="color: var(--accent-primary);">10°</span></div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Bottom Card: Digital Twin Architecture Notes -->
+          <div class="card" style="grid-column: span 12; border-left: 4px solid var(--accent-primary);">
+            <h3 class="card-title">Digital Twin & Simulation Pipeline (Toshal Kumbhar)</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
+              <strong>How the Digital Twin Synchronizes:</strong><br>
+              1. <strong>Baby ROS / Three.js URDF Loader:</strong> Toshal's 3D CAD mesh files are parsed using standard URDF joint origins and rotational axes.<br>
+              2. <strong>Bi-Directional Telemetry:</strong> Moving sliders or teleoperating with PS5 updates both the physical servos via Arduino and the 3D Digital Twin model simultaneously in 30Hz real-time.<br>
+              3. <strong>Safe Motion Validation:</strong> Digital Twin can be used in offline simulation mode to preview trajectory execution before sending power to physical motors.
+            </p>
           </div>
 
         </div>

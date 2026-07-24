@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #22 — 3D Digital Twin Integration in Web Dashboard
+## Decision #23 — Dedicated 3D Digital Twin Sidebar Tab
 - **Date:** 2026-07-24
-- **Decision:** Embed a real-time 3D Digital Twin visualizer inside the Web Dashboard (synced with Toshal Kumbhar's Baby ROS / URDF / WebGL model).
-- **Alternatives Rejected:** Keeping the digital twin isolated in a separate offline desktop window.
-- **Rationale:** Embedding the 3D Digital Twin directly inside the dashboard allows simultaneous visualization of the physical robot arm and its digital twin during manual slider moves, PS5 teleoperation, and autonomous neural network inference, presenting a unified high-tech capstone demonstration.
+- **Decision:** Provide a dedicated top-level sidebar tab `Digital Twin` (`#panel-digital-twin`) with a large 3D viewport canvas (Baby ROS / URDF / WebGL integration) for Toshal's simulation model.
+- **Alternatives Rejected:** Small widget card embedded inside the Servo Control panel.
+- **Rationale:** A dedicated full-page 3D viewport allows for a much larger 3D workspace rendering, interactive 360° camera controls, live joint telemetry overlays, and a far more impressive capstone presentation.
