@@ -50,7 +50,7 @@ dashboard/
    python3 main.py
    ```
 
-4. Open your browser to `http://localhost:8000` (or access from your tablet on the same WiFi using `http://<your-mac-ip>:8000`).
+4. Open your browser to `http://localhost:8050` (or access from your tablet on the same WiFi using `http://<your-mac-ip>:8050`).
 
 ## Features (Phase A)
 
