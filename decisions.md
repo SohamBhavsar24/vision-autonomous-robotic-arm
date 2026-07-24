@@ -134,8 +134,8 @@
 
 ---
 
-## Decision #21 — Live Kinematic Calibration & DH Fine-Tuning Panel
+## Decision #22 — 3D Digital Twin Integration in Web Dashboard
 - **Date:** 2026-07-24
-- **Decision:** Provide live interactive input fields in the Dashboard Teleoperation tab for link lengths ($L_1, L_2, L_3, L_4$), joint angle offsets ($\Delta \theta_1 .. \Delta \theta_6$), and Gripper Open/Close angles, persisted to a `kinematics_config.json` file.
-- **Alternatives Rejected:** Hardcoding DH parameters directly in Python code.
-- **Rationale:** Physical 3D prints, servo horn splines, and manual assembly tolerances have 1–3mm variances. Allowing real-time kinematic fine-tuning from the web dashboard lets the user eliminate Cartesian plane errors without editing backend code.
+- **Decision:** Embed a real-time 3D Digital Twin visualizer inside the Web Dashboard (synced with Toshal Kumbhar's Baby ROS / URDF / WebGL model).
+- **Alternatives Rejected:** Keeping the digital twin isolated in a separate offline desktop window.
+- **Rationale:** Embedding the 3D Digital Twin directly inside the dashboard allows simultaneous visualization of the physical robot arm and its digital twin during manual slider moves, PS5 teleoperation, and autonomous neural network inference, presenting a unified high-tech capstone demonstration.
