@@ -120,7 +120,7 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - User requested PPT generation prompt for Manus AI.
 - User requested image generation prompt for setup visualization.
 
-### Session 3 (2026-07-23) — CURRENT
+### Session 3 (2026-07-23)
 - User requested a web-based dashboard for the entire project lifecycle.
 - Resolved open questions: Arduino CLI for port management, no auth, laptop+tablet only, warm light theme.
 - Created `architecture.md`, `agent_bible.md`, `decisions.md`, `.gemini/rules.md`.
@@ -128,13 +128,21 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - Configured GitHub remote & classic PAT. Successfully pushed project to `https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git`.
 - Decision #19: User clarified Dashboard Phase A will be built first as the live physical assembly & testing tool.
 
+### Session 4 (2026-07-24) — COMPLETED
+- Built Web Dashboard Phase A (FastAPI + WebSockets + Warm Linen UI + Sliders + E-Stop + Solo Test Buttons + Port CLI auto-connect).
+- Added persistent REST API endpoints (`/api/kinematics`) for saving physical link measurements ($L_1..L_4$) and servo zero offsets in `kinematics_config.json`.
+- Repositioned 3D Digital Twin tab to bottom of sidebar and updated status to "Standing By (Awaiting URDF)". Anonymized all UI text.
+- Generated vector SVG ArUco markers (IDs 0, 1, 2) and printable HTML sheet (`print_aruco_sheet.html`).
+- Finalized $50\text{cm} \times 50\text{cm}$ platform geometry & dual-frame transformation (Marker ID 2 at corner = World Frame $(0,0)$, Robot Base = $(25\text{cm}, 5\text{cm})$).
+- Created interactive Web Journal (`project_journal.html`), iPhone PWA native app with custom 3D robotic arm home screen icon, and deployed live to GitHub Pages (`https://sohambhavsar24.github.io/vision-autonomous-robotic-arm/`).
+
 ---
 
 ## 6. Next Steps (Immediate)
 
-1. **Build Dashboard Phase A** — Construct FastAPI backend + WebSockets + Warm light UI shell + Robot Control Panel (6 sliders, Lock at 90°, Home button, E-stop, Arduino CLI port auto-connect).
-2. **Physical Hardware Assembly (assisted by Dashboard)** — Connect Arduino + PCA9685, use Dashboard to lock servos at 90°, mount 3D parts at midpoints, test range using dashboard sliders, measure links (L1–L4).
-3. **Write IK Solver** — Implement Python Cartesian IK solver once physical link measurements are provided by user.
+1. **Physical Hardware Assembly (assisted by Web Dashboard Phase A)** — Connect Arduino Uno + PCA9685 + 6 Servos, open Web Dashboard at `http://localhost:8050`, use "Lock at 90°" button to align horns, physically assemble the 6-DOF arm on the $50\text{cm} \times 50\text{cm}$ wooden platform, and test individual servos using "Test Solo" buttons.
+2. **Kinematic Calibration** — Measure physical link lengths ($L_1, L_2, L_3, L_4$) in centimeters using a ruler and enter them into the Kinematic Calibration form on the Web Dashboard Teleoperation tab.
+3. **Write Analytical IK Solver** — Implement Python Cartesian IK solver (`ik_solver.py`) once link measurements are saved.
 
 ---
 
