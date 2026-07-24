@@ -46,7 +46,7 @@
 | `dashboard/README.md` | ✅ Created |
 | `architecture.md` | ✅ Written |
 | `agent_bible.md` | ✅ This file |
-| `project_journal.md` | ✅ Created (Narrative project journal, updated only on explicit user command) |
+| `project_journal.html` | ✅ Created (Interactive PWA Web Journal & iPhone App on GitHub Pages) |
 | `decisions.md` | ✅ Written |
 | `robotic arm synopsis.pdf` | ✅ Completed, submitted to college |
 
