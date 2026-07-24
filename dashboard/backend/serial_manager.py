@@ -136,11 +136,38 @@ class SerialManager:
 
         return True, "Smooth transition completed"
 
-    async def lock_all_90(self, broadcast_callback=None) -> Tuple[bool, str]:
-        """Locks all 6 servos smoothly to 90 degrees for mechanical assembly."""
-        self.is_estop = False
-        angles = [90, 90, 90, 90, 90, 90]
-        return await self.smooth_transition_to_angles(angles, duration_sec=1.0, broadcast_callback=broadcast_callback)
+    async def test_single_servo(self, servo_index: int, broadcast_callback=None) -> Tuple[bool, str]:
+        """
+        Performs a smooth solo sweep test on a single servo (0 to 5) from current -> 30° -> 150° -> 90°
+        to test individual joint movement in isolation during physical assembly.
+        """
+        if self.is_estop:
+            return False, "Cannot test servo: Emergency Stop is active."
+
+        if servo_index < 0 or servo_index >= NUM_SERVOS:
+            return False, f"Invalid servo index {servo_index}."
+
+        logger.info(f"Starting Solo Test on Servo {servo_index}...")
+        start_angles = list(self.current_angles)
+
+        # Target 1: 30 degrees
+        t1 = list(start_angles)
+        t1[servo_index] = 30
+        await self.smooth_transition_to_angles(t1, duration_sec=0.8, broadcast_callback=broadcast_callback)
+        await asyncio.sleep(0.2)
+
+        # Target 2: 150 degrees
+        t2 = list(start_angles)
+        t2[servo_index] = 150
+        await self.smooth_transition_to_angles(t2, duration_sec=1.0, broadcast_callback=broadcast_callback)
+        await asyncio.sleep(0.2)
+
+        # Target 3: Return to 90 degrees
+        t3 = list(start_angles)
+        t3[servo_index] = 90
+        await self.smooth_transition_to_angles(t3, duration_sec=0.8, broadcast_callback=broadcast_callback)
+
+        return True, f"Solo test on Servo {servo_index} completed."
 
     async def move_to_home(self, broadcast_callback=None) -> Tuple[bool, str]:
         """Moves all servos smoothly to predefined Home Position angles (Decision #20)."""

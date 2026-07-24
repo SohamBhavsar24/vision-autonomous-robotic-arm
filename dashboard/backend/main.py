@@ -168,11 +168,11 @@ async def move_home():
     return {"status": "success", "message": "Moving to Home Position"}
 
 
-@app.post("/api/sweep")
-async def run_joint_sweep():
-    """Executes joint sweep test across all 6 servos to verify mechanical assembly."""
-    asyncio.create_task(serial_manager.run_joint_sweep_test(broadcast_callback=broadcast_status))
-    return {"status": "success", "message": "Joint sweep test started"}
+@app.post("/api/servos/test/{servo_index}")
+async def test_servo(servo_index: int):
+    """Performs a solo sweep test on a single servo for assembly diagnostics."""
+    asyncio.create_task(serial_manager.test_single_servo(servo_index, broadcast_callback=broadcast_status))
+    return {"status": "success", "message": f"Testing Servo {servo_index}"}
 
 
 @app.post("/api/estop")
@@ -222,6 +222,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 elif action_type == "sweep":
                     asyncio.create_task(serial_manager.run_joint_sweep_test(broadcast_callback=broadcast_status))
+
+                elif action_type == "test_servo":
+                    servo_index = int(data.get("index", 0))
+                    asyncio.create_task(serial_manager.test_single_servo(servo_index, broadcast_callback=broadcast_status))
 
                 elif action_type == "estop":
                     serial_manager.emergency_stop()

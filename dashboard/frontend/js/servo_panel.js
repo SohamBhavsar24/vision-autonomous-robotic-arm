@@ -115,6 +115,12 @@ const ServoPanel = {
     }
   },
 
+  /* Trigger single servo solo test (Decision #19) */
+  testServo(index) {
+    App.sendWS('test_servo', { index });
+    App.log(`Action: Testing Servo ${index} in isolation...`);
+  },
+
   /* Get current angles array from sliders */
   getAnglesFromSliders() {
     const angles = [];
