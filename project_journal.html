@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robotic Arm Project Engineering Journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #FAF7F2;
+      --bg-card: #FFFFFF;
+      --border-card: #E0D6C8;
+      --text-main: #2A2624;
+      --text-muted: #66605C;
+      --accent-primary: #C4784A;
+      --font-heading: 'DM Serif Display', Georgia, serif;
+      --font-body: 'Source Sans 3', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.7;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 2px solid var(--border-card);
+      padding-bottom: 24px;
+      margin-bottom: 40px;
+    }
+
+    .journal-title {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .journal-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .journal-entry {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 12px rgba(42, 38, 36, 0.03);
+    }
+
+    .entry-date {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .entry-title {
+      font-family: var(--font-heading);
+      font-size: 1.45rem;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      line-height: 1.3;
+    }
+
+    .entry-content p {
+      margin-bottom: 16px;
+      font-size: 1rem;
+      color: #383330;
+      text-align: justify;
+    }
+
+    .entry-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .print-btn {
+      background: var(--accent-primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      cursor: pointer;
+      float: right;
+    }
+
+    .print-btn:hover {
+      opacity: 0.9;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .print-btn { display: none; }
+      .journal-entry { border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <button class="print-btn" onclick="window.print()">Print Journal</button>
+      <h1 class="journal-title">Project Engineering Journal</h1>
+      <div class="journal-subtitle">Vision-Based Autonomous Pick-and-Place Robotic Arm Using Imitation Learning</div>
+    </header>
+
+    <main id="journalContainer">
+
+      <!-- Entry 4 -->
+      <article class="journal-entry">
+        <div class="entry-date">Friday, 24th July 2026</div>
+        <h2 class="entry-title">Physical Workspace Geometry & Dual-Frame Calibration Decision</h2>
+        <div class="entry-content">
+          <p>In this session, we finalized the physical workspace geometry and perception pipeline in preparation for hardware assembly. We established persistent REST endpoints for saving physical link measurements and servo zero offsets to a persistent configuration file. The Web Dashboard layout was further refined by placing the 3D Digital Twin tab in the final sidebar position, updating its sync status to "Standing By (Awaiting URDF)", and anonymizing all interface text to ensure a clean, presentation-ready capstone interface. Additionally, we added individual "Test Solo" diagnostic buttons to each servo card for single-joint assembly testing and configured Uvicorn live auto-reload on port 8050.</p>
+          <p>A major focus of this session was resolving the physical workspace coordinate system for the 50cm x 50cm wooden platform. We finalized a dual-frame transformation architecture: ArUco Marker ID 2 is placed at the corner of the platform near the overhead camera pole, establishing a rock-solid World Frame Origin (0,0). This design ensures that every point on the platform map has strictly positive coordinates (X, Y from 0 to 50cm) and prevents the robot arm from casting shadows over the calibration marker. The Robot Base is anchored at a fixed offset of (25cm, 5cm) in World Frame, allowing Python to convert vision coordinates into robot-centric vectors before executing Inverse Kinematics calculations. We also generated vector SVG ArUco markers, created a printable 4cm x 4cm HTML sheet, and compiled a step-by-step physical assembly guide.</p>
+        </div>
+      </article>
+
+      <!-- Entry 3 -->
+      <article class="journal-entry">
+        <div class="entry-date">Thursday, 23rd July 2026</div>
+        <h2 class="entry-title">Web Dashboard Construction & Pre-Assembly Preparation Decision</h2>
+        <div class="entry-content">
+          <p>This session focused on transforming the control software into a full-featured, web-based robotic dashboard to support the entire project lifecycle, starting with physical hardware assembly. Built with FastAPI, WebSockets, and a custom warm linen design system, the dashboard provides live joint sliders, zero-jerk S-curve automated routines, and automated serial port detection via the Arduino CLI tool. We integrated live PS5 DualSense controller teleoperation directly into the web browser via the Gamepad API and added a dedicated Kinematic Calibration panel to tune physical link lengths and servo zero offsets in real-time.</p>
+          <p>To support team integration, a dedicated top-level 3D Digital Twin tab was created to host the 3D URDF simulation model. We implemented individual "Test Solo" diagnostic buttons for single-joint physical assembly testing and generated vector SVG ArUco markers alongside a printable HTML sheet. Finally, we confirmed the Stage 1 environment design—keeping the destination box fixed while randomly placing the sponge block—to establish a clean, high-accuracy baseline before introducing multi-object complexity in Stage 2.</p>
+        </div>
+      </article>
+
+      <!-- Entry 2 -->
+      <article class="journal-entry">
+        <div class="entry-date">Thursday, 16th July 2026</div>
+        <h2 class="entry-title">Capstone Documentation & Setup Visualizations Decision</h2>
+        <div class="entry-content">
+          <p>During this session, attention shifted toward project documentation and presentation materials. We drafted comprehensive prompts for AI generation tools to produce a professional presentation slide deck for the college synopsis defense. Visual design specifications were defined for creating high-impact 3D render prompts depicting the complete dual-camera robotic workbench setup. The synopsis PDF was finalized and submitted to the university department, establishing a clear project schedule across the six-month development timeline.</p>
+        </div>
+      </article>
+
+      <!-- Entry 1 -->
+      <article class="journal-entry">
+        <div class="entry-date">Monday, 06th July 2026</div>
+        <h2 class="entry-title">Architecture Definition & Firmware Foundation Decision</h2>
+        <div class="entry-content">
+          <p>The project began with a thorough architectural review of the 6-DOF robotic arm capstone project. We established the core hybrid perception and control strategy, deciding to isolate vision feature extraction using OpenCV before passing compact coordinate data into a neural network trained via Behavior Cloning. To ensure human teleoperation produces clean, natural motion, we agreed to implement Cartesian Inverse Kinematics driven by a PS5 DualSense controller rather than relying on direct joint manipulation. On the hardware front, we selected lightweight sponge cubes with cardboard-backed ArUco markers to prevent servo stall and eliminate surface warping under variable room lighting.</p>
+          <p>For safety and embedded control, we designed a dual-layer safety mechanism featuring a physical emergency stop switch alongside a 500ms serial watchdog on the Arduino Uno. Firmware scripts were developed for initial servo zeroing and production binary packet driver execution. Additionally, we resolved a key mechanical assembly strategy: rather than mounting joints strictly straight up at 90 degrees, we decided to mount hardware at physical midpoints to maximize workspace reach, allowing software joint offsets to handle the mathematical mapping seamlessly.</p>
+        </div>
+      </article>
+
+    </main>
+  </div>
+</body>
+</html>
