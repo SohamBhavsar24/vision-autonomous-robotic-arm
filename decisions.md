@@ -136,6 +136,6 @@
 
 ## Decision #26 — World Frame Corner Origin (Marker 2 at 0,0)
 - **Date:** 2026-07-24
-- **Decision:** Define the platform corner (where ArUco Marker 2 sits) as the World Origin $(X_w=0, Y_w=0)$. The entire $50\text{cm} \times 50\text{cm}$ board operates strictly in positive coordinates ($X_w \in [0, 50]$, $Y_w \in [0, 50]$). The Robot Base sits at fixed location $(25\text{cm}, 5\text{cm})$ in World Frame.
+- **Decision:** Define the platform corner (where ArUco Marker 2 will be placed) as the World Origin $(X_w=0, Y_w=0)$. The entire $50\text{cm} \times 50\text{cm}$ board operates strictly in positive coordinates ($X_w \in [0, 50]$, $Y_w \in [0, 50]$). The exact physical offset of the Robot Base $(X_{\text{base}}, Y_{\text{base}})$ will be measured and registered in software once physical mounting is completed.
 - **Alternatives Rejected:** Defining the centered Robot Base as $(0, 0)$ which created negative $X$ values for the left side of the platform.
-- **Rationale:** Standard dual-frame robotics transformation: Vision detects all objects in positive World Coordinates $(X_w, Y_w)$, and Python converts to Robot Base coordinates ($X_r = X_w - 25$, $Y_r = Y_w - 5$) before passing to the Inverse Kinematics solver.
+- **Rationale:** Standard dual-frame robotics transformation: Vision detects all objects in positive World Coordinates $(X_w, Y_w)$, and Python converts to Robot Base coordinates ($X_r = X_w - X_{\text{base}}$, $Y_r = Y_w - Y_{\text{base}}$) before passing to the Inverse Kinematics solver.
