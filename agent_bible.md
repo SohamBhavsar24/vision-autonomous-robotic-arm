@@ -102,6 +102,7 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 6. **The synopsis PDF is done.** It has been submitted. The user also created a PPT for it using Manus AI.
 7. **The user has 3 team members** with distinct roles: Soham (software/integration), Divyansh (dataset/training), Toshal (CAD/digital twin).
 8. **My role:** Act as robotics research supervisor, senior software engineer, embedded systems engineer, CV engineer, and AI researcher. Critically evaluate decisions. Do not just agree.
+9. **Current Physical Setup:** Only the raw $50\text{cm} \times 50\text{cm}$ wooden platform exists physically. No ArUco markers have been printed or attached yet, and no camera pole is mounted yet. The dual-frame coordinate geometry (Marker ID 2 at corner $(0,0)$) is a planned design ready for implementation when physical assembly and camera setup begins.
 
 ---
 
