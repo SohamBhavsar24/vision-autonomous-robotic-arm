@@ -14,6 +14,7 @@
      - Decision #6: Serial Protocol (Binary 6-byte streaming)
      - Decision #15: Arduino CLI Port Management
      - Decision #19: Active Physical Assembly Tool
+     - Decision #20: Smooth S-Curve Trajectory Interpolation & Zero-Jerk Motion
    ========================================================================== */
 
 const ServoPanel = {
@@ -47,7 +48,7 @@ const ServoPanel = {
   },
 
   bindEvents() {
-    // Slider input listeners (throttled sending)
+    // Slider input listeners (manual drag throttled sending)
     for (let i = 0; i < this.NUM_SERVOS; i++) {
       if (this.sliders[i]) {
         this.sliders[i].addEventListener('input', () => {
@@ -60,30 +61,27 @@ const ServoPanel = {
       }
     }
 
-    // Lock All at 90° Button (Decision #19 — Assembly Mode)
+    // Lock All at 90° Button (Decision #19 & #20 — Smooth S-Curve Lock)
     if (this.btnLock90) {
       this.btnLock90.addEventListener('click', () => {
-        this.setAllSliders(90);
         App.sendWS('lock90');
-        App.log('Action: Lock All Servos at 90° (Assembly Mode)');
+        App.log('Action: Smooth transition to Lock All at 90°...');
       });
     }
 
-    // Move to Home Position Button
+    // Move to Home Position Button (Decision #20 — Smooth S-Curve Home)
     if (this.btnHome) {
       this.btnHome.addEventListener('click', () => {
-        const homeAngles = [90, 90, 90, 90, 90, 10];
-        this.setSlidersFromAngles(homeAngles);
         App.sendWS('home');
-        App.log('Action: Move to Home Position');
+        App.log('Action: Smooth transition to Home Position...');
       });
     }
 
-    // Run Joint Sweep Test Button (Decision #19)
+    // Run Joint Sweep Test Button (Decision #19 & #20 — Smooth S-Curve Sweep)
     if (this.btnSweep) {
       this.btnSweep.addEventListener('click', () => {
         App.sendWS('sweep');
-        App.log('Action: Started Joint Sweep Test Routine...');
+        App.log('Action: Started Zero-Jerk Joint Sweep Test Routine...');
       });
     }
 
@@ -124,14 +122,6 @@ const ServoPanel = {
       angles.push(parseInt(this.sliders[i] ? this.sliders[i].value : 90, 10));
     }
     return angles;
-  },
-
-  /* Set all sliders to a single uniform angle */
-  setAllSliders(angle) {
-    for (let i = 0; i < this.NUM_SERVOS; i++) {
-      if (this.sliders[i]) this.sliders[i].value = angle;
-      if (this.valueDisplays[i]) this.valueDisplays[i].textContent = `${angle}°`;
-    }
   },
 
   /* Set sliders from an array of angles */
@@ -237,6 +227,9 @@ const ServoPanel = {
     }
   }
 };
+
+// Export to window scope so app.js can call ServoPanel.updateSlidersFromBackend
+window.ServoPanel = ServoPanel;
 
 document.addEventListener('DOMContentLoaded', () => {
   ServoPanel.init();

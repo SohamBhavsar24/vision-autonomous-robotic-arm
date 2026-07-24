@@ -185,12 +185,16 @@ async def websocket_endpoint(websocket: WebSocket):
                     await broadcast_status()
 
                 elif action_type == "lock90":
-                    serial_manager.lock_all_90()
-                    await broadcast_status()
+                    loop = asyncio.get_running_loop()
+                    def sync_broadcast():
+                        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
+                    serial_manager.lock_all_90(broadcast_callback=sync_broadcast)
 
                 elif action_type == "home":
-                    serial_manager.move_to_home()
-                    await broadcast_status()
+                    loop = asyncio.get_running_loop()
+                    def sync_broadcast():
+                        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
+                    serial_manager.move_to_home(broadcast_callback=sync_broadcast)
 
                 elif action_type == "sweep":
                     loop = asyncio.get_running_loop()
