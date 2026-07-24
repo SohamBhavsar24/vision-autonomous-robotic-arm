@@ -144,6 +144,11 @@ const App = {
         cliBadge.textContent = `Arduino CLI: Not Installed (Falling back to PySerial)`;
       }
     }
+
+    // Update Servo Control Sliders live from backend WebSocket telemetry
+    if (window.ServoPanel && data.angles) {
+      window.ServoPanel.updateSlidersFromBackend(data.angles);
+    }
   },
 
   updateStatusPill(isConnected, text) {
