@@ -68,7 +68,7 @@ class SerialManager:
             })
         return result
 
-    def auto_connect(() -> Tuple[bool, str]:
+    def auto_connect(self) -> Tuple[bool, str]:
         """Attempts to auto-detect and connect to the Arduino Uno."""
         ports = self.list_available_ports()
         if not ports:
@@ -123,7 +123,7 @@ class SerialManager:
         with self._lock:
             return self._disconnect_internal()
 
-    def _disconnect_internal(() -> Tuple[bool, str]:
+    def _disconnect_internal(self) -> Tuple[bool, str]:
         if self._serial and self._serial.is_open:
             try:
                 self._serial.close()
@@ -167,18 +167,18 @@ class SerialManager:
             self.is_connected = False
             return False, f"Write error: {e}"
 
-    def lock_all_90(() -> Tuple[bool, str]:
+    def lock_all_90(self) -> Tuple[bool, str]:
         """Locks all 6 servos to exactly 90 degrees for mechanical assembly."""
         self.is_estop = False
         angles = [90, 90, 90, 90, 90, 90]
         return self.send_angles(angles)
 
-    def move_to_home(() -> Tuple[bool, str]:
+    def move_to_home(self) -> Tuple[bool, str]:
         """Moves all servos to predefined Home Position angles."""
         self.is_estop = False
         return self.send_angles(DEFAULT_HOME_ANGLES)
 
-    def emergency_stop(() -> Tuple[bool, str]:
+    def emergency_stop(self) -> Tuple[bool, str]:
         """
         Triggers instant software Emergency Stop.
         Flags E-Stop state and attempts to send Home angles.
@@ -197,13 +197,13 @@ class SerialManager:
                     
         return True, "EMERGENCY STOP ACTIVATED"
 
-    def reset_estop(() -> Tuple[bool, str]:
+    def reset_estop(self) -> Tuple[bool, str]:
         """Clears Emergency Stop state."""
         self.is_estop = False
         logger.info("Emergency stop reset.")
         return True, "E-Stop reset"
 
-    def get_status(() -> Dict:
+    def get_status(self) -> Dict:
         """Returns complete serial connection & servo state for WebSocket broadcast."""
         return {
             "is_connected": self.is_connected,
