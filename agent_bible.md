@@ -41,7 +41,7 @@
 | `dashboard/frontend/index.html` | ✅ Phase A Warm Cream UI shell |
 | `dashboard/frontend/css/styles.css` | ✅ Phase A Warm Cream design system |
 | `dashboard/frontend/js/app.js` | ✅ Phase A WS & Tab router |
-| `dashboard/frontend/js/servo_panel.js` | ✅ Phase A Sliders, Lock 90°, Home, E-stop |
+| `dashboard/frontend/js/servo_panel.js` | ✅ Phase A Sliders, Lock 90°, Home, Sweep Test, E-stop |
 | `dashboard/frontend/js/teleop_panel.js` | ✅ Phase A Live PS5 DualSense Tester + IK preview |
 | `dashboard/README.md` | ✅ Created |
 | `architecture.md` | ✅ Written |

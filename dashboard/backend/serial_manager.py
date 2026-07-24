@@ -66,6 +66,73 @@ class SerialManager:
         
         # Thread lock for serial writing
         self._lock = threading.Lock()
+        self.is_sweeping: bool = False
+        self._sweep_thread: Optional[threading.Thread] = None
+
+    def run_joint_sweep_test(self, broadcast_callback=None) -> Tuple[bool, str]:
+        """
+        Executes a smooth non-blocking joint sweep test across all 6 servos to verify
+        mechanical assembly and check for physical plastic collisions.
+        Automatically returns to Home Position upon completion.
+        """
+        if self.is_estop:
+            return False, "Cannot sweep: Emergency Stop is active."
+
+        if self.is_sweeping:
+            return False, "Sweep test is already running."
+
+        def sweep_worker():
+            self.is_sweeping = True
+            logger.info("Starting Joint Sweep Test...")
+
+            # Define sweep waypoints: (Base, Shoulder, Elbow, WristPitch, WristRoll, Gripper)
+            waypoints = [
+                [90, 90, 90, 90, 90, 10],   # Start Home
+                [45, 90, 90, 90, 90, 10],   # Base left
+                [135, 90, 90, 90, 90, 10],  # Base right
+                [90, 60, 120, 90, 90, 10],  # Shoulder/Elbow flex
+                [90, 120, 60, 90, 90, 10],  # Shoulder/Elbow extend
+                [90, 90, 90, 45, 45, 10],   # Wrist pitch/roll min
+                [90, 90, 90, 135, 135, 10], # Wrist pitch/roll max
+                [90, 90, 90, 90, 90, 90],   # Gripper open
+                [90, 90, 90, 90, 90, 10],   # Gripper close
+            ]
+
+            curr = list(self.current_angles)
+            step_delay = 0.03 # 30Hz step rate
+
+            for target in waypoints:
+                if self.is_estop or not self.is_sweeping:
+                    logger.warning("Sweep aborted due to E-Stop or cancel signal.")
+                    break
+
+                # Interpolate smoothly from current to target
+                steps = 25
+                for s in range(1, steps + 1):
+                    if self.is_estop or not self.is_sweeping:
+                        break
+                    interpolated = [
+                        int(curr[i] + (target[i] - curr[i]) * (s / steps))
+                        for i in range(NUM_SERVOS)
+                    ]
+                    self.send_angles(interpolated)
+                    if broadcast_callback:
+                        broadcast_callback()
+                    time.sleep(step_delay)
+
+                curr = list(target)
+                time.sleep(0.15) # Pause briefly at each waypoint
+
+            # Final return to Home Position
+            logger.info("Sweep completed. Returning to Home Position.")
+            self.move_to_home()
+            if broadcast_callback:
+                broadcast_callback()
+            self.is_sweeping = False
+
+        self._sweep_thread = threading.Thread(target=sweep_worker, daemon=True)
+        self._sweep_thread.start()
+        return True, "Joint Sweep Test started."
 
     def check_arduino_cli(self) -> Tuple[bool, str]:
         """Checks if `arduino-cli` is installed and available in PATH."""
@@ -296,6 +363,7 @@ class SerialManager:
             "port": self.port,
             "baudrate": self.baudrate,
             "is_estop": self.is_estop,
+            "is_sweeping": self.is_sweeping,
             "angles": self.current_angles,
             "has_arduino_cli": has_cli,
             "arduino_cli_info": cli_msg

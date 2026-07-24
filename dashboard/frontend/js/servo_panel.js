@@ -37,6 +37,7 @@ const ServoPanel = {
 
     this.btnLock90 = document.getElementById('btnLock90');
     this.btnHome = document.getElementById('btnHome');
+    this.btnSweep = document.getElementById('btnSweep');
     this.btnEstop = document.getElementById('btnEstop');
     this.btnResetEstop = document.getElementById('btnResetEstop');
     this.btnAutoConnect = document.getElementById('btnAutoConnect');
@@ -68,13 +69,21 @@ const ServoPanel = {
       });
     }
 
-    // Home Position Button
+    // Move to Home Position Button
     if (this.btnHome) {
       this.btnHome.addEventListener('click', () => {
         const homeAngles = [90, 90, 90, 90, 90, 10];
         this.setSlidersFromAngles(homeAngles);
         App.sendWS('home');
         App.log('Action: Move to Home Position');
+      });
+    }
+
+    // Run Joint Sweep Test Button (Decision #19)
+    if (this.btnSweep) {
+      this.btnSweep.addEventListener('click', () => {
+        App.sendWS('sweep');
+        App.log('Action: Started Joint Sweep Test Routine...');
       });
     }
 

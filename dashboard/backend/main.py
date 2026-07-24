@@ -133,12 +133,16 @@ async def lock_all_90():
     return {"status": "success", "message": msg, "angles": serial_manager.current_angles}
 
 
-@app.post("/api/home")
-async def move_home():
-    """Moves all servos to Home Position."""
-    success, msg = serial_manager.move_to_home()
-    await broadcast_status()
-    return {"status": "success", "message": msg, "angles": serial_manager.current_angles}
+@app.post("/api/sweep")
+async def run_joint_sweep():
+    """Executes joint sweep test across all 6 servos to verify mechanical assembly."""
+    loop = asyncio.get_running_loop()
+    def sync_broadcast():
+        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
+    success, msg = serial_manager.run_joint_sweep_test(broadcast_callback=sync_broadcast)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"status": "success", "message": msg}
 
 
 @app.post("/api/estop")
@@ -187,6 +191,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 elif action_type == "home":
                     serial_manager.move_to_home()
                     await broadcast_status()
+
+                elif action_type == "sweep":
+                    loop = asyncio.get_running_loop()
+                    def sync_broadcast():
+                        asyncio.run_coroutine_threadsafe(broadcast_status(), loop)
+                    serial_manager.run_joint_sweep_test(broadcast_callback=sync_broadcast)
 
                 elif action_type == "estop":
                     serial_manager.emergency_stop()
