@@ -481,7 +481,7 @@
       } catch (e) { return false; }
     }
 
-    async function getMediaBlob(id) {
+    async function getMediaBlobUrl(id) {
       try {
         const db = await dbPromise;
         if (!db) return null;
@@ -489,7 +489,12 @@
           const tx = db.transaction('media', 'readonly');
           const store = tx.objectStore('media');
           const req = store.get(id);
-          req.onsuccess = () => resolve(req.result || null);
+          req.onsuccess = () => {
+            const res = req.result;
+            if (!res) resolve(null);
+            else if (typeof res === 'string') resolve(res);
+            else resolve(URL.createObjectURL(res));
+          };
           req.onerror = () => resolve(null);
         });
       } catch (e) { return null; }
@@ -686,14 +691,12 @@
       }
       if (att.type === 'video' || (att.name && (att.name.toLowerCase().endsWith('.mp4') || att.name.toLowerCase().endsWith('.mov')))) {
         const vidId = `video-el-${entryId}`;
-        if (!att.url) {
-          getMediaBlob(entryId).then(blobData => {
-            if (blobData) {
-              const el = document.getElementById(vidId);
-              if (el) el.src = blobData;
-            }
-          });
-        }
+        getMediaBlobUrl(entryId).then(mediaUrl => {
+          if (mediaUrl) {
+            const el = document.getElementById(vidId);
+            if (el && el.src !== mediaUrl) el.src = mediaUrl;
+          }
+        });
         return `
           <div class="attachment-box">
             <div class="attachment-badge">📹 Attached Video: ${att.name}</div>
@@ -788,12 +791,13 @@
     });
 
     // Handle Form Submit with File Attachment
-    journalForm.addEventListener('submit', (e) => {
+    journalForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const date = inputDate.value;
       let title = document.getElementById('inputTitle').value.trim();
       const rawText = document.getElementById('inputText').value.trim();
       const fileInput = document.getElementById('inputFile');
+      const submitBtn = journalForm.querySelector('button[type="submit"]');
 
       if (!title) {
         title = 'Engineering Progress & Decision Updates';
@@ -801,55 +805,64 @@
 
       const paragraphs = rawText.split('\n\n').map(p => p.trim()).filter(p => p.length > 0);
 
-      const processAndSave = async (attachmentObj = null) => {
-        const entryId = `entry-${Date.now()}`;
-        const newEntry = {
-          id: entryId,
-          date,
-          title,
-          paragraphs,
-          attachment: attachmentObj
-        };
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving Journal Entry...';
+      }
 
-        if (attachmentObj && attachmentObj.url) {
-          await storeMediaBlob(entryId, attachmentObj.url);
-        }
-
-        const entries = getStoredEntries();
-        entries.unshift(newEntry);
-        await saveEntries(entries);
-        renderJournal();
-
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Entry';
-        modalOverlay.style.display = 'none';
-      };
+      const entryId = `entry-${Date.now()}`;
+      let attachmentObj = null;
 
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
-        const submitBtn = journalForm.querySelector('button[type="submit"]');
+        let type = 'file';
+        if (file.type.startsWith('image/')) type = 'image';
+        else if (file.type.startsWith('video/')) type = 'video';
+        else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) type = 'pdf';
+
         if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Processing & Saving Attachment...';
+          submitBtn.textContent = `Saving ${Math.round(file.size / 1024 / 1024)}MB File...`;
         }
 
-        const reader = new FileReader();
-        reader.onload = async function(evt) {
-          let type = 'file';
-          if (file.type.startsWith('image/')) type = 'image';
-          else if (file.type.startsWith('video/')) type = 'video';
-          else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) type = 'pdf';
+        // Store raw binary Blob directly in IndexedDB (Sub-second instant save)
+        await storeMediaBlob(entryId, file);
 
-          await processAndSave({
-            name: file.name,
-            type: type,
-            url: evt.target.result
+        let dataUrl = '';
+        if (file.size < 2 * 1024 * 1024 && type !== 'video') {
+          // Small images/files can also include inline DataURL
+          dataUrl = await new Promise((res) => {
+            const r = new FileReader();
+            r.onload = (e) => res(e.target.result);
+            r.readAsDataURL(file);
           });
+        }
+
+        attachmentObj = {
+          name: file.name,
+          type: type,
+          size: file.size,
+          url: dataUrl
         };
-        reader.readAsDataURL(file);
-      } else {
-        processAndSave(null);
       }
+
+      const newEntry = {
+        id: entryId,
+        date,
+        title,
+        paragraphs,
+        attachment: attachmentObj
+      };
+
+      const entries = getStoredEntries();
+      entries.unshift(newEntry);
+      await saveEntries(entries);
+      renderJournal();
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Entry';
+      }
+      modalOverlay.style.display = 'none';
     });
 
     // Auto-Sync with GitHub Pages when app is opened or brought to foreground
