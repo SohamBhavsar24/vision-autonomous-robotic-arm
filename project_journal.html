@@ -677,9 +677,10 @@
       let fileUrl = att.url || '';
 
       if (att.type === 'pdf' || (fileName && fileName.toLowerCase().endsWith('.pdf'))) {
+        let pdfTarget = fileUrl || 'robotic_arm_synopsis.pdf';
         return `
           <div class="attachment-box">
-            <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', 'robotic_arm_synopsis.pdf')" class="attachment-badge">
+            <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${pdfTarget}')" class="attachment-badge">
               📄 View / Download PDF: ${fileName}
             </button>
           </div>
@@ -818,8 +819,8 @@
         await storeMediaBlob(entryId, file);
 
         let dataUrl = '';
-        if (file.size < 3 * 1024 * 1024) {
-          // Small images/files store DataURL directly for cross-device sync
+        if (file.size < 10 * 1024 * 1024) {
+          // PDFs & images up to 10MB convert to DataURL for direct 2-way cloud database sync
           dataUrl = await new Promise((res) => {
             const r = new FileReader();
             r.onload = (e) => res(e.target.result);
