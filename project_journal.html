@@ -585,61 +585,26 @@
     }
 
     async function syncBackendJournal() {
-      try {
-        let res = await fetch('/api/journal');
-        if (!res.ok) {
-          res = await fetch('dashboard/backend/journal_entries.json');
-        }
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const local = getStoredEntries();
-            const merged = [...data];
-            local.forEach(locItem => {
-              if (!merged.some(m => m.id === locItem.id)) {
-                merged.unshift(locItem);
-              }
-            });
-            localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
-            renderJournal();
+      const targets = ['http://192.168.1.253:8050/api/journal', '/api/journal', 'dashboard/backend/journal_entries.json'];
+      for (const t of targets) {
+        try {
+          const res = await fetch(t);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              const local = getStoredEntries();
+              const merged = [...data];
+              local.forEach(locItem => {
+                if (!merged.some(m => m.id === locItem.id)) {
+                  merged.unshift(locItem);
+                }
+              });
+              localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
+              renderJournal();
+              break;
+            }
           }
-        }
-      } catch (e) {}
-    }
-
-    async function commitToGitHub(entries) {
-      const pat = localStorage.getItem('github_pat');
-      if (!pat) return;
-      
-      const repoPath = 'SohamBhavsar24/vision-autonomous-robotic-arm';
-      const filePath = 'dashboard/backend/journal_entries.json';
-      const apiUrl = `https://api.github.com/repos/${repoPath}/contents/${filePath}`;
-
-      try {
-        const getRes = await fetch(apiUrl, {
-          headers: { Authorization: `token ${pat}` }
-        });
-        let sha = '';
-        if (getRes.ok) {
-          const getJson = await getRes.json();
-          sha = getJson.sha;
-        }
-
-        const contentStr = btoa(unescape(encodeURIComponent(JSON.stringify(entries, null, 2))));
-        await fetch(apiUrl, {
-          method: 'PUT',
-          headers: {
-            Authorization: `token ${pat}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            message: 'Auto-sync journal entry from iPhone App',
-            content: contentStr,
-            sha: sha || undefined
-          })
-        });
-      } catch (err) {
-        console.warn('GitHub API sync error:', err);
+        } catch (e) {}
       }
     }
 
@@ -660,16 +625,17 @@
         console.warn('localStorage quota error handled gracefully:', err);
       }
 
-      try {
-        await fetch('/api/journal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ entries })
-        });
-      } catch (e) {}
-
-      // Direct Cloud GitHub Sync
-      commitToGitHub(entries);
+      const targets = ['http://192.168.1.253:8050/api/journal', '/api/journal'];
+      for (const t of targets) {
+        try {
+          await fetch(t, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entries })
+          });
+          break;
+        } catch (e) {}
+      }
     }
 
     function deleteEntry(id) {
