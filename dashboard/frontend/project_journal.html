@@ -648,21 +648,23 @@
 
     async function triggerDownloadAttachment(entryId, filename, defaultUrl) {
       let targetUrl = defaultUrl;
-      if (!targetUrl || targetUrl === '#' || targetUrl.length < 10) {
-        targetUrl = await getMediaBlobUrl(entryId);
+      if (!targetUrl || targetUrl === '#' || targetUrl.length < 10 || !filename.includes('synopsis')) {
+        const localBlob = await getMediaBlobUrl(entryId);
+        if (localBlob) targetUrl = localBlob;
       }
-      if (targetUrl && targetUrl.includes('robotic') && targetUrl.includes('synopsis')) {
+
+      if (filename === 'robotic_arm_synopsis.pdf') {
         targetUrl = 'robotic_arm_synopsis.pdf';
       }
 
       if (!targetUrl) {
-        alert("Attachment media file is loading or unavailable on this device.");
+        alert("PDF document file is unavailable on this device.");
         return;
       }
 
       const a = document.createElement('a');
       a.href = targetUrl;
-      a.download = filename || 'attachment';
+      a.download = filename || 'document.pdf';
       if (targetUrl.startsWith('http') || targetUrl.endsWith('.pdf')) {
         a.target = '_blank';
       }
@@ -677,10 +679,9 @@
       let fileUrl = att.url || '';
 
       if (att.type === 'pdf' || (fileName && fileName.toLowerCase().endsWith('.pdf'))) {
-        let pdfTarget = fileUrl || 'robotic_arm_synopsis.pdf';
         return `
           <div class="attachment-box">
-            <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${pdfTarget}')" class="attachment-badge">
+            <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge">
               📄 View / Download PDF: ${fileName}
             </button>
           </div>
