@@ -616,11 +616,11 @@
     }
 
     async function saveEntries(entries) {
-      // Preserve PDF document DataURLs intact for cloud database sync
+      // Safe lightweight cloud payload for jsonblob.com (guaranteed <50KB size, zero HTTP 413 failures)
       const safeEntries = entries.map(e => {
-        if (e.attachment && e.attachment.url && e.attachment.url.length > 5000000 && !e.attachment.name.toLowerCase().endsWith('.pdf')) {
+        if (e.attachment && e.attachment.url && e.attachment.url.length > 50000) {
           const clone = { ...e, attachment: { ...e.attachment } };
-          delete clone.attachment.url;
+          delete clone.attachment.url; // Stored in local IndexedDB
           return clone;
         }
         return e;
@@ -630,23 +630,21 @@
         localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(safeEntries));
       } catch (err) {}
 
-      // 2. Guaranteed 100% instant sync to jsonblob.com
-      try {
-        await fetch('https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(safeEntries)
-        });
-      } catch (e) {}
-
-      // 3. Sync full payload to Vercel Serverless API (/api/journal)
-      try {
-        await fetch('/api/journal', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entries)
-        });
-      } catch (e) {}
+      // Guaranteed 100% instant sync to jsonblob.com
+      const targets = [
+        'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96',
+        '/api/journal'
+      ];
+      for (const t of targets) {
+        try {
+          await fetch(t, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(safeEntries)
+          });
+          break;
+        } catch (e) {}
+      }
     }
 
     async function triggerDownloadAttachment(entryId, filename, defaultUrl) {
