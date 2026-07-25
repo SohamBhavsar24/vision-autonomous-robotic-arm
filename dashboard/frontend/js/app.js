@@ -29,6 +29,7 @@ const App = {
     const titles = {
       'panel-control': 'Robot Servo Control & Assembly Helper',
       'panel-digital-twin': '3D Digital Twin Simulation (Baby ROS / URDF)',
+      'panel-journal': 'Robotic Arm Project Journal & Log Archive',
       'panel-camera': 'Live Dual-Camera Feeds',
       'panel-perception': 'OpenCV Perception & Coordinate Mapping',
       'panel-teleop': 'PS5 Controller Teleoperation & IK',

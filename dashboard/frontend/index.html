@@ -67,6 +67,12 @@
             <span>Digital Twin</span>
           </a>
         </li>
+        <li>
+          <a class="nav-item" data-panel="panel-journal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span>Journal</span>
+          </a>
+        </li>
       </ul>
     </aside>
 
@@ -345,6 +351,21 @@
             </p>
           </div>
 
+        </div>
+      </main>
+
+      <!-- Panel: Interactive Project Journal App -->
+      <main class="content-panel" id="panel-journal">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+          <div>
+            <h3 class="card-title">Engineering Project Journal & Log Archive</h3>
+            <p class="card-subtitle">Live interactive journal app with real-time search, file attachments, and session history.</p>
+          </div>
+          <a href="project_journal.html" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem;">Open App in New Tab ↗</a>
+        </div>
+
+        <div class="card" style="padding: 0; overflow: hidden; height: calc(100vh - 170px); min-height: 650px;">
+          <iframe src="project_journal.html" style="width: 100%; height: 100%; border: none; border-radius: 12px;"></iframe>
         </div>
       </main>
 
