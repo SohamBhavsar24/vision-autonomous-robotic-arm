@@ -595,20 +595,23 @@
           const res = await fetch(t);
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const local = getStoredEntries();
-              const merged = [...data];
-              local.forEach(locItem => {
-                if (!merged.some(m => m.id === locItem.id)) {
-                  merged.unshift(locItem);
-                }
-              });
-              localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
+            if (Array.isArray(data)) {
+              localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(data));
               renderJournal();
               break;
             }
           }
         } catch (e) {}
+      }
+    }
+
+    async function deleteEntry(id) {
+      if (confirm("Are you sure you want to delete this journal entry?")) {
+        let entries = getStoredEntries();
+        entries = entries.filter(e => e.id !== id);
+        localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
+        renderJournal();
+        await saveEntries(entries);
       }
     }
 
@@ -640,15 +643,6 @@
           });
           break;
         } catch (e) {}
-      }
-    }
-
-    function deleteEntry(id) {
-      if (confirm("Are you sure you want to delete this journal entry?")) {
-        let entries = getStoredEntries();
-        entries = entries.filter(e => e.id !== id);
-        saveEntries(entries);
-        renderJournal();
       }
     }
 
