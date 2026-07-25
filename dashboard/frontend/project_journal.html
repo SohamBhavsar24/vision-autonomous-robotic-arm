@@ -516,8 +516,32 @@
       return DEFAULT_ENTRIES;
     }
 
-    function saveEntries(entries) {
+    async function syncBackendJournal() {
+      try {
+        const res = await fetch('/api/journal');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(data));
+            renderJournal();
+          }
+        }
+      } catch (e) {
+        // Backend not available (e.g. static GitHub Pages on mobile data)
+      }
+    }
+
+    async function saveEntries(entries) {
       localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
+      try {
+        await fetch('/api/journal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entries })
+        });
+      } catch (e) {
+        // Fallback to local storage
+      }
     }
 
     function deleteEntry(id) {
@@ -693,6 +717,7 @@
     });
 
     renderJournal();
+    syncBackendJournal();
   </script>
 </body>
 </html>

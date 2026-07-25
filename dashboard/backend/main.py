@@ -74,6 +74,7 @@ class ServoAnglesRequest(BaseModel):
 
 
 CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "kinematics_config.json"))
+JOURNAL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "journal_entries.json"))
 
 class KinematicsConfigRequest(BaseModel):
     L1: float = 10.0
@@ -83,6 +84,29 @@ class KinematicsConfigRequest(BaseModel):
     offsets: List[int] = [0, 0, 0, 0, 0, 0]
     gripper_closed: int = 10
     gripper_open: int = 90
+
+class JournalEntriesRequest(BaseModel):
+    entries: List[Dict[str, Any]]
+
+
+@app.get("/api/journal")
+async def get_journal_entries():
+    """Returns shared master list of journal entries."""
+    if os.path.exists(JOURNAL_PATH):
+        try:
+            with open(JOURNAL_PATH, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+@app.post("/api/journal")
+async def save_journal_entries(req: JournalEntriesRequest):
+    """Saves shared master list of journal entries to backend file."""
+    with open(JOURNAL_PATH, "w") as f:
+        json.dump(req.entries, f, indent=2)
+    return {"status": "saved", "count": len(req.entries)}
 
 
 @app.get("/api/kinematics")
