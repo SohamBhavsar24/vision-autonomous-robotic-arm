@@ -489,7 +489,7 @@
         attachment: {
           name: 'robotic_arm_synopsis.pdf',
           type: 'pdf',
-          url: 'https://raw.githubusercontent.com/SohamBhavsar24/vision-autonomous-robotic-arm/main/robotic_arm_synopsis.pdf'
+          url: 'robotic_arm_synopsis.pdf'
         }
       },
       {
@@ -610,10 +610,15 @@
 
     function renderAttachment(att) {
       if (!att) return '';
+      let fileUrl = att.url || 'robotic_arm_synopsis.pdf';
+      if (fileUrl.includes('robotic') && fileUrl.includes('synopsis')) {
+        fileUrl = 'robotic_arm_synopsis.pdf';
+      }
+
       if (att.type === 'pdf' || (att.name && att.name.toLowerCase().endsWith('.pdf'))) {
         return `
           <div class="attachment-box">
-            <a href="${att.url}" target="_blank" download="${att.name}" class="attachment-badge">
+            <a href="${fileUrl}" target="_blank" download="${att.name}" class="attachment-badge">
               📄 View / Download PDF: ${att.name}
             </a>
           </div>
