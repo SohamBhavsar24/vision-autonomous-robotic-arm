@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-07-23 (Session 3 — Dashboard Planning)
+> **Last Updated:** 2026-07-25 (Session 5 — Journal App Completion & Dashboard Sync)
 
 ---
 
@@ -136,6 +136,11 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - Generated vector SVG ArUco markers (IDs 0, 1, 2) and printable HTML sheet (`print_aruco_sheet.html`).
 - Finalized $50\text{cm} \times 50\text{cm}$ platform geometry & dual-frame transformation (Marker ID 2 at corner = World Frame $(0,0)$, Robot Base = $(25\text{cm}, 5\text{cm})$).
 - Created interactive Web Journal (`project_journal.html`), iPhone PWA native app with custom 3D robotic arm home screen icon, and deployed live to GitHub Pages (`https://sohambhavsar24.github.io/vision-autonomous-robotic-arm/`).
+
+### Session 5 (2026-07-25) — COMPLETED
+- Upgraded interactive Web Journal PWA with real-time header search bar, file attachment uploader/viewer (PDFs, MP4/MOV videos, images), and log entry deletion (`🗑️`).
+- Integrated dedicated **Journal** tab directly into local Web Dashboard (`http://localhost:8050`) below the Digital Twin tab.
+- Built persistent disk backend storage (`journal_entries.json`) & REST API sync (`/api/journal`) so logs remain saved permanently across server restarts and sync seamlessly between iPhone and laptop dashboard.
 
 ---
 
