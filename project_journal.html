@@ -29,6 +29,7 @@
       --text-main: #2A2624;
       --text-muted: #66605C;
       --accent-primary: #C4784A;
+      --accent-danger: #D9534F;
       --font-heading: 'DM Serif Display', Georgia, serif;
       --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-mono: 'IBM Plex Mono', monospace;
@@ -60,7 +61,7 @@
     header {
       border-bottom: 2px solid var(--border-card);
       padding-bottom: 20px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
@@ -82,6 +83,42 @@
       color: var(--text-muted);
     }
 
+    /* Search Bar Box */
+    .search-box {
+      margin-bottom: 28px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-card);
+      border-radius: 12px;
+      padding: 14px 16px 14px 44px;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--text-main);
+      box-shadow: 0 2px 8px rgba(42, 38, 36, 0.02);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 4px 12px rgba(196, 120, 74, 0.15);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Journal Entry Card */
     .journal-entry {
       background: var(--bg-card);
       border: 1px solid var(--border-card);
@@ -89,6 +126,14 @@
       padding: 28px;
       margin-bottom: 28px;
       box-shadow: 0 4px 12px rgba(42, 38, 36, 0.03);
+      position: relative;
+    }
+
+    .entry-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
     }
 
     .entry-date {
@@ -97,8 +142,23 @@
       color: var(--accent-primary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 4px;
       font-weight: 600;
+    }
+
+    .delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    .delete-btn:hover, .delete-btn:active {
+      color: var(--accent-danger);
+      background: #FDF2F2;
     }
 
     .entry-title {
@@ -117,6 +177,48 @@
 
     .entry-content p:last-child {
       margin-bottom: 0;
+    }
+
+    /* File Attachment Styling */
+    .attachment-box {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border-card);
+    }
+
+    .attachment-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #F4EFE6;
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+
+    .attachment-badge:hover {
+      background: #EFE6D8;
+    }
+
+    .attachment-media-video {
+      width: 100%;
+      max-height: 380px;
+      border-radius: 10px;
+      margin-top: 12px;
+      background: #000;
+    }
+
+    .attachment-media-img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 12px;
+      border: 1px solid var(--border-card);
     }
 
     .btn {
@@ -247,7 +349,7 @@
     }
 
     .form-textarea {
-      height: 180px;
+      height: 160px;
       resize: vertical;
       line-height: 1.6;
     }
@@ -259,9 +361,20 @@
       margin-top: 24px;
     }
 
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      background: var(--bg-card);
+      border: 1px dashed var(--border-card);
+      border-radius: 14px;
+    }
+
     @media print {
       body { background: white; padding: 0; }
-      .header-btns, .fab-btn, .modal-overlay { display: none !important; }
+      .header-btns, .search-box, .fab-btn, .modal-overlay, .delete-btn { display: none !important; }
       .journal-entry { border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; }
     }
   </style>
@@ -277,6 +390,12 @@
         <button class="btn" onclick="window.print()">Print / PDF</button>
       </div>
     </header>
+
+    <!-- Header Search Bar -->
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search entries by title or content (e.g. 'synopsis', 'calibration')...">
+    </div>
 
     <main id="journalContainer">
       <!-- Entries render dynamically -->
@@ -305,6 +424,12 @@
         <div class="form-group">
           <label class="form-label">Journal Narrative Story</label>
           <textarea class="form-textarea" id="inputText" placeholder="Write detailed session narrative..." required></textarea>
+        </div>
+
+        <!-- Optional File Attachment Input -->
+        <div class="form-group">
+          <label class="form-label">Attach File (Optional Synopsis PDF, Video MP4, or Image)</label>
+          <input type="file" class="form-input" id="inputFile" accept="image/*,video/*,application/pdf,.pdf,.mp4,.mov">
         </div>
 
         <div class="modal-actions">
@@ -342,7 +467,12 @@
         title: 'Capstone Documentation & Setup Visualizations Decision',
         paragraphs: [
           'During this session, attention shifted toward project documentation and presentation materials. We drafted comprehensive prompts for AI generation tools to produce a professional presentation slide deck for the college synopsis defense. Visual design specifications were defined for creating high-impact 3D render prompts depicting the complete dual-camera robotic workbench setup. The synopsis PDF was finalized and submitted to the university department, establishing a clear project schedule across the six-month development timeline.'
-        ]
+        ],
+        attachment: {
+          name: 'robotic_arm_synopsis.pdf',
+          type: 'pdf',
+          url: 'robotic%20arm%20synopsis.pdf'
+        }
       },
       {
         id: 'entry-1',
@@ -390,20 +520,88 @@
       localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
     }
 
+    function deleteEntry(id) {
+      if (confirm("Are you sure you want to delete this journal entry?")) {
+        let entries = getStoredEntries();
+        entries = entries.filter(e => e.id !== id);
+        saveEntries(entries);
+        renderJournal();
+      }
+    }
+
+    function renderAttachment(att) {
+      if (!att) return '';
+      if (att.type === 'pdf' || (att.name && att.name.toLowerCase().endsWith('.pdf'))) {
+        return `
+          <div class="attachment-box">
+            <a href="${att.url}" target="_blank" download="${att.name}" class="attachment-badge">
+              📄 View / Download PDF: ${att.name}
+            </a>
+          </div>
+        `;
+      }
+      if (att.type === 'video' || (att.name && (att.name.toLowerCase().endsWith('.mp4') || att.name.toLowerCase().endsWith('.mov')))) {
+        return `
+          <div class="attachment-box">
+            <div class="attachment-badge">📹 Attached Video: ${att.name}</div>
+            <video class="attachment-media-video" controls src="${att.url}"></video>
+          </div>
+        `;
+      }
+      if (att.type === 'image' || (att.name && (att.name.toLowerCase().endsWith('.png') || att.name.toLowerCase().endsWith('.jpg') || att.name.toLowerCase().endsWith('.jpeg')))) {
+        return `
+          <div class="attachment-box">
+            <div class="attachment-badge">🖼️ Attached Image: ${att.name}</div>
+            <br>
+            <img class="attachment-media-img" src="${att.url}" alt="${att.name}">
+          </div>
+        `;
+      }
+      return `
+        <div class="attachment-box">
+          <a href="${att.url}" target="_blank" download="${att.name}" class="attachment-badge">
+            📎 Download File: ${att.name}
+          </a>
+        </div>
+      `;
+    }
+
     function renderJournal() {
       const container = document.getElementById('journalContainer');
       const entries = getStoredEntries();
-      
-      container.innerHTML = entries.map(item => `
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      const filtered = entries.filter(item => {
+        if (!query) return true;
+        const matchTitle = item.title.toLowerCase().includes(query);
+        const matchDate = item.date.toLowerCase().includes(query);
+        const matchContent = item.paragraphs.some(p => p.toLowerCase().includes(query));
+        const matchAttachment = item.attachment && item.attachment.name.toLowerCase().includes(query);
+        return matchTitle || matchDate || matchContent || matchAttachment;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state">No journal entries found matching "${query}"</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
         <article class="journal-entry">
-          <div class="entry-date">${item.date}</div>
+          <div class="entry-header-row">
+            <div class="entry-date">${item.date}</div>
+            <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">🗑️</button>
+          </div>
           <h2 class="entry-title">${item.title}</h2>
           <div class="entry-content">
             ${item.paragraphs.map(p => `<p>${p}</p>`).join('')}
           </div>
+          ${renderAttachment(item.attachment)}
         </article>
       `).join('');
     }
+
+    // Live Search Event Listener
+    document.getElementById('searchInput').addEventListener('input', renderJournal);
 
     // Modal Control
     const modalOverlay = document.getElementById('modalOverlay');
@@ -416,6 +614,7 @@
       inputDate.value = formatExactDate();
       document.getElementById('inputTitle').value = '';
       document.getElementById('inputText').value = '';
+      document.getElementById('inputFile').value = '';
       modalOverlay.style.display = 'flex';
     });
 
@@ -427,12 +626,13 @@
       if (e.target === modalOverlay) modalOverlay.style.display = 'none';
     });
 
-    // Handle Form Submit
+    // Handle Form Submit with File Attachment
     journalForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const date = inputDate.value;
       let title = document.getElementById('inputTitle').value.trim();
       const rawText = document.getElementById('inputText').value.trim();
+      const fileInput = document.getElementById('inputFile');
 
       if (!title) {
         title = 'Engineering Progress & Decision Updates';
@@ -443,19 +643,42 @@
 
       const paragraphs = rawText.split('\n\n').map(p => p.trim()).filter(p => p.length > 0);
 
-      const newEntry = {
-        id: `entry-${Date.now()}`,
-        date,
-        title,
-        paragraphs
+      const processAndSave = (attachmentObj = null) => {
+        const newEntry = {
+          id: `entry-${Date.now()}`,
+          date,
+          title,
+          paragraphs,
+          attachment: attachmentObj
+        };
+
+        const entries = getStoredEntries();
+        entries.unshift(newEntry);
+        saveEntries(entries);
+        renderJournal();
+
+        modalOverlay.style.display = 'none';
       };
 
-      const entries = getStoredEntries();
-      entries.unshift(newEntry);
-      saveEntries(entries);
-      renderJournal();
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          let type = 'file';
+          if (file.type.startsWith('image/')) type = 'image';
+          else if (file.type.startsWith('video/')) type = 'video';
+          else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) type = 'pdf';
 
-      modalOverlay.style.display = 'none';
+          processAndSave({
+            name: file.name,
+            type: type,
+            url: evt.target.result
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        processAndSave(null);
+      }
     });
 
     // Auto-Sync with GitHub Pages when app is opened or brought to foreground
