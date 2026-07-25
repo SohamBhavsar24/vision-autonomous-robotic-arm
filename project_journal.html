@@ -670,15 +670,21 @@
       }
       if (att.type === 'video' || (att.name && (att.name.toLowerCase().endsWith('.mp4') || att.name.toLowerCase().endsWith('.mov')))) {
         const vidId = `video-el-${entryId}`;
+        const linkId = `video-link-${entryId}`;
         getMediaBlobUrl(entryId).then(mediaUrl => {
           if (mediaUrl) {
             const el = document.getElementById(vidId);
             if (el && el.src !== mediaUrl) el.src = mediaUrl;
+            const lnk = document.getElementById(linkId);
+            if (lnk) lnk.href = mediaUrl;
           }
         });
         return `
           <div class="attachment-box">
-            <div class="attachment-badge">📹 Attached Video: ${att.name}</div>
+            <a id="${linkId}" href="${att.url || '#'}" target="_blank" download="${att.name}" class="attachment-badge">
+              📹 Play / Download Video: ${att.name}
+            </a>
+            <br><br>
             <video id="${vidId}" class="attachment-media-video" controls playsinline webkit-playsinline preload="metadata" src="${att.url || ''}"></video>
           </div>
         `;
