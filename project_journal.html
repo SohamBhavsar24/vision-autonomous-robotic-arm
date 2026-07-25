@@ -386,8 +386,7 @@
         <h1 class="journal-title">Project Journal</h1>
         <div class="journal-subtitle">Vision-Based Autonomous Pick-and-Place Robotic Arm</div>
       </div>
-      <div class="header-btns" style="display: flex; gap: 8px;">
-        <button class="btn btn-secondary" id="btnOpenSyncModal">⚙️ GitHub Sync</button>
+      <div class="header-btns">
         <button class="btn" onclick="window.print()">Print / PDF</button>
       </div>
     </header>
@@ -438,26 +437,6 @@
           <button type="submit" class="btn">Submit Entry</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- GitHub Sync Modal -->
-  <div class="modal-overlay" id="syncModalOverlay">
-    <div class="modal-card">
-      <h2 class="modal-title">GitHub Cloud Real-Time Sync</h2>
-      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
-        Save your GitHub Personal Access Token (PAT) once below. Whenever you submit or delete a journal log on your iPhone (even on mobile data outside home), it makes a direct commit to your GitHub repository in the cloud!
-      </p>
-      
-      <div class="form-group">
-        <label class="form-label">GitHub Personal Access Token (PAT)</label>
-        <input type="password" class="form-input" id="inputPat" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn btn-secondary" id="btnCloseSyncModal">Cancel</button>
-        <button type="button" class="btn" id="btnSavePat">Save Token & Enable Cloud Sync</button>
-      </div>
     </div>
   </div>
 
@@ -684,40 +663,6 @@
 
     // Live Search Event Listener
     document.getElementById('searchInput').addEventListener('input', renderJournal);
-
-    // GitHub Sync Modal Handlers
-    const syncModalOverlay = document.getElementById('syncModalOverlay');
-    const btnOpenSyncModal = document.getElementById('btnOpenSyncModal');
-    const btnCloseSyncModal = document.getElementById('btnCloseSyncModal');
-    const btnSavePat = document.getElementById('btnSavePat');
-    const inputPat = document.getElementById('inputPat');
-
-    if (btnOpenSyncModal) {
-      btnOpenSyncModal.addEventListener('click', () => {
-        inputPat.value = localStorage.getItem('github_pat') || '';
-        syncModalOverlay.style.display = 'flex';
-      });
-    }
-
-    if (btnCloseSyncModal) {
-      btnCloseSyncModal.addEventListener('click', () => {
-        syncModalOverlay.style.display = 'none';
-      });
-    }
-
-    if (btnSavePat) {
-      btnSavePat.addEventListener('click', () => {
-        const patVal = inputPat.value.trim();
-        if (patVal) {
-          localStorage.setItem('github_pat', patVal);
-          alert('GitHub Personal Access Token saved! iPhone entries will now commit directly to your GitHub Cloud Repository.');
-        } else {
-          localStorage.removeItem('github_pat');
-          alert('GitHub Token removed.');
-        }
-        syncModalOverlay.style.display = 'none';
-      });
-    }
 
     // Modal Control
     const modalOverlay = document.getElementById('modalOverlay');
