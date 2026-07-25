@@ -450,6 +450,51 @@
   </div>
 
   <script>
+    // IndexedDB Media Store for Large Video/Media Attachments
+    const dbPromise = new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open('JournalMediaDB', 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('media')) {
+            db.createObjectStore('media');
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => resolve(null);
+      } catch (err) {
+        resolve(null);
+      }
+    });
+
+    async function storeMediaBlob(id, dataUrl) {
+      try {
+        const db = await dbPromise;
+        if (!db) return false;
+        return new Promise((resolve) => {
+          const tx = db.transaction('media', 'readwrite');
+          const store = tx.objectStore('media');
+          store.put(dataUrl, id);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        });
+      } catch (e) { return false; }
+    }
+
+    async function getMediaBlob(id) {
+      try {
+        const db = await dbPromise;
+        if (!db) return null;
+        return new Promise((resolve) => {
+          const tx = db.transaction('media', 'readonly');
+          const store = tx.objectStore('media');
+          const req = store.get(id);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        });
+      } catch (e) { return null; }
+    }
+
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
@@ -586,7 +631,22 @@
     }
 
     async function saveEntries(entries) {
-      localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
+      // Safe localStorage save (strip heavy base64 video data from localStorage to prevent QuotaExceededError)
+      const safeEntries = entries.map(e => {
+        if (e.attachment && e.attachment.url && e.attachment.url.length > 500000) {
+          const clone = { ...e, attachment: { ...e.attachment } };
+          delete clone.attachment.url; // Stored in IndexedDB / Backend server
+          return clone;
+        }
+        return e;
+      });
+
+      try {
+        localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(safeEntries));
+      } catch (err) {
+        console.warn('localStorage quota error handled gracefully:', err);
+      }
+
       try {
         await fetch('/api/journal', {
           method: 'POST',
@@ -608,7 +668,7 @@
       }
     }
 
-    function renderAttachment(att) {
+    function renderAttachment(att, entryId) {
       if (!att) return '';
       let fileUrl = att.url || 'robotic_arm_synopsis.pdf';
       if (fileUrl.includes('robotic') && fileUrl.includes('synopsis')) {
@@ -625,10 +685,19 @@
         `;
       }
       if (att.type === 'video' || (att.name && (att.name.toLowerCase().endsWith('.mp4') || att.name.toLowerCase().endsWith('.mov')))) {
+        const vidId = `video-el-${entryId}`;
+        if (!att.url) {
+          getMediaBlob(entryId).then(blobData => {
+            if (blobData) {
+              const el = document.getElementById(vidId);
+              if (el) el.src = blobData;
+            }
+          });
+        }
         return `
           <div class="attachment-box">
             <div class="attachment-badge">📹 Attached Video: ${att.name}</div>
-            <video class="attachment-media-video" controls src="${att.url}"></video>
+            <video id="${vidId}" class="attachment-media-video" controls playsinline webkit-playsinline preload="metadata" src="${att.url || ''}"></video>
           </div>
         `;
       }
@@ -687,7 +756,7 @@
           <div class="entry-content">
             ${item.paragraphs.map(p => `<p>${highlightText(p, query)}</p>`).join('')}
           </div>
-          ${renderAttachment(item.attachment)}
+          ${renderAttachment(item.attachment, item.id)}
         </article>
       `).join('');
     }
@@ -729,39 +798,49 @@
       if (!title) {
         title = 'Engineering Progress & Decision Updates';
       }
-      if (!title.toLowerCase().endsWith('decision')) {
-        title += ' Decision';
-      }
 
       const paragraphs = rawText.split('\n\n').map(p => p.trim()).filter(p => p.length > 0);
 
-      const processAndSave = (attachmentObj = null) => {
+      const processAndSave = async (attachmentObj = null) => {
+        const entryId = `entry-${Date.now()}`;
         const newEntry = {
-          id: `entry-${Date.now()}`,
+          id: entryId,
           date,
           title,
           paragraphs,
           attachment: attachmentObj
         };
 
+        if (attachmentObj && attachmentObj.url) {
+          await storeMediaBlob(entryId, attachmentObj.url);
+        }
+
         const entries = getStoredEntries();
         entries.unshift(newEntry);
-        saveEntries(entries);
+        await saveEntries(entries);
         renderJournal();
 
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Entry';
         modalOverlay.style.display = 'none';
       };
 
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
+        const submitBtn = journalForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Processing & Saving Attachment...';
+        }
+
         const reader = new FileReader();
-        reader.onload = function(evt) {
+        reader.onload = async function(evt) {
           let type = 'file';
           if (file.type.startsWith('image/')) type = 'image';
           else if (file.type.startsWith('video/')) type = 'video';
           else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) type = 'pdf';
 
-          processAndSave({
+          await processAndSave({
             name: file.name,
             type: type,
             url: evt.target.result
