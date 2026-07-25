@@ -822,21 +822,31 @@
         // 1. Instant local device save to IndexedDB
         await storeMediaBlob(entryId, file);
 
-        let dataUrl = '';
-        if (file.size < 5 * 1024 * 1024) {
-          // PDFs & images up to 5MB convert to DataURL for direct cross-device cloud sync
-          dataUrl = await new Promise((res) => {
+        let vercelFileUrl = file.name === 'robotic_arm_synopsis.pdf' ? 'robotic_arm_synopsis.pdf' : '';
+        try {
+          const dataUrl = await new Promise((res) => {
             const r = new FileReader();
             r.onload = (e) => res(e.target.result);
             r.readAsDataURL(file);
           });
-        }
+          const vRes = await fetch('/api/file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: file.name, dataUrl })
+          });
+          if (vRes.ok) {
+            const vJson = await vRes.json();
+            if (vJson && vJson.fileUrl) {
+              vercelFileUrl = vJson.fileUrl;
+            }
+          }
+        } catch (e) {}
 
         attachmentObj = {
           name: file.name,
           type: type,
           size: file.size,
-          url: dataUrl || (file.name === 'robotic_arm_synopsis.pdf' ? 'robotic_arm_synopsis.pdf' : '')
+          url: vercelFileUrl
         };
       }
 
