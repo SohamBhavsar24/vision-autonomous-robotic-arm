@@ -139,8 +139,8 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 
 ### Session 5 (2026-07-25) — COMPLETED
 - Upgraded interactive Web Journal PWA with real-time header search bar, live 2-way Cloud Database persistence (`jsonblob.com`), and log entry deletion (`🗑️`).
+- Built official **Vercel Serverless PDF & Document Cloud Store (`api/file.js`)** allowing 100% ad-free PDF uploads on iPhone and instant native PDF downloads on Laptop Safari & Web Dashboard.
 - Deployed journal serverless backend to Vercel (`https://vision-autonomous-robotic-arm.vercel.app`) for instant real-time sync across iPhone PWA app, Laptop Safari, and local Web Dashboard (`http://localhost:8050`).
-- Streamlined file attachment system to focus 100% on **PDF document attachments** (`📄 View / Download PDF`) and document images for 100% cross-platform stability.
 - Integrated dedicated **Journal** tab directly into local Web Dashboard (`http://localhost:8050`) below the Digital Twin tab.
 
 ---
