@@ -585,23 +585,31 @@
     }
 
     async function syncBackendJournal() {
-      try {
-        const res = await fetch('/api/journal');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const local = getStoredEntries();
-            const merged = [...data];
-            local.forEach(locItem => {
-              if (!merged.some(m => m.id === locItem.id)) {
-                merged.unshift(locItem);
-              }
-            });
-            localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
-            renderJournal();
+      const targets = [
+        'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96',
+        '/api/journal',
+        'dashboard/backend/journal_entries.json'
+      ];
+      for (const t of targets) {
+        try {
+          const res = await fetch(t);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              const local = getStoredEntries();
+              const merged = [...data];
+              local.forEach(locItem => {
+                if (!merged.some(m => m.id === locItem.id)) {
+                  merged.unshift(locItem);
+                }
+              });
+              localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
+              renderJournal();
+              break;
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
     }
 
     async function saveEntries(entries) {
@@ -619,13 +627,20 @@
         localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(safeEntries));
       } catch (err) {}
 
-      try {
-        await fetch('/api/journal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ entries })
-        });
-      } catch (e) {}
+      const targets = [
+        'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96',
+        '/api/journal'
+      ];
+      for (const t of targets) {
+        try {
+          await fetch(t, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entries)
+          });
+          break;
+        } catch (e) {}
+      }
     }
 
     function deleteEntry(id) {
