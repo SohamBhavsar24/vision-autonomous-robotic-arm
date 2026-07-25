@@ -653,49 +653,73 @@
         fileUrl = 'robotic_arm_synopsis.pdf';
       }
 
+      const linkId = `att-link-${entryId}`;
+
       if (att.type === 'pdf' || (att.name && att.name.toLowerCase().endsWith('.pdf'))) {
         return `
           <div class="attachment-box">
-            <a href="${fileUrl}" target="_blank" download="${att.name}" class="attachment-badge">
+            <a id="${linkId}" href="${fileUrl}" target="_blank" download="${att.name}" class="attachment-badge">
               📄 View / Download PDF: ${att.name}
             </a>
           </div>
         `;
       }
       if (att.type === 'video' || (att.name && (att.name.toLowerCase().endsWith('.mp4') || att.name.toLowerCase().endsWith('.mov')))) {
-        const vidId = `video-el-${entryId}`;
-        const linkId = `video-link-${entryId}`;
         getMediaBlobUrl(entryId).then(mediaUrl => {
           if (mediaUrl) {
-            const el = document.getElementById(vidId);
-            if (el && el.src !== mediaUrl) el.src = mediaUrl;
             const lnk = document.getElementById(linkId);
-            if (lnk) lnk.href = mediaUrl;
+            if (lnk) {
+              lnk.href = mediaUrl;
+              lnk.onclick = (e) => {
+                const a = document.createElement('a');
+                a.href = mediaUrl;
+                a.download = att.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                e.preventDefault();
+              };
+            }
           }
         });
         return `
           <div class="attachment-box">
             <a id="${linkId}" href="${att.url || '#'}" target="_blank" download="${att.name}" class="attachment-badge">
-              📹 Play / Download Video: ${att.name}
+              📹 Download / View Video: ${att.name}
             </a>
-            <br><br>
-            <video id="${vidId}" class="attachment-media-video" controls playsinline webkit-playsinline preload="metadata" src="${att.url || ''}"></video>
           </div>
         `;
       }
       if (att.type === 'image' || (att.name && (att.name.toLowerCase().endsWith('.png') || att.name.toLowerCase().endsWith('.jpg') || att.name.toLowerCase().endsWith('.jpeg')))) {
+        getMediaBlobUrl(entryId).then(mediaUrl => {
+          if (mediaUrl) {
+            const lnk = document.getElementById(linkId);
+            if (lnk) {
+              lnk.href = mediaUrl;
+              lnk.onclick = (e) => {
+                const a = document.createElement('a');
+                a.href = mediaUrl;
+                a.download = att.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                e.preventDefault();
+              };
+            }
+          }
+        });
         return `
           <div class="attachment-box">
-            <div class="attachment-badge">🖼️ Attached Image: ${att.name}</div>
-            <br>
-            <img class="attachment-media-img" src="${att.url}" alt="${att.name}">
+            <a id="${linkId}" href="${att.url || '#'}" target="_blank" download="${att.name}" class="attachment-badge">
+              🖼️ Download / View Image: ${att.name}
+            </a>
           </div>
         `;
       }
       return `
         <div class="attachment-box">
-          <a href="${att.url}" target="_blank" download="${att.name}" class="attachment-badge">
-            📎 Download File: ${att.name}
+          <a href="${att.url || '#'}" target="_blank" download="${att.name}" class="attachment-badge">
+            📎 Download / View File: ${att.name}
           </a>
         </div>
       `;
