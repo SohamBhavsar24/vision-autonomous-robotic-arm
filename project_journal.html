@@ -161,6 +161,15 @@
       background: #FDF2F2;
     }
 
+    mark.search-highlight {
+      background: rgba(196, 120, 74, 0.28);
+      color: #6A3212;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 600;
+      border: 1px solid rgba(196, 120, 74, 0.4);
+    }
+
     .entry-title {
       font-family: var(--font-heading);
       font-size: 1.4rem;
@@ -636,17 +645,25 @@
       `;
     }
 
+    function highlightText(text, query) {
+      if (!query || !text) return text;
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escapedQuery})`, 'gi');
+      return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+    }
+
     function renderJournal() {
       const container = document.getElementById('journalContainer');
       const entries = getStoredEntries();
-      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const query = document.getElementById('searchInput').value.trim();
+      const queryLower = query.toLowerCase();
 
       const filtered = entries.filter(item => {
-        if (!query) return true;
-        const matchTitle = item.title.toLowerCase().includes(query);
-        const matchDate = item.date.toLowerCase().includes(query);
-        const matchContent = item.paragraphs.some(p => p.toLowerCase().includes(query));
-        const matchAttachment = item.attachment && item.attachment.name.toLowerCase().includes(query);
+        if (!queryLower) return true;
+        const matchTitle = item.title.toLowerCase().includes(queryLower);
+        const matchDate = item.date.toLowerCase().includes(queryLower);
+        const matchContent = item.paragraphs.some(p => p.toLowerCase().includes(queryLower));
+        const matchAttachment = item.attachment && item.attachment.name.toLowerCase().includes(queryLower);
         return matchTitle || matchDate || matchContent || matchAttachment;
       });
 
@@ -658,12 +675,12 @@
       container.innerHTML = filtered.map(item => `
         <article class="journal-entry">
           <div class="entry-header-row">
-            <div class="entry-date">${item.date}</div>
+            <div class="entry-date">${highlightText(item.date, query)}</div>
             <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">🗑️</button>
           </div>
-          <h2 class="entry-title">${item.title}</h2>
+          <h2 class="entry-title">${highlightText(item.title, query)}</h2>
           <div class="entry-content">
-            ${item.paragraphs.map(p => `<p>${p}</p>`).join('')}
+            ${item.paragraphs.map(p => `<p>${highlightText(p, query)}</p>`).join('')}
           </div>
           ${renderAttachment(item.attachment)}
         </article>
