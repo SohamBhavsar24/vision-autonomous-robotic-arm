@@ -821,23 +821,14 @@
         // 1. Instant local device save to IndexedDB
         await storeMediaBlob(entryId, file);
 
-        let vercelFileUrl = file.name === 'robotic_arm_synopsis.pdf' ? 'robotic_arm_synopsis.pdf' : '';
+        let dataUrl = '';
         try {
-          const dataUrl = await new Promise((res) => {
-            const r = new FileReader();
-            r.onload = (e) => res(e.target.result);
-            r.readAsDataURL(file);
-          });
-          const vRes = await fetch('/api/file', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: file.name, dataUrl })
-          });
-          if (vRes.ok) {
-            const vJson = await vRes.json();
-            if (vJson && vJson.fileUrl) {
-              vercelFileUrl = vJson.fileUrl;
-            }
+          if (file.size < 5 * 1024 * 1024) {
+            dataUrl = await new Promise((res) => {
+              const r = new FileReader();
+              r.onload = (e) => res(e.target.result);
+              r.readAsDataURL(file);
+            });
           }
         } catch (e) {}
 
@@ -845,7 +836,7 @@
           name: file.name,
           type: type,
           size: file.size,
-          url: vercelFileUrl
+          url: dataUrl || (file.name === 'robotic_arm_synopsis.pdf' ? 'robotic_arm_synopsis.pdf' : '')
         };
       }
 
@@ -889,7 +880,6 @@
 
     renderJournal();
     syncBackendJournal();
-    setInterval(syncBackendJournal, 5000);
   </script>
 </body>
 </html>
