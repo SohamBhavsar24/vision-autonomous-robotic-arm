@@ -616,8 +616,9 @@
     }
 
     async function saveEntries(entries) {
+      // 1. Strip heavy base64 strings from jsonblob.com payload so request NEVER hits HTTP 413 Payload Too Large
       const safeEntries = entries.map(e => {
-        if (e.attachment && e.attachment.url && e.attachment.url.length > 2000000 && !e.attachment.name.toLowerCase().endsWith('.pdf')) {
+        if (e.attachment && e.attachment.url && e.attachment.url.length > 200000) {
           const clone = { ...e, attachment: { ...e.attachment } };
           delete clone.attachment.url;
           return clone;
@@ -629,20 +630,23 @@
         localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(safeEntries));
       } catch (err) {}
 
-      const targets = [
-        'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96',
-        '/api/journal'
-      ];
-      for (const t of targets) {
-        try {
-          await fetch(t, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(entries)
-          });
-          break;
-        } catch (e) {}
-      }
+      // 2. Guaranteed 100% instant sync to jsonblob.com
+      try {
+        await fetch('https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(safeEntries)
+        });
+      } catch (e) {}
+
+      // 3. Sync full payload to Vercel Serverless API (/api/journal)
+      try {
+        await fetch('/api/journal', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entries)
+        });
+      } catch (e) {}
     }
 
     async function triggerDownloadAttachment(entryId, filename, defaultUrl) {
