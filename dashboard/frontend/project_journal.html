@@ -811,37 +811,27 @@
         else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) type = 'pdf';
 
         if (submitBtn) {
-          submitBtn.textContent = `Uploading ${Math.round(file.size / 1024 / 1024)}MB to Cloud CDN...`;
+          submitBtn.textContent = `Saving ${Math.round(file.size / 1024 / 1024)}MB File...`;
         }
 
         // 1. Instant local device save to IndexedDB
         await storeMediaBlob(entryId, file);
 
-        // 2. Upload file to Cloud CDN for cross-device downloads on Laptop/Dashboard
-        let cdnUrl = '';
-        try {
-          const formData = new FormData();
-          formData.append('file', file);
-          const uploadRes = await fetch('https://tmpfiles.org/api/v1/upload', {
-            method: 'POST',
-            body: formData
+        let dataUrl = '';
+        if (file.size < 3 * 1024 * 1024) {
+          // Small images/files store DataURL directly for cross-device sync
+          dataUrl = await new Promise((res) => {
+            const r = new FileReader();
+            r.onload = (e) => res(e.target.result);
+            r.readAsDataURL(file);
           });
-          if (uploadRes.ok) {
-            const uploadJson = await uploadRes.json();
-            if (uploadJson && uploadJson.data && uploadJson.data.url) {
-              // Convert page URL to direct CDN download URL
-              cdnUrl = uploadJson.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-            }
-          }
-        } catch (e) {
-          console.warn('CDN upload notice:', e);
         }
 
         attachmentObj = {
           name: file.name,
           type: type,
           size: file.size,
-          url: cdnUrl
+          url: dataUrl
         };
       }
 
