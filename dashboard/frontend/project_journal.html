@@ -585,27 +585,23 @@
     }
 
     async function syncBackendJournal() {
-      const targets = ['http://192.168.1.253:8050/api/journal', '/api/journal', 'dashboard/backend/journal_entries.json'];
-      for (const t of targets) {
-        try {
-          const res = await fetch(t);
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const local = getStoredEntries();
-              const merged = [...data];
-              local.forEach(locItem => {
-                if (!merged.some(m => m.id === locItem.id)) {
-                  merged.unshift(locItem);
-                }
-              });
-              localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
-              renderJournal();
-              break;
-            }
+      try {
+        const res = await fetch('/api/journal');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const local = getStoredEntries();
+            const merged = [...data];
+            local.forEach(locItem => {
+              if (!merged.some(m => m.id === locItem.id)) {
+                merged.unshift(locItem);
+              }
+            });
+            localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
+            renderJournal();
           }
-        } catch (e) {}
-      }
+        }
+      } catch (e) {}
     }
 
     async function saveEntries(entries) {
@@ -613,7 +609,7 @@
       const safeEntries = entries.map(e => {
         if (e.attachment && e.attachment.url && e.attachment.url.length > 500000) {
           const clone = { ...e, attachment: { ...e.attachment } };
-          delete clone.attachment.url; // Stored in IndexedDB / Backend server
+          delete clone.attachment.url; // Stored in IndexedDB
           return clone;
         }
         return e;
@@ -621,21 +617,15 @@
 
       try {
         localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(safeEntries));
-      } catch (err) {
-        console.warn('localStorage quota error handled gracefully:', err);
-      }
+      } catch (err) {}
 
-      const targets = ['http://192.168.1.253:8050/api/journal', '/api/journal'];
-      for (const t of targets) {
-        try {
-          await fetch(t, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ entries })
-          });
-          break;
-        } catch (e) {}
-      }
+      try {
+        await fetch('/api/journal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entries })
+        });
+      } catch (e) {}
     }
 
     function deleteEntry(id) {
