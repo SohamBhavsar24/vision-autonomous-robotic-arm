@@ -444,6 +444,15 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-5",
+        date: "Saturday, 25th July 2026",
+        title: "Interactive Journal App Upgrades & Dashboard Integration Decision",
+        paragraphs: [
+          "In today's session, we significantly enhanced the project journal software infrastructure to provide a seamless logging experience across mobile and desktop environments. We implemented a real-time header search bar allowing instant keyword filtering across log titles, dates, narrative text, and attached documents (such as college synopsis PDFs). We also engineered a multi-format attachment system supporting PDFs, inline video clips (MP4/MOV), and images, alongside an instant entry deletion feature with persistent device storage clean-up.",
+          "To unify project tracking under a single interface, we integrated a dedicated top-level Journal tab into the local Web Dashboard (http://localhost:8050) positioned below the 3D Digital Twin tab. We established a persistent backend JSON storage architecture (journal_entries.json) with REST API endpoints (/api/journal) to ensure all journal entries remain saved permanently across server restarts and sync seamlessly between iPhone PWA devices and the local control dashboard. With full documentation and journal infrastructure locked in place, we finalized the web software phase to transition focus directly to physical 6-DOF robotic arm hardware assembly."
+        ]
+      },
+      {
         id: 'entry-4',
         date: 'Friday, 24th July 2026',
         title: 'Physical Workspace Geometry & Dual-Frame Calibration Decision',
