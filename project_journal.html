@@ -651,13 +651,12 @@
 
     async function triggerDownloadAttachment(entryId, filename, defaultUrl) {
       let targetUrl = defaultUrl;
-      if (!targetUrl || targetUrl === '#' || targetUrl.length < 10 || !filename.includes('synopsis')) {
-        const localBlob = await getMediaBlobUrl(entryId);
-        if (localBlob) targetUrl = localBlob;
-      }
-
       if (filename === 'robotic_arm_synopsis.pdf') {
         targetUrl = 'robotic_arm_synopsis.pdf';
+      }
+
+      if (!targetUrl || targetUrl === '#' || targetUrl.length < 5) {
+        targetUrl = await getMediaBlobUrl(entryId);
       }
 
       if (!targetUrl) {
@@ -668,7 +667,7 @@
       const a = document.createElement('a');
       a.href = targetUrl;
       a.download = filename || 'document.pdf';
-      if (targetUrl.startsWith('http') || targetUrl.endsWith('.pdf')) {
+      if (targetUrl.startsWith('http') || targetUrl.startsWith('/api') || targetUrl.endsWith('.pdf')) {
         a.target = '_blank';
       }
       document.body.appendChild(a);
