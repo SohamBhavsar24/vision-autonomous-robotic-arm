@@ -435,12 +435,6 @@
           <textarea class="form-textarea" id="inputText" placeholder="Write detailed session narrative..." required></textarea>
         </div>
 
-        <!-- Optional File Attachment Input -->
-        <div class="form-group">
-          <label class="form-label">Attach File (Optional Synopsis PDF or Document Image)</label>
-          <input type="file" class="form-input" id="inputFile" accept="application/pdf,.pdf,image/*">
-        </div>
-
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="btnCloseModal">Cancel</button>
           <button type="submit" class="btn">Submit Entry</button>
@@ -450,65 +444,15 @@
   </div>
 
   <script>
-    // IndexedDB Media Store for Large Video/Media Attachments
-    const dbPromise = new Promise((resolve, reject) => {
-      try {
-        const req = indexedDB.open('JournalMediaDB', 1);
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('media')) {
-            db.createObjectStore('media');
-          }
-        };
-        req.onsuccess = (e) => resolve(e.target.result);
-        req.onerror = (e) => resolve(null);
-      } catch (err) {
-        resolve(null);
-      }
-    });
-
-    async function storeMediaBlob(id, dataUrl) {
-      try {
-        const db = await dbPromise;
-        if (!db) return false;
-        return new Promise((resolve) => {
-          const tx = db.transaction('media', 'readwrite');
-          const store = tx.objectStore('media');
-          store.put(dataUrl, id);
-          tx.oncomplete = () => resolve(true);
-          tx.onerror = () => resolve(false);
-        });
-      } catch (e) { return false; }
-    }
-
-    async function getMediaBlobUrl(id) {
-      try {
-        const db = await dbPromise;
-        if (!db) return null;
-        return new Promise((resolve) => {
-          const tx = db.transaction('media', 'readonly');
-          const store = tx.objectStore('media');
-          const req = store.get(id);
-          req.onsuccess = () => {
-            const res = req.result;
-            if (!res) resolve(null);
-            else if (typeof res === 'string') resolve(res);
-            else resolve(URL.createObjectURL(res));
-          };
-          req.onerror = () => resolve(null);
-        });
-      } catch (e) { return null; }
-    }
-
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
         id: "entry-5",
         date: "Saturday, 25th July 2026",
-        title: "Interactive Journal App Upgrades & Dashboard Integration Decision",
+        title: "Interactive Journal App Upgrades, Cloud Sync & Session Finalization Decision",
         paragraphs: [
-          "In today's session, we significantly enhanced the project journal software infrastructure to provide a seamless logging experience across mobile and desktop environments. We implemented a real-time header search bar allowing instant keyword filtering across log titles, dates, narrative text, and attached documents (such as college synopsis PDFs). We also engineered a multi-format attachment system supporting PDFs, inline video clips (MP4/MOV), and images, alongside an instant entry deletion feature with persistent device storage clean-up.",
-          "To unify project tracking under a single interface, we integrated a dedicated top-level Journal tab into the local Web Dashboard (http://localhost:8050) positioned below the 3D Digital Twin tab. We established a persistent backend JSON storage architecture (journal_entries.json) with REST API endpoints (/api/journal) to ensure all journal entries remain saved permanently across server restarts and sync seamlessly between iPhone PWA devices and the local control dashboard. With full documentation and journal infrastructure locked in place, we finalized the web software phase to transition focus directly to physical 6-DOF robotic arm hardware assembly."
+          "In today's session, we completed the interactive Web Journal PWA and local control dashboard integration. We implemented a real-time header search bar for filtering log entries, instant log entry deletion with cloud database sync, and serverless API integration deployed on Vercel (https://vision-autonomous-robotic-arm.vercel.app). We established a persistent 2-way cloud database sync (jsonblob.com API) so all text journal logs sync seamlessly in real-time across iPhone PWA devices, Laptop Safari, and the local Web Dashboard (http://localhost:8050).",
+          "To eliminate cross-device media storage overhead, we streamlined the mobile journal into a clean, ultra-fast text logging engine, reserving document attachments (such as the college synopsis PDF) to be managed directly via session code integration. With full web documentation, cloud sync, and dashboard software locked in place, we finalized Session 5 to transition our full technical focus to physical 6-DOF robotic arm hardware assembly."
         ]
       },
       {
@@ -616,21 +560,10 @@
     }
 
     async function saveEntries(entries) {
-      // Safe lightweight cloud payload for jsonblob.com (guaranteed <50KB size, zero HTTP 413 failures)
-      const safeEntries = entries.map(e => {
-        if (e.attachment && e.attachment.url && e.attachment.url.length > 50000) {
-          const clone = { ...e, attachment: { ...e.attachment } };
-          delete clone.attachment.url; // Stored in local IndexedDB
-          return clone;
-        }
-        return e;
-      });
-
       try {
-        localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(safeEntries));
+        localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
       } catch (err) {}
 
-      // Guaranteed 100% instant sync to jsonblob.com
       const targets = [
         'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96',
         '/api/journal'
@@ -640,34 +573,19 @@
           await fetch(t, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(safeEntries)
+            body: JSON.stringify(entries)
           });
           break;
         } catch (e) {}
       }
     }
 
-    async function triggerDownloadAttachment(entryId, filename, defaultUrl) {
-      let targetUrl = defaultUrl;
-      if (filename === 'robotic_arm_synopsis.pdf') {
-        targetUrl = 'robotic_arm_synopsis.pdf';
-      }
-
-      if (!targetUrl || targetUrl === '#' || targetUrl.length < 5) {
-        targetUrl = await getMediaBlobUrl(entryId);
-      }
-
-      if (!targetUrl) {
-        alert("PDF document file is unavailable on this device.");
-        return;
-      }
-
+    function triggerDownloadAttachment(entryId, filename, defaultUrl) {
+      let targetUrl = defaultUrl || 'robotic_arm_synopsis.pdf';
       const a = document.createElement('a');
       a.href = targetUrl;
       a.download = filename || 'document.pdf';
-      if (targetUrl.startsWith('http') || targetUrl.startsWith('/api') || targetUrl.endsWith('.pdf')) {
-        a.target = '_blank';
-      }
+      a.target = '_blank';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -676,39 +594,12 @@
     function renderAttachment(att, entryId) {
       if (!att) return '';
       let fileName = att.name || 'attachment';
-      let fileUrl = att.url || '';
+      let fileUrl = att.url || 'robotic_arm_synopsis.pdf';
 
-      if (att.type === 'pdf' || (fileName && fileName.toLowerCase().endsWith('.pdf'))) {
-        return `
-          <div class="attachment-box">
-            <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge">
-              📄 View / Download PDF: ${fileName}
-            </button>
-          </div>
-        `;
-      }
-      if (att.type === 'video' || (fileName && (fileName.toLowerCase().endsWith('.mp4') || fileName.toLowerCase().endsWith('.mov')))) {
-        return `
-          <div class="attachment-box">
-            <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge">
-              📹 Download / View Video: ${fileName}
-            </button>
-          </div>
-        `;
-      }
-      if (att.type === 'image' || (fileName && (fileName.toLowerCase().endsWith('.png') || fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')))) {
-        return `
-          <div class="attachment-box">
-            <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge">
-              🖼️ Download / View Image: ${fileName}
-            </button>
-          </div>
-        `;
-      }
       return `
         <div class="attachment-box">
           <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge">
-            📎 Download / View File: ${fileName}
+            📄 View / Download PDF Document: ${fileName}
           </button>
         </div>
       `;
@@ -770,7 +661,6 @@
       inputDate.value = formatExactDate();
       document.getElementById('inputTitle').value = '';
       document.getElementById('inputText').value = '';
-      document.getElementById('inputFile').value = '';
       modalOverlay.style.display = 'flex';
     });
 
@@ -782,13 +672,12 @@
       if (e.target === modalOverlay) modalOverlay.style.display = 'none';
     });
 
-    // Handle Form Submit with File Attachment
+    // Handle Form Submit for Text Log Entries (0.1s instant cloud sync)
     journalForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const date = inputDate.value;
       let title = document.getElementById('inputTitle').value.trim();
       const rawText = document.getElementById('inputText').value.trim();
-      const fileInput = document.getElementById('inputFile');
       const submitBtn = journalForm.querySelector('button[type="submit"]');
 
       if (!title) {
@@ -802,56 +691,16 @@
         submitBtn.textContent = 'Saving Journal Entry...';
       }
 
-      const entryId = `entry-${Date.now()}`;
-      let attachmentObj = null;
-
-      if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        let type = 'file';
-        if (file.type.startsWith('image/')) type = 'image';
-        else if (file.type.startsWith('video/')) type = 'video';
-        else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) type = 'pdf';
-
-        if (submitBtn) {
-          submitBtn.textContent = `Saving ${Math.round(file.size / 1024 / 1024)}MB File...`;
-        }
-
-        // 1. Instant local device save to IndexedDB
-        await storeMediaBlob(entryId, file);
-
-        let dataUrl = '';
-        try {
-          if (file.size < 5 * 1024 * 1024) {
-            dataUrl = await new Promise((res) => {
-              const r = new FileReader();
-              r.onload = (e) => res(e.target.result);
-              r.readAsDataURL(file);
-            });
-          }
-        } catch (e) {}
-
-        attachmentObj = {
-          name: file.name,
-          type: type,
-          size: file.size,
-          url: dataUrl || (file.name === 'robotic_arm_synopsis.pdf' ? 'robotic_arm_synopsis.pdf' : '')
-        };
-      }
-
       const newEntry = {
-        id: entryId,
+        id: `entry-${Date.now()}`,
         date,
         title,
         paragraphs,
-        attachment: attachmentObj
+        attachment: null
       };
 
       const entries = getStoredEntries();
       entries.unshift(newEntry);
-
-      if (submitBtn) {
-        submitBtn.textContent = 'Syncing to Cloud Database...';
-      }
 
       await saveEntries(entries);
       renderJournal();
@@ -863,7 +712,7 @@
       modalOverlay.style.display = 'none';
     });
 
-    // Auto-Sync in real-time when app is brought to foreground or every 5 seconds
+    // Auto-Sync when app is opened or brought to foreground
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         syncBackendJournal();

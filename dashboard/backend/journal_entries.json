@@ -2,10 +2,10 @@
   {
     "id": "entry-5",
     "date": "Saturday, 25th July 2026",
-    "title": "Interactive Journal App Upgrades & Dashboard Integration Decision",
+    "title": "Interactive Journal App Upgrades, Cloud Sync & Session Finalization Decision",
     "paragraphs": [
-      "In today's session, we significantly enhanced the project journal software infrastructure to provide a seamless logging experience across mobile and desktop environments. We implemented a real-time header search bar allowing instant keyword filtering across log titles, dates, narrative text, and attached documents (such as college synopsis PDFs). We also engineered a multi-format attachment system supporting PDFs, inline video clips (MP4/MOV), and images, alongside an instant entry deletion feature with persistent device storage clean-up.",
-      "To unify project tracking under a single interface, we integrated a dedicated top-level Journal tab into the local Web Dashboard (http://localhost:8050) positioned below the 3D Digital Twin tab. We established a persistent backend JSON storage architecture (journal_entries.json) with REST API endpoints (/api/journal) to ensure all journal entries remain saved permanently across server restarts and sync seamlessly between iPhone PWA devices and the local control dashboard. With full documentation and journal infrastructure locked in place, we finalized the web software phase to transition focus directly to physical 6-DOF robotic arm hardware assembly."
+      "In today's session, we completed the interactive Web Journal PWA and local control dashboard integration. We implemented a real-time header search bar for filtering log entries, instant log entry deletion with cloud database sync, and serverless API integration deployed on Vercel (https://vision-autonomous-robotic-arm.vercel.app). We established a persistent 2-way cloud database sync (jsonblob.com API) so all text journal logs sync seamlessly in real-time across iPhone PWA devices, Laptop Safari, and the local Web Dashboard (http://localhost:8050).",
+      "To eliminate cross-device media storage overhead, we streamlined the mobile journal into a clean, ultra-fast text logging engine, reserving document attachments (such as the college synopsis PDF) to be managed directly via session code integration. With full web documentation, cloud sync, and dashboard software locked in place, we finalized Session 5 to transition our full technical focus to physical 6-DOF robotic arm hardware assembly."
     ]
   },
   {
@@ -23,7 +23,7 @@
     "title": "Web Dashboard Construction & Pre-Assembly Preparation Decision",
     "paragraphs": [
       "This session focused on transforming the control software into a full-featured, web-based robotic dashboard to support the entire project lifecycle, starting with physical hardware assembly. Built with FastAPI, WebSockets, and a custom warm linen design system, the dashboard provides live joint sliders, zero-jerk S-curve automated routines, and automated serial port detection via the Arduino CLI tool. We integrated live PS5 DualSense controller teleoperation directly into the web browser via the Gamepad API and added a dedicated Kinematic Calibration panel to tune physical link lengths and servo zero offsets in real-time.",
-      "To support team integration, a dedicated top-level 3D Digital Twin tab was created to host the 3D URDF simulation model. We implemented individual \"Test Solo\" diagnostic buttons for single-joint physical assembly testing and generated vector SVG ArUco markers alongside a printable HTML sheet. Finally, we confirmed the Stage 1 environment design—keeping the destination box fixed while randomly placing the sponge block—to establish a clean, high-accuracy baseline before introducing multi-object complexity in Stage 2."
+      "To support team integration, a dedicated top-level 3D Digital Twin tab was created to host the 3D URDF simulation model. We implemented individual \"Test Solo\" diagnostic buttons for single-joint physical assembly testing and generated vector SVG ArUco markers alongside a printable HTML sheet. Finally, we confirmed the Stage 1 environment design\u2014keeping the destination box fixed while randomly placing the sponge block\u2014to establish a clean, high-accuracy baseline before introducing multi-object complexity in Stage 2."
     ]
   },
   {
