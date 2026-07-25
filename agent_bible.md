@@ -137,9 +137,9 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - Finalized $50\text{cm} \times 50\text{cm}$ platform geometry & dual-frame transformation (Marker ID 2 at corner = World Frame $(0,0)$, Robot Base = $(25\text{cm}, 5\text{cm})$).
 - Created interactive Web Journal (`project_journal.html`), iPhone PWA native app with custom 3D robotic arm home screen icon, and deployed live to GitHub Pages (`https://sohambhavsar24.github.io/vision-autonomous-robotic-arm/`).
 
-### Session 5 (2026-07-25) — COMPLETED
+### Session 5 (2026-07-25 / 2026-07-26) — COMPLETED
 - Upgraded interactive Web Journal PWA with real-time header search bar, live 2-way Cloud Database persistence (`jsonblob.com`), and log entry deletion (`🗑️`).
-- Streamlined mobile journal into a 100% clean, ultra-fast text logging engine across iPhone PWA app and Web Dashboard, reserving document attachments to be managed via session code integration.
+- Logged Entry #6 (**Media Payload Overhead, Cloud DB Limits & Text Logger Pivot Decision**), documenting the engineering friction of video/PDF Base64 uploads and the strategic pivot to a 100% clean, ultra-fast text logging engine.
 - Deployed serverless journal backend to Vercel (`https://vision-autonomous-robotic-arm.vercel.app`) for instant real-time text log sync across iPhone PWA app, Laptop Safari, and local Web Dashboard (`http://localhost:8050`).
 - Integrated dedicated **Journal** tab directly into local Web Dashboard (`http://localhost:8050`) below the Digital Twin tab.
 - Finalized Session 5 journal entry and locked all web control infrastructure. Ready for physical hardware assembly!

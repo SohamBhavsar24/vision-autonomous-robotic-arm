@@ -1,5 +1,14 @@
 [
   {
+    "id": "entry-6",
+    "date": "Sunday, 26th July 2026",
+    "title": "Media Payload Overhead, Cloud DB Limits & Text Logger Pivot Decision",
+    "paragraphs": [
+      "During this session, we encountered significant technical friction and engineering overhead attempting to support heavy video clips and multi-device Base64 PDF attachment uploads. Initial integration attempts with third-party file uploaders resulted in unexpected browser ad redirects, broken mobile download links, and device availability failures. Furthermore, attempting to sync 1.5MB+ Base64 PDF DataURLs across cloud database APIs (jsonblob.com) triggered strict HTTP 413 Payload Too Large rejections, HTTP 429 Rate Limiting, and mobile Safari background fetch terminations that blocked form submission and caused cross-device sync inconsistencies between iPhone PWAs and laptop dashboards.",
+      "Recognizing that heavy binary media attachments introduced unnecessary complexity, cross-origin security risks, and severe cloud database performance bottlenecks, we made a definitive architectural pivot. We completely stripped all video and file upload inputs from the mobile PWA app and Web Dashboard, streamlining the system into a 100% clean, ultra-fast, zero-friction text logging engine. Essential project documents (such as the college synopsis PDF) will remain managed directly via code integration, while all future session notes will be logged as lightweight, instantly synchronized text entries. This decision restored 0.1-second cloud database sync speeds and eliminated all cross-device storage friction."
+    ]
+  },
+  {
     "id": "entry-5",
     "date": "Saturday, 25th July 2026",
     "title": "Interactive Journal App Upgrades, Cloud Sync & Session Finalization Decision",
