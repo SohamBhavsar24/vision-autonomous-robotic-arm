@@ -860,19 +860,20 @@
       modalOverlay.style.display = 'none';
     });
 
-    // Auto-Sync with GitHub Pages when app is opened or brought to foreground
+    // Auto-Sync in real-time when app is brought to foreground or every 5 seconds
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        renderJournal();
+        syncBackendJournal();
       }
     });
 
     window.addEventListener('focus', () => {
-      renderJournal();
+      syncBackendJournal();
     });
 
     renderJournal();
     syncBackendJournal();
+    setInterval(syncBackendJournal, 5000);
   </script>
 </body>
 </html>
