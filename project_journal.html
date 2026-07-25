@@ -586,17 +586,25 @@
 
     async function syncBackendJournal() {
       try {
-        const res = await fetch('/api/journal');
+        let res = await fetch('/api/journal');
+        if (!res.ok) {
+          res = await fetch('dashboard/backend/journal_entries.json');
+        }
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(data));
+            const local = getStoredEntries();
+            const merged = [...data];
+            local.forEach(locItem => {
+              if (!merged.some(m => m.id === locItem.id)) {
+                merged.unshift(locItem);
+              }
+            });
+            localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(merged));
             renderJournal();
           }
         }
-      } catch (e) {
-        // Backend not available (e.g. static GitHub Pages on mobile data)
-      }
+      } catch (e) {}
     }
 
     async function commitToGitHub(entries) {
