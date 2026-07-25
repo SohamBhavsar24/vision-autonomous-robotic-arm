@@ -138,9 +138,10 @@ These decisions have been discussed, debated, and finalized. Do NOT re-question 
 - Created interactive Web Journal (`project_journal.html`), iPhone PWA native app with custom 3D robotic arm home screen icon, and deployed live to GitHub Pages (`https://sohambhavsar24.github.io/vision-autonomous-robotic-arm/`).
 
 ### Session 5 (2026-07-25) — COMPLETED
-- Upgraded interactive Web Journal PWA with real-time header search bar, file attachment uploader/viewer (PDFs, MP4/MOV videos, images), and log entry deletion (`🗑️`).
+- Upgraded interactive Web Journal PWA with real-time header search bar, sub-second binary Blob video uploader (`IndexedDB`), iOS playsinline attributes, and log entry deletion (`🗑️`).
+- Deployed journal serverless backend to Vercel (`https://vision-autonomous-robotic-arm.vercel.app`) with live 2-way Cloud Database persistence (`jsonblob.com` API) for instant real-time sync across iPhone and Laptop Safari.
+- Replaced heavy inline media tags with clean 1-tap **Download / View** badges (`📄 PDF`, `📹 Video`, `🖼️ Image`) matching the Synopsis PDF button style for 100% cross-platform compatibility.
 - Integrated dedicated **Journal** tab directly into local Web Dashboard (`http://localhost:8050`) below the Digital Twin tab.
-- Built persistent disk backend storage (`journal_entries.json`) & REST API sync (`/api/journal`) so logs remain saved permanently across server restarts and sync seamlessly between iPhone and laptop dashboard.
 
 ---
 
