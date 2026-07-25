@@ -850,7 +850,11 @@
 
       const entries = getStoredEntries();
       entries.unshift(newEntry);
-      await saveEntries(entries);
+      
+      // Instant UI update & modal close (0.01s instant feedback)
+      try {
+        localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
+      } catch (err) {}
       renderJournal();
 
       if (submitBtn) {
@@ -858,6 +862,9 @@
         submitBtn.textContent = 'Submit Entry';
       }
       modalOverlay.style.display = 'none';
+
+      // Background Cloud Sync (non-blocking)
+      saveEntries(entries);
     });
 
     // Auto-Sync in real-time when app is brought to foreground or every 5 seconds
