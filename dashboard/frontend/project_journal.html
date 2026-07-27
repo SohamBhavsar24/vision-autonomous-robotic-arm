@@ -447,6 +447,20 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-7",
+        date: "Monday, 27th July 2026",
+        title: "Official Capstone Academic Logbook Integration & Departmental Review Document",
+        paragraphs: [
+          "In today's session, we formally integrated the official Department of Electrical and Electronics Engineering Project Logbook (Log Book-1.docx) into our capstone project repository. This document covers the initial academic project review period from July 20 to July 31, 2026, establishing the formal objectives, guide feedback channels, individual team contribution breakdowns, resource lists, and percentage completion tracking required for university milestone reviews.",
+          "The integrated logbook documents our software architecture foundation, hardware workspace preparation, Web Dashboard Phase A construction, and 2-way cloud database synchronization. With official academic reporting artifacts synced directly alongside our web control software, all team members can access and download the official capstone logbook file directly from the project journal interface."
+        ],
+        attachment: {
+          name: "Log Book-1.docx",
+          type: "docx",
+          url: "Log Book-1.docx"
+        }
+      },
+      {
         id: "entry-6",
         date: "Sunday, 26th July 2026",
         title: "Media Payload Overhead, Cloud DB Limits & Text Logger Pivot Decision",
@@ -606,12 +620,18 @@
     function renderAttachment(att, entryId) {
       if (!att) return '';
       let fileName = att.name || 'attachment';
-      let fileUrl = att.url || 'robotic_arm_synopsis.pdf';
+      let fileUrl = att.url || fileName;
+      let badgeText = `📄 View / Download Document: ${fileName}`;
+      if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+        badgeText = `📝 View / Download Word Logbook: ${fileName}`;
+      } else if (fileName.endsWith('.pdf')) {
+        badgeText = `📄 View / Download PDF Document: ${fileName}`;
+      }
 
       return `
         <div class="attachment-box">
           <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge">
-            📄 View / Download PDF Document: ${fileName}
+            ${badgeText}
           </button>
         </div>
       `;
