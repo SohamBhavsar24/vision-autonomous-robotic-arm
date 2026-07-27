@@ -532,14 +532,17 @@
     function getStoredEntries() {
       const saved = localStorage.getItem('robotic_arm_journal_entries');
       if (saved) {
-        try { return JSON.parse(saved); } catch (e) {}
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
       }
       return DEFAULT_ENTRIES;
     }
 
     async function syncBackendJournal() {
       const targets = [
-        'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96',
+        'https://jsonblob.com/api/jsonBlob/019fa34d-c325-70ac-af5f-c3a8ea648122',
         '/api/journal',
         'dashboard/backend/journal_entries.json'
       ];
@@ -548,7 +551,7 @@
           const res = await fetch(t);
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data)) {
+            if (Array.isArray(data) && data.length > 0) {
               localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(data));
               renderJournal();
               break;
@@ -574,7 +577,7 @@
       } catch (err) {}
 
       const targets = [
-        'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96',
+        'https://jsonblob.com/api/jsonBlob/019fa34d-c325-70ac-af5f-c3a8ea648122',
         '/api/journal'
       ];
       for (const t of targets) {

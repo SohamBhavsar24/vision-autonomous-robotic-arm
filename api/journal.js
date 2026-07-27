@@ -1,7 +1,7 @@
 // Vercel Serverless API Endpoint with Live Cloud Database Persistence
 // Path: api/journal.js
 
-const DB_URL = 'https://jsonblob.com/api/jsonBlob/019f9a78-d623-75d5-9fbd-eefadfc36a96';
+const DB_URL = 'https://jsonblob.com/api/jsonBlob/019fa34d-c325-70ac-af5f-c3a8ea648122';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
