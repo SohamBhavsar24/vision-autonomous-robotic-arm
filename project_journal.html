@@ -447,6 +447,20 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-8",
+        date: "Thursday, 30th July 2026",
+        title: "Secondary Academic Logbook PDF Integration & Serial Device Filtering Decision",
+        paragraphs: [
+          "In today's session, we formally integrated the second official academic project logbook document (logbook2.pdf) into our capstone project repository. This document records our technical progress, software architecture updates, control dashboard testing, and upcoming hardware assembly tasks required for departmental review.",
+          "Additionally, we identified and resolved a critical macOS serial port communication issue where virtual Bluetooth audio devices (such as paired Bluetooth speakers and headphones) were appearing as openable serial ports on the Web Dashboard. We implemented strict backend keyword filtering to block virtual system ports and ensure the dashboard auto-detects and connects exclusively to genuine physical USB Arduino Uno hardware."
+        ],
+        attachment: {
+          name: "logbook2.pdf",
+          type: "pdf",
+          url: "logbook2.pdf"
+        }
+      },
+      {
         id: "entry-7",
         date: "Monday, 27th July 2026",
         title: "Official Capstone Academic Logbook Integration & Departmental Review Document",
@@ -556,7 +570,7 @@
 
     async function syncBackendJournal() {
       const targets = [
-        'https://jsonblob.com/api/jsonBlob/019fa34d-c325-70ac-af5f-c3a8ea648122',
+        'https://jsonblob.com/api/jsonBlob/019fb297-c286-7609-8165-90d10a10452c',
         '/api/journal',
         'dashboard/backend/journal_entries.json'
       ];
@@ -591,7 +605,7 @@
       } catch (err) {}
 
       const targets = [
-        'https://jsonblob.com/api/jsonBlob/019fa34d-c325-70ac-af5f-c3a8ea648122',
+        'https://jsonblob.com/api/jsonBlob/019fb297-c286-7609-8165-90d10a10452c',
         '/api/journal'
       ];
       for (const t of targets) {
