@@ -51,13 +51,21 @@ GRIPPER_OPEN_ANGLE = 90
 
 DEFAULT_HOME_ANGLES = [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE]
 
-# List of macOS/Linux system virtual ports that must NEVER be auto-opened
+# List of macOS/Linux virtual Bluetooth & audio ports that must NEVER be listed or connected
 IGNORED_PORT_KEYWORDS = [
     "debug-console",
-    "bluetooth-incoming",
+    "bluetooth",
     "wlan-debug",
     "soc",
-    "tty.Bluetooth"
+    "tty.bluetooth",
+    "cu.bluetooth",
+    "stone",
+    "airdopes",
+    "airpods",
+    "speaker",
+    "headset",
+    "headphone",
+    "handsfree"
 ]
 
 
