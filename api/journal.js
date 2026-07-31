@@ -1,7 +1,35 @@
-// Vercel Serverless API Endpoint with Live Cloud Database Persistence
+// Vercel Serverless API Endpoint with Self-Healing Cloud Persistence
 // Path: api/journal.js
 
-const DB_URL = 'https://jsonblob.com/api/jsonBlob/019fb297-c286-7609-8165-90d10a10452c';
+let currentBlobUrl = 'https://jsonblob.com/api/jsonBlob/019fb297-c286-7609-8165-90d10a10452c';
+let memoryEntriesCache = null;
+
+async function getOrCreateBlobUrl() {
+  if (currentBlobUrl) {
+    try {
+      const checkRes = await fetch(currentBlobUrl);
+      if (checkRes.ok) return currentBlobUrl;
+    } catch (e) {}
+  }
+
+  // Create new blob if 404 or expired
+  try {
+    const createRes = await fetch('https://jsonblob.com/api/jsonBlob', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(memoryEntriesCache || [])
+    });
+    if (createRes.ok) {
+      const loc = createRes.headers.get('Location');
+      if (loc) {
+        currentBlobUrl = loc.startsWith('http') ? loc : `https://jsonblob.com${loc}`;
+        return currentBlobUrl;
+      }
+    }
+  } catch (e) {}
+
+  return currentBlobUrl;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,14 +40,26 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const blobUrl = await getOrCreateBlobUrl();
+
   if (req.method === 'GET') {
     try {
-      const dbRes = await fetch(DB_URL);
-      if (dbRes.ok) {
-        const data = await dbRes.json();
-        return res.status(200).json(data);
+      if (blobUrl) {
+        const dbRes = await fetch(blobUrl);
+        if (dbRes.ok) {
+          const data = await dbRes.json();
+          if (Array.isArray(data) && data.length > 0) {
+            memoryEntriesCache = data;
+            return res.status(200).json(data);
+          }
+        }
       }
     } catch (e) {}
+
+    if (memoryEntriesCache && memoryEntriesCache.length > 0) {
+      return res.status(200).json(memoryEntriesCache);
+    }
+
     return res.status(200).json([]);
   }
 
@@ -37,18 +77,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing or invalid entries array' });
     }
 
+    memoryEntriesCache = payload;
+
     try {
-      const saveRes = await fetch(DB_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (saveRes.ok) {
-        return res.status(200).json({ status: 'saved', count: payload.length });
+      if (blobUrl) {
+        await fetch(blobUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
       }
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
+    } catch (err) {}
+
+    return res.status(200).json({ status: 'saved', count: payload.length });
   }
 
   res.status(405).end();

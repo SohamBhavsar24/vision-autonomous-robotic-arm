@@ -570,7 +570,7 @@
 
     async function syncBackendJournal() {
       const targets = [
-        'https://jsonblob.com/api/jsonBlob/019fb297-c286-7609-8165-90d10a10452c',
+        'https://vision-autonomous-robotic-arm.vercel.app/api/journal',
         '/api/journal',
         'dashboard/backend/journal_entries.json'
       ];
@@ -580,8 +580,11 @@
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-              localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(data));
-              renderJournal();
+              const current = localStorage.getItem('robotic_arm_journal_entries');
+              if (current !== JSON.stringify(data)) {
+                localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(data));
+                renderJournal();
+              }
               break;
             }
           }
@@ -605,13 +608,13 @@
       } catch (err) {}
 
       const targets = [
-        'https://jsonblob.com/api/jsonBlob/019fb297-c286-7609-8165-90d10a10452c',
+        'https://vision-autonomous-robotic-arm.vercel.app/api/journal',
         '/api/journal'
       ];
       for (const t of targets) {
         try {
           await fetch(t, {
-            method: 'PUT',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(entries)
           });
@@ -771,6 +774,7 @@
 
     renderJournal();
     syncBackendJournal();
+    setInterval(syncBackendJournal, 3000);
   </script>
 </body>
 </html>
