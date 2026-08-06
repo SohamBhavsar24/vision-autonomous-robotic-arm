@@ -84,7 +84,10 @@ const TeleopPanel = {
     }
 
     if (this.btnToggleMode) {
-      this.btnToggleMode.addEventListener('click', () => this.toggleMode());
+      this.btnToggleMode.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.toggleMode();
+      });
     }
 
     window.addEventListener('gamepadconnected', (e) => {
@@ -109,9 +112,10 @@ const TeleopPanel = {
   },
 
   toggleMode() {
-    this.activeMode = this.activeMode === 'ik' ? 'joint' : 'ik';
-    this.cacheDOM();
+    this.activeMode = (this.activeMode === 'ik') ? 'joint' : 'ik';
+    console.log('[TeleopPanel] Mode toggled to:', this.activeMode);
     this.updateModeUI();
+
     if (window.App && App.log) {
       App.log(`Switched Teleoperation Mode to: ${this.activeMode === 'ik' ? 'Cartesian IK Mode' : 'Direct Joint Motor Control Mode'}`);
     }
@@ -127,7 +131,8 @@ const TeleopPanel = {
       if (btnText) btnText.textContent = 'Cartesian IK Mode';
       if (pill) {
         pill.textContent = 'Cartesian IK';
-        pill.className = 'status-pill connected';
+        pill.style.background = 'rgba(46, 125, 50, 0.15)';
+        pill.style.color = '#2E7D32';
       }
       if (noteTitle) noteTitle.textContent = 'Cartesian Inverse Kinematics (IK) Teleoperation Architecture';
       if (noteText) {
@@ -143,7 +148,8 @@ const TeleopPanel = {
       if (btnText) btnText.textContent = 'Direct Joint Control Mode';
       if (pill) {
         pill.textContent = 'Direct Joint Control';
-        pill.className = 'status-pill';
+        pill.style.background = 'rgba(196, 120, 74, 0.15)';
+        pill.style.color = 'var(--accent-primary)';
       }
       if (noteTitle) noteTitle.textContent = 'Direct Joint Motor Control Teleoperation Architecture';
       if (noteText) {
@@ -382,6 +388,10 @@ const TeleopPanel = {
       if (typeof ServoPanel !== 'undefined') ServoPanel.setAngles(currentAngles);
     }
   }
+};
+
+window.toggleTeleopMode = function() {
+  TeleopPanel.toggleMode();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
