@@ -113,8 +113,11 @@ const TeleopPanel = {
 
   toggleMode() {
     this.activeMode = this.activeMode === 'ik' ? 'joint' : 'ik';
+    this.cacheDOM();
     this.updateModeUI();
-    App.log(`Switched Teleoperation Mode to: ${this.activeMode === 'ik' ? 'Cartesian IK Mode' : 'Direct Joint Motor Control Mode'}`);
+    if (window.App && App.log) {
+      App.log(`Switched Teleoperation Mode to: ${this.activeMode === 'ik' ? 'Cartesian IK Mode' : 'Direct Joint Motor Control Mode'}`);
+    }
   },
 
   updateModeUI() {

@@ -393,8 +393,8 @@
             <p class="card-subtitle">Select teleoperation mode, view controller mapping diagram, and test live inputs.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="btn btn-primary" id="btnToggleTeleopMode" style="font-weight: 600;">
-              🎮 Switch Mode: <span id="lblModeBtnText">Cartesian IK Mode</span>
+            <button class="btn btn-primary" id="btnToggleTeleopMode" onclick="TeleopPanel.toggleMode()" style="font-weight: 600; cursor: pointer;">
+              🎮 Switch Mode: <span id="lblModeBtnText">Direct Joint Control</span>
             </button>
             <div class="status-pill" id="ps5StatusPill">
               <span class="status-dot"></span>
