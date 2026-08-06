@@ -95,11 +95,6 @@
       <!-- Panel 1: Servo Control & Assembly Helper -->
       <main class="content-panel active" id="panel-control">
         
-        <!-- Assembly Assistant Helper Banner (Decision #19) -->
-        <div class="assembly-banner">
-          <strong>Physical Assembly Assistant:</strong> Use the <strong>"Lock All at 90°"</strong> button below to lock all motors while mounting 3D-printed arm parts. After attaching each joint, drag its slider to test mechanical limits and verify there are no plastic collisions.
-        </div>
-
         <!-- Quick Action Toolbar -->
         <div class="action-toolbar">
           <button class="btn btn-primary" id="btnLock90">
@@ -356,11 +351,7 @@
 
       <!-- Panel: Interactive Project Journal App -->
       <main class="content-panel" id="panel-journal">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-          <div>
-            <h3 class="card-title">Engineering Project Journal & Log Archive</h3>
-            <p class="card-subtitle">Live interactive journal app with real-time search, file attachments, and session history.</p>
-          </div>
+        <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 16px;">
           <a href="https://vision-autonomous-robotic-arm.vercel.app" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem;">Open App in New Tab ↗</a>
         </div>
 
@@ -390,7 +381,6 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
           <div>
             <h3 class="card-title">PS5 DualSense Controller Teleoperation & Live Tester</h3>
-            <p class="card-subtitle">Connect your PS5 controller via Bluetooth or USB to drive the arm in Cartesian IK or Direct Joint Mode.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 12px;">
             <button class="btn btn-primary" id="btnToggleTeleopMode" onclick="
@@ -645,9 +635,9 @@
   </div>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.12"></script>
-  <script src="js/servo_panel.js?v=1.0.12"></script>
-  <script src="js/teleop_panel.js?v=1.0.12"></script>
-  <script src="js/dataset_panel.js?v=1.0.12"></script>
+  <script src="js/app.js?v=1.0.13"></script>
+  <script src="js/servo_panel.js?v=1.0.13"></script>
+  <script src="js/teleop_panel.js?v=1.0.13"></script>
+  <script src="js/dataset_panel.js?v=1.0.13"></script>
 </body>
 </html>
