@@ -608,8 +608,30 @@
 
       <main class="content-panel" id="panel-dataset">
         <div class="card">
-          <h3 class="card-title">Dataset Management (Phase C)</h3>
-          <p class="card-subtitle">Will manage recorded demonstration episodes and trajectory replays.</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div>
+              <h3 class="card-title">Demonstration Dataset Recording & Trajectory Replay (Phase C)</h3>
+              <p class="card-subtitle">Record human teleoperation demonstrations with 30Hz trajectory logging, auto-homing, and smooth trajectory replay.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <button class="btn btn-primary" id="btnRecordDataset" style="font-weight: 600; cursor: pointer; padding: 10px 20px;">
+                ⏺️ Start Recording Demonstration
+              </button>
+              <div id="lblRecordStatusPill" class="status-pill" style="display: none; background: rgba(229, 57, 53, 0.15); color: #E53935; font-weight: 600; padding: 8px 14px; border: 1px solid rgba(229,57,53,0.3);">
+                🔴 RECORDING... (<span id="lblFrameCount">0</span> frames)
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px;">
+            <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-main); margin-bottom: 8px;">
+              Recorded Demonstration Episodes (Latest First)
+            </h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+              Each recorded episode captures 30Hz joint trajectory frames. Clicking <strong>Play</strong> smooth-replays the human teleoperation demonstration on the arm.
+            </p>
+            <div id="datasetEpisodesList"></div>
+          </div>
         </div>
       </main>
 
@@ -627,5 +649,6 @@
   <script src="js/app.js?v=1.0.9"></script>
   <script src="js/servo_panel.js?v=1.0.9"></script>
   <script src="js/teleop_panel.js?v=1.0.9"></script>
+  <script src="js/dataset_panel.js?v=1.0.9"></script>
 </body>
 </html>

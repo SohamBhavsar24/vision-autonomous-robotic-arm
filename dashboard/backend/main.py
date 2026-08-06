@@ -75,6 +75,7 @@ class ServoAnglesRequest(BaseModel):
 
 CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "kinematics_config.json"))
 JOURNAL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "journal_entries.json"))
+DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "dataset_episodes.json"))
 
 class KinematicsConfigRequest(BaseModel):
     L1: float = 10.0
@@ -87,6 +88,29 @@ class KinematicsConfigRequest(BaseModel):
 
 class JournalEntriesRequest(BaseModel):
     entries: List[Dict[str, Any]]
+
+class DatasetEpisodesRequest(BaseModel):
+    episodes: List[Dict[str, Any]]
+
+
+@app.get("/api/dataset")
+async def get_dataset_episodes():
+    """Returns persistent list of recorded demonstration episodes."""
+    if os.path.exists(DATASET_PATH):
+        try:
+            with open(DATASET_PATH, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+@app.post("/api/dataset")
+async def save_dataset_episodes(req: DatasetEpisodesRequest):
+    """Saves persistent list of demonstration episodes."""
+    with open(DATASET_PATH, "w") as f:
+        json.dump(req.episodes, f, indent=2)
+    return {"status": "saved", "count": len(req.episodes)}
 
 
 @app.get("/api/journal")
