@@ -393,7 +393,24 @@
             <p class="card-subtitle">Connect your PS5 controller via Bluetooth or USB to drive the arm in Cartesian IK or Direct Joint Mode.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="btn btn-primary" id="btnToggleTeleopMode" onclick="toggleTeleopMode()" style="font-weight: 600; cursor: pointer; padding: 10px 18px; font-size: 0.85rem;">
+            <button class="btn btn-primary" id="btnToggleTeleopMode" onclick="
+              window.teleopMode = (window.teleopMode === 'joint') ? 'ik' : 'joint';
+              const isIK = (window.teleopMode === 'ik');
+              document.getElementById('lblModeBtnText').textContent = isIK ? 'Direct Joint Control Mode →' : 'Cartesian IK Mode →';
+              const pill = document.getElementById('lblActiveModePill');
+              pill.textContent = isIK ? 'Active: Cartesian IK' : 'Active: Direct Joint Control';
+              pill.style.background = isIK ? 'rgba(46, 125, 50, 0.15)' : 'rgba(196, 120, 74, 0.15)';
+              pill.style.color = isIK ? '#2E7D32' : '#C4784A';
+              const title = document.getElementById('lblTeleopNoteTitle');
+              if (title) title.textContent = isIK ? 'Cartesian Inverse Kinematics (IK) Teleoperation Architecture' : 'Direct Joint Motor Control Teleoperation Architecture';
+              const text = document.getElementById('lblTeleopNoteText');
+              if (text) {
+                text.innerHTML = isIK ? 
+                  '1. <strong>Left Stick (X / Y):</strong> Moves the end-effector in Cartesian table space (centimeters relative to base).<br>2. <strong>Right Stick (Z):</strong> Moves end-effector Z-height up and down towards table.<br>3. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>4. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>5. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.' :
+                  '1. <strong>Left Stick (X):</strong> Controls Base Servo angle (0° to 180°).<br>2. <strong>Left Stick (Y):</strong> Controls Shoulder Servo angle (0° to 180°).<br>3. <strong>Right Stick (Y):</strong> Controls Elbow Servo angle (0° to 180°).<br>4. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>5. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>6. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.';
+              }
+              if (window.TeleopPanel) window.TeleopPanel.activeMode = window.teleopMode;
+            " style="font-weight: 600; cursor: pointer; padding: 10px 18px; font-size: 0.85rem;">
               🎮 Click to Switch: <span id="lblModeBtnText">Direct Joint Control Mode →</span>
             </button>
             <div class="status-pill connected" id="lblActiveModePill" style="font-weight: 600; font-size: 0.85rem; padding: 8px 14px;">
@@ -606,9 +623,9 @@
     </div>
   </div>
 
-  <!-- Dashboard JavaScript -->
-  <script src="js/app.js"></script>
-  <script src="js/servo_panel.js"></script>
-  <script src="js/teleop_panel.js"></script>
+  <!-- Dashboard JavaScript with Cache Busting -->
+  <script src="js/app.js?v=1.0.1"></script>
+  <script src="js/servo_panel.js?v=1.0.1"></script>
+  <script src="js/teleop_panel.js?v=1.0.1"></script>
 </body>
 </html>
