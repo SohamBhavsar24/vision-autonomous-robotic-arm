@@ -581,15 +581,39 @@
       return `${dayName}, ${padDay}${getOrdinalSuffix(dayNum)} ${monthName} ${year}`;
     }
 
+    function parseEntryTimestamp(entry) {
+      if (!entry) return 0;
+      if (entry.date) {
+        const cleanDate = entry.date.replace(/(\d+)(st|nd|rd|th)/, '$1');
+        const ts = Date.parse(cleanDate);
+        if (!isNaN(ts)) return ts;
+      }
+      if (entry.id && typeof entry.id === 'string' && entry.id.startsWith('entry-')) {
+        const num = parseInt(entry.id.replace('entry-', ''), 10);
+        if (!isNaN(num)) return num;
+      }
+      return 0;
+    }
+
+    function sortEntriesDatewise(entries) {
+      if (!Array.isArray(entries)) return [];
+      return [...entries].sort((a, b) => {
+        const tsA = parseEntryTimestamp(a);
+        const tsB = parseEntryTimestamp(b);
+        return tsB - tsA; // LATEST / MOST RECENT AT TOP!
+      });
+    }
+
     function getStoredEntries() {
+      let result = DEFAULT_ENTRIES;
       const saved = localStorage.getItem('robotic_arm_journal_entries');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) result = parsed;
         } catch (e) {}
       }
-      return DEFAULT_ENTRIES;
+      return sortEntriesDatewise(result);
     }
 
     const SUPABASE_URL = 'https://pzewxynfhrylnqbkkeeq.supabase.co';
@@ -614,9 +638,10 @@
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
+              const sortedData = sortEntriesDatewise(data);
               const current = localStorage.getItem('robotic_arm_journal_entries');
-              if (current !== JSON.stringify(data)) {
-                localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(data));
+              if (current !== JSON.stringify(sortedData)) {
+                localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(sortedData));
                 renderJournal();
               }
               break;
