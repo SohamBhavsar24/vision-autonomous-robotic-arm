@@ -10,9 +10,12 @@
        1. Cartesian Inverse Kinematics (IK) Mode (Left Stick: X/Y, Right Stick: Z height)
        2. Direct Joint Motor Control Mode (Velocity-Based Rate Integrator)
      
-     PRIME DIRECTIVE:
-       Joints move via Velocity-Based Rate Integration + Exponential Moving Average (EMA)
-       low-pass filtering to guarantee 100% smooth, zero-jerk, fluid motion.
+     GRIPPER STATE MACHINE:
+       - Default / Unlocked: R2 released -> Gripper stays at 10°.
+       - R2 Pressed: Gripper moves slowly towards 180°.
+       - R2 Released: Gripper travels back to 10° slowly.
+       - L2 Pressed: Gripper LOCKS at current angle (R2 ignored).
+       - L2 Pressed again: Gripper UNLOCKS and travels back to 10° slowly.
    ========================================================================== */
 
 const TeleopPanel = {
@@ -143,7 +146,7 @@ const TeleopPanel = {
           2. <strong>Right Stick (Z):</strong> Moves end-effector Z-height up and down towards table.<br>
           3. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>
           4. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>
-          5. <strong>R2 / L2 Triggers:</strong> R2 slowly drives gripper to 180°; releasing R2 returns gripper to 10°; L2 locks gripper position.
+          5. <strong>R2 / L2 Triggers:</strong> R2 drives gripper towards 180°; releasing R2 returns to 10°; L2 locks/unlocks position.
         `;
       }
     } else {
@@ -161,7 +164,7 @@ const TeleopPanel = {
           3. <strong>Right Stick (Y):</strong> Smoothly rotates Elbow Servo (0° to 180°).<br>
           4. <strong>R1 / L1 Bumpers:</strong> Smoothly rotates Wrist Roll CW / CCW.<br>
           5. <strong>Cross (×) / Circle (○) Buttons:</strong> Smoothly rotates Wrist Pitch UP / DOWN.<br>
-          6. <strong>R2 / L2 Triggers:</strong> R2 slowly drives gripper towards 180°; releasing R2 returns gripper to 10°; L2 locks gripper position.
+          6. <strong>R2 / L2 Triggers:</strong> R2 drives gripper towards 180°; releasing R2 returns to 10°; L2 locks/unlocks position.
         `;
       }
     }
@@ -368,25 +371,41 @@ const TeleopPanel = {
     const ly = this.applyDeadzone(gp.axes[1] || 0); // Shoulder Servo (Ch 1)
     const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
 
-    // Check if the user is actively manipulating a stick or button
-    const isUserInteracting = (Math.abs(lx) > 0) || (Math.abs(ly) > 0) || (Math.abs(ry) > 0) ||
-                              xPressed || circlePressed || r1Pressed || l1Pressed || (r2Val > 0.05) || l2Pressed;
+    // Handle Gripper Lock Toggle (L2)
+    if (l2Pressed && !this.wasL2Pressed) {
+      this.isGripperLocked = !this.isGripperLocked;
+      if (window.App && App.log) {
+        App.log(`Gripper Lock ${this.isGripperLocked ? 'LOCKED (Position Saved)' : 'UNLOCKED (Returning to 10°)'}`);
+      }
+    }
+    this.wasL2Pressed = l2Pressed;
 
-    // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls,
+    // Gripper Angle Motion Logic
+    if (this.isGripperLocked) {
+      // While locked, R2 is ignored; gripper stays locked at current angle
+    } else {
+      if (r2Val > 0.05) {
+        // While R2 is pressed, gripper motor starts heading towards 180° slowly
+        this.integratedAngles[5] = Math.min(180, this.integratedAngles[5] + (r2Val * stepSpeed * 1.5));
+      } else {
+        // When R2 is released (or after L2 unlock), gripper starts going back to 10° slowly
+        this.integratedAngles[5] = Math.max(10, this.integratedAngles[5] - (stepSpeed * 1.5));
+      }
+    }
+
+    // Flag indicating if Gripper is actively moving (either expanding with R2 or returning to 10°)
+    const isGripperActive = !this.isGripperLocked && (Math.round(this.integratedAngles[5]) > 10 || r2Val > 0.05);
+
+    // Check if the user is actively manipulating any stick, button, or active gripper travel
+    const isUserInteracting = (Math.abs(lx) > 0) || (Math.abs(ly) > 0) || (Math.abs(ry) > 0) ||
+                              xPressed || circlePressed || r1Pressed || l1Pressed || isGripperActive || l2Pressed;
+
+    // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls and gripper is not moving,
     // sync PS5 integrated state with current ServoPanel sliders/angles.
     if (!isUserInteracting && typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
       this.integratedAngles = [...ServoPanel.currentAngles];
       this.smoothedAngles = [...ServoPanel.currentAngles];
     }
-
-    // Handle Gripper Lock Toggle (L2)
-    if (l2Pressed && !this.wasL2Pressed) {
-      this.isGripperLocked = !this.isGripperLocked;
-      if (window.App && App.log) {
-        App.log(`Gripper Lock ${this.isGripperLocked ? 'LOCKED' : 'UNLOCKED'}`);
-      }
-    }
-    this.wasL2Pressed = l2Pressed;
 
     // Wrist Pitch Control (Cross X / Circle O)
     if (xPressed) {
@@ -400,17 +419,6 @@ const TeleopPanel = {
       this.integratedAngles[4] = Math.min(180, this.integratedAngles[4] + stepSpeed);
     } else if (l1Pressed) {
       this.integratedAngles[4] = Math.max(0, this.integratedAngles[4] - stepSpeed);
-    }
-
-    // Gripper Control (R2 Trigger): Resting at 10° -> Drives slowly towards 180° when held -> Returns slowly to 10° when released
-    if (!this.isGripperLocked) {
-      if (r2Val > 0.05) {
-        // When R2 is pressed, start going towards 180° slowly
-        this.integratedAngles[5] = Math.min(180, this.integratedAngles[5] + (r2Val * stepSpeed * 1.5));
-      } else {
-        // When R2 is released, start going back to 10° slowly
-        this.integratedAngles[5] = Math.max(10, this.integratedAngles[5] - (stepSpeed * 1.5));
-      }
     }
 
     if (this.activeMode === 'joint') {
@@ -433,7 +441,7 @@ const TeleopPanel = {
       this.smoothedAngles[i] = Math.round((targetVal * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
     }
 
-    // ONLY dispatch teleoperation angles when user is actively giving control inputs
+    // ONLY dispatch teleoperation angles when user is actively giving control inputs or gripper is traveling
     if (this.activeMode === 'joint' && isUserInteracting) {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
         ServoPanel.setAngles(this.smoothedAngles);
