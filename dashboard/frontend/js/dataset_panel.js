@@ -57,7 +57,7 @@ const DatasetPanel = {
     this.currentTrajectory = [];
 
     if (this.btnRecord) {
-      this.btnRecord.textContent = '⏹️ Stop Recording Demonstration';
+      this.btnRecord.textContent = 'Stop Recording Demonstration';
       this.btnRecord.style.backgroundColor = '#E53935';
       this.btnRecord.style.borderColor = '#E53935';
     }
@@ -71,7 +71,7 @@ const DatasetPanel = {
     }
 
     if (window.App && App.log) {
-      App.log('⏺️ STARTED DEMONSTRATION RECORDING (30Hz Trajectory Sampler Active)...');
+      App.log('STARTED DEMONSTRATION RECORDING (30Hz Trajectory Sampler Active)...');
     }
 
     // 30Hz sampling loop
@@ -94,7 +94,7 @@ const DatasetPanel = {
     if (this.recordTimer) clearInterval(this.recordTimer);
 
     if (this.btnRecord) {
-      this.btnRecord.textContent = '⏺️ Start Recording Demonstration';
+      this.btnRecord.textContent = 'Start Recording Demonstration';
       this.btnRecord.style.backgroundColor = 'var(--accent-primary)';
       this.btnRecord.style.borderColor = 'var(--accent-primary)';
     }
@@ -107,7 +107,7 @@ const DatasetPanel = {
     const durationSec = (frameCount * (this.sampleIntervalMs / 1000)).toFixed(1);
 
     if (window.App && App.log) {
-      App.log(`⏹️ STOPPED DEMONSTRATION RECORDING (${frameCount} frames captured, ~${durationSec}s). Auto-homing arm...`);
+      App.log(`STOPPED DEMONSTRATION RECORDING (${frameCount} frames captured, ~${durationSec}s). Auto-homing arm...`);
     }
 
     // Auto-home the arm smoothly per user spec
@@ -192,7 +192,7 @@ const DatasetPanel = {
 
     this.isPlaying = true;
     if (window.App && App.log) {
-      App.log(`▶️ REPLAYING TRAJECTORY: Episode #${ep.number} (${ep.frameCount} frames, ~${ep.durationSec}s)...`);
+      App.log(`REPLAYING TRAJECTORY: Episode #${ep.number} (${ep.frameCount} frames, ~${ep.durationSec}s)...`);
     }
 
     let frameIndex = 0;
@@ -200,7 +200,7 @@ const DatasetPanel = {
       if (frameIndex >= ep.trajectory.length) {
         clearInterval(this.playTimer);
         this.isPlaying = false;
-        if (window.App && App.log) App.log(`✅ Episode #${ep.number} Replay Complete. Moving smoothly to Home Position...`);
+        if (window.App && App.log) App.log(`Episode #${ep.number} Replay Complete. Moving smoothly to Home Position...`);
         if (window.App && App.sendWS) App.sendWS('home');
         return;
       }
@@ -221,7 +221,7 @@ const DatasetPanel = {
       this.episodes = this.episodes.filter(e => e.id !== episodeId);
       await this.saveEpisodes();
       this.renderEpisodes();
-      if (window.App && App.log) App.log(`🗑️ Deleted ${epName} from dataset.`);
+      if (window.App && App.log) App.log(`Deleted ${epName} from dataset.`);
     }
   },
 
@@ -231,8 +231,7 @@ const DatasetPanel = {
     if (this.episodes.length === 0) {
       this.episodesList.innerHTML = `
         <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-family: var(--font-mono); font-size: 0.85rem; border: 2px dashed var(--border-subtle); border-radius: 12px; margin-top: 16px;">
-          No demonstration episodes recorded yet.<br>
-          Click <strong>"⏺️ Start Recording Demonstration"</strong> above to record your first human teleoperation demonstration episode.
+          No demonstration episodes recorded yet.
         </div>
       `;
       return;
@@ -246,15 +245,15 @@ const DatasetPanel = {
               Episode #${ep.number}
             </h4>
             <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);">
-              📅 ${ep.date} • ⏱️ ${ep.frameCount} frames (~${ep.durationSec}s)
+              ${ep.date} • ${ep.frameCount} frames (~${ep.durationSec}s)
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 10px;">
             <button class="btn btn-primary" onclick="DatasetPanel.playEpisode('${ep.id}')" style="padding: 8px 16px; font-size: 0.82rem; font-weight: 600;">
-              ▶️ Play Trajectory
+              Play Trajectory
             </button>
             <button class="btn btn-secondary" onclick="DatasetPanel.deleteEpisode('${ep.id}')" style="padding: 8px 14px; font-size: 0.82rem; color: #E53935; border-color: rgba(229, 57, 53, 0.3);">
-              🗑️ Delete
+              Delete
             </button>
           </div>
         </div>
