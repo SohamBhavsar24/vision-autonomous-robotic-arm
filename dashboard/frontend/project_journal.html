@@ -402,8 +402,7 @@
 
     <!-- Header Search Bar -->
     <div class="search-box">
-      <span class="search-icon" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Search</span>
-      <input type="text" class="search-input" id="searchInput" placeholder="Search entries by title or content (e.g. 'synopsis', 'calibration')...">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search..." style="padding-left: 16px;">
     </div>
 
     <main id="journalContainer">
@@ -772,7 +771,7 @@
         <article class="journal-entry">
           <div class="entry-header-row">
             <div class="entry-date">${highlightText(item.date, query)}</div>
-            <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry" style="font-size: 0.8rem; font-weight: 600; color: #E53935; background: none; border: none; cursor: pointer;">Delete</button>
+            <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry" style="font-size: 0.9rem; background: none; border: none; cursor: pointer;">🗑️</button>
           </div>
           <h2 class="entry-title">${highlightText(item.title, query)}</h2>
           <div class="entry-content">

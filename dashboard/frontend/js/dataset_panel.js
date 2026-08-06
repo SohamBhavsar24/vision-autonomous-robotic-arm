@@ -315,7 +315,7 @@ const DatasetPanel = {
               Play Trajectory
             </button>
             <button class="btn btn-secondary" onclick="DatasetPanel.deleteEpisode('${ep.id}')" style="padding: 8px 14px; font-size: 0.82rem; color: #E53935; border-color: rgba(229, 57, 53, 0.3);">
-              Delete
+              🗑️ Delete
             </button>
           </div>
         </div>
