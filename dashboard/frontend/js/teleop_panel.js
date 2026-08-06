@@ -20,8 +20,8 @@ const TeleopPanel = {
   animFrameId: null,
   activeMode: 'ik', // 'ik' or 'joint'
   isGripperLocked: false,
-  integratedAngles: [90, 90, 90, 90, 90, 90], // Continuous Velocity-Based Integrator
-  smoothedAngles: [90, 90, 90, 90, 90, 90],   // EMA Low-Pass Filter State
+  integratedAngles: [90, 90, 90, 90, 90, 10], // Continuous Velocity-Based Integrator
+  smoothedAngles: [90, 90, 90, 90, 90, 10],   // EMA Low-Pass Filter State
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -371,6 +371,14 @@ const TeleopPanel = {
     // Check if the user is actively manipulating a stick or button
     const isUserInteracting = (Math.abs(lx) > 0) || (Math.abs(ly) > 0) || (Math.abs(ry) > 0) ||
                               xPressed || circlePressed || r1Pressed || l1Pressed || (r2Val > 0.05) || l2Pressed;
+
+    // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls,
+    // sync PS5 integrated state with current ServoPanel sliders/angles.
+    // This prevents snapping on first PS5 touch & prevents snapping back after manual slider drags!
+    if (!isUserInteracting && typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
+      this.integratedAngles = [...ServoPanel.currentAngles];
+      this.smoothedAngles = [...ServoPanel.currentAngles];
+    }
 
     // Handle Gripper Lock Toggle (L2)
     if (l2Pressed && !this.wasL2Pressed) {
