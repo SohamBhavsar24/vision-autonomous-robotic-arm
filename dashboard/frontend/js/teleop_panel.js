@@ -1,23 +1,23 @@
 /* ==========================================================================
-   TELEOPERATION PANEL & PS5 DUALSENSE CONTROLLER INTEGRATION (JS)
+   TELEOPERATION PANEL & DUAL-MODE PS5 CONTROLLER INTEGRATION (JS)
    ==========================================================================
    Project:  Vision-Based Autonomous Robotic Arm
    File:     teleop_panel.js
    Location: dashboard/frontend/js/
 
    PURPOSE:
-     Reads PS5 DualSense inputs live via browser Gamepad API. Visualizes stick
-     positions, triggers, and button presses, and previews the Cartesian Inverse
-     Kinematics (IK) mapping pipeline for Phase C demonstration collection.
-
-   RELATED DECISIONS:
-     - Decision #4: Cartesian IK Teleoperation (PS5 joystick controls X,Y,Z)
-     - Decision #5: Safety System
+     Handles live PS5 DualSense controller teleoperation with 2 modes:
+       1. Cartesian Inverse Kinematics (IK) Mode (Left Stick: X/Y, Right Stick: Z height)
+       2. Direct Joint Motor Control Mode (Left Stick: Base/Shoulder, Right Stick: Elbow)
+     Includes dynamic game-style controller mapping diagram switching.
    ========================================================================== */
 
 const TeleopPanel = {
   gamepadIndex: null,
   animFrameId: null,
+  activeMode: 'ik', // 'ik' or 'joint'
+  isGripperLocked: false,
+  targetGripperAngle: 90,
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -33,6 +33,7 @@ const TeleopPanel = {
     this.bindEvents();
     this.startLoop();
     this.loadKinematicsConfig();
+    this.updateModeUI();
   },
 
   cacheDOM() {
@@ -53,6 +54,15 @@ const TeleopPanel = {
     this.buttonsGrid = document.getElementById('ps5ButtonsGrid');
     this.axesList = document.getElementById('ps5AxesList');
     this.btnSaveKinematics = document.getElementById('btnSaveKinematics');
+
+    // Teleop Mode Switcher DOM elements
+    this.btnToggleMode = document.getElementById('btnToggleTeleopMode');
+    this.lblModeBtnText = document.getElementById('lblModeBtnText');
+    this.lblDiagramTitle = document.getElementById('lblDiagramTitle');
+    this.lblActiveModePill = document.getElementById('lblActiveModePill');
+    this.lblDiagramSubtitle = document.getElementById('lblDiagramSubtitle');
+    this.imgControllerDiagram = document.getElementById('imgControllerDiagram');
+    this.cardArchitectureNotes = document.getElementById('cardArchitectureNotes');
 
     if (this.axesList) {
       this.axesList.innerHTML = '<div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); padding: 12px 0;">No controller connected.<br>Press any button on PS5 DualSense to display live axes.</div>';
@@ -76,6 +86,10 @@ const TeleopPanel = {
       this.btnSaveKinematics.addEventListener('click', () => this.saveKinematicsConfig());
     }
 
+    if (this.btnToggleMode) {
+      this.btnToggleMode.addEventListener('click', () => this.toggleMode());
+    }
+
     window.addEventListener('gamepadconnected', (e) => {
       this.gamepadIndex = e.gamepad.index;
       if (this.statusPill && this.statusText) {
@@ -95,6 +109,34 @@ const TeleopPanel = {
         App.log('PS5 Controller Disconnected.');
       }
     });
+  },
+
+  toggleMode() {
+    this.activeMode = this.activeMode === 'ik' ? 'joint' : 'ik';
+    this.updateModeUI();
+    App.log(`Switched Teleoperation Mode to: ${this.activeMode === 'ik' ? 'Cartesian IK Mode' : 'Direct Joint Motor Control Mode'}`);
+  },
+
+  updateModeUI() {
+    if (this.activeMode === 'ik') {
+      if (this.lblModeBtnText) this.lblModeBtnText.textContent = 'Direct Joint Control';
+      if (this.lblDiagramTitle) this.lblDiagramTitle.textContent = 'Cartesian Inverse Kinematics (IK) Teleoperation Diagram';
+      if (this.lblActiveModePill) {
+        this.lblActiveModePill.textContent = 'Active Mode: Cartesian IK';
+        this.lblActiveModePill.className = 'status-pill connected';
+      }
+      if (this.lblDiagramSubtitle) this.lblDiagramSubtitle.textContent = 'Left Stick: X/Y Translation • Right Stick: Z Height • Triggers: Gripper Close/Lock';
+      if (this.imgControllerDiagram) this.imgControllerDiagram.src = 'img/ps5_controller_ik_mode.jpg';
+    } else {
+      if (this.lblModeBtnText) this.lblModeBtnText.textContent = 'Cartesian IK Mode';
+      if (this.lblDiagramTitle) this.lblDiagramTitle.textContent = 'Direct Joint Motor Control Teleoperation Diagram';
+      if (this.lblActiveModePill) {
+        this.lblActiveModePill.textContent = 'Active Mode: Direct Joint Control';
+        this.lblActiveModePill.className = 'status-pill';
+      }
+      if (this.lblDiagramSubtitle) this.lblDiagramSubtitle.textContent = 'Left Stick: Base & Shoulder Servos • Right Stick: Elbow Servo • Triggers: Gripper Close/Lock';
+      if (this.imgControllerDiagram) this.imgControllerDiagram.src = 'img/ps5_controller_joint_mode.jpg';
+    }
   },
 
   async loadKinematicsConfig() {
@@ -168,6 +210,7 @@ const TeleopPanel = {
           this.updateTriggers(gp);
           this.updateButtons(gp);
           this.updateAxes(gp);
+          this.processControlInputs(gp);
         }
       }
       this.animFrameId = requestAnimationFrame(update);
@@ -258,6 +301,65 @@ const TeleopPanel = {
         bar.style.width = `${Math.abs(val) * 50}%`;
       }
       if (valEl) valEl.textContent = val.toFixed(2);
+    }
+  },
+
+  processControlInputs(gp) {
+    // Check Gripper Lock Button (L2)
+    const l2Btn = gp.buttons[6];
+    if (l2Btn && l2Btn.pressed) {
+      this.isGripperLocked = true;
+    }
+
+    // Gripper R2 Trigger Control
+    const r2Val = gp.buttons[7] ? gp.buttons[7].value : 0;
+    if (!this.isGripperLocked) {
+      if (r2Val > 0.05) {
+        // Slowly close gripper from 90° down towards 10°
+        this.targetGripperAngle = Math.max(10, Math.round(90 - (r2Val * 80)));
+      } else {
+        this.targetGripperAngle = 90; // Open position
+      }
+    }
+
+    const currentAngles = [...ServoPanel.currentAngles];
+    currentAngles[5] = this.targetGripperAngle;
+
+    // Wrist Roll (R1 / L1)
+    const r1Pressed = gp.buttons[5] && gp.buttons[5].pressed;
+    const l1Pressed = gp.buttons[4] && gp.buttons[4].pressed;
+    if (r1Pressed) {
+      currentAngles[4] = Math.min(180, currentAngles[4] + 1); // Wrist Roll CW
+    } else if (l1Pressed) {
+      currentAngles[4] = Math.max(0, currentAngles[4] - 1);  // Wrist Roll CCW
+    }
+
+    // Wrist Pitch (Cross X / Circle O)
+    const xPressed = gp.buttons[0] && gp.buttons[0].pressed;
+    const circlePressed = gp.buttons[1] && gp.buttons[1].pressed;
+    if (xPressed) {
+      currentAngles[3] = Math.min(180, currentAngles[3] + 1); // Wrist Pitch Up
+    } else if (circlePressed) {
+      currentAngles[3] = Math.max(0, currentAngles[3] - 1);  // Wrist Pitch Down
+    }
+
+    if (this.activeMode === 'joint') {
+      // Direct Joint Motor Control Mode
+      const lx = this.applyDeadzone(gp.axes[0] || 0); // Base Servo (Ch 0)
+      const ly = this.applyDeadzone(gp.axes[1] || 0); // Shoulder Servo (Ch 1)
+      const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
+
+      if (Math.abs(lx) > 0) {
+        currentAngles[0] = Math.max(0, Math.min(180, Math.round(90 + (lx * 90))));
+      }
+      if (Math.abs(ly) > 0) {
+        currentAngles[1] = Math.max(0, Math.min(180, Math.round(90 + (ly * 90))));
+      }
+      if (Math.abs(ry) > 0) {
+        currentAngles[2] = Math.max(0, Math.min(180, Math.round(90 + (ry * 90))));
+      }
+
+      ServoPanel.setAngles(currentAngles);
     }
   }
 };
