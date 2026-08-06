@@ -143,7 +143,7 @@ const TeleopPanel = {
           2. <strong>Right Stick (Z):</strong> Moves end-effector Z-height up and down towards table.<br>
           3. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>
           4. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>
-          5. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.
+          5. <strong>R2 / L2 Triggers:</strong> R2 slowly drives gripper to 180°; releasing R2 returns gripper to 10°; L2 locks gripper position.
         `;
       }
     } else {
@@ -161,7 +161,7 @@ const TeleopPanel = {
           3. <strong>Right Stick (Y):</strong> Smoothly rotates Elbow Servo (0° to 180°).<br>
           4. <strong>R1 / L1 Bumpers:</strong> Smoothly rotates Wrist Roll CW / CCW.<br>
           5. <strong>Cross (×) / Circle (○) Buttons:</strong> Smoothly rotates Wrist Pitch UP / DOWN.<br>
-          6. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.
+          6. <strong>R2 / L2 Triggers:</strong> R2 slowly drives gripper towards 180°; releasing R2 returns gripper to 10°; L2 locks gripper position.
         `;
       }
     }
@@ -374,7 +374,6 @@ const TeleopPanel = {
 
     // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls,
     // sync PS5 integrated state with current ServoPanel sliders/angles.
-    // This prevents snapping on first PS5 touch & prevents snapping back after manual slider drags!
     if (!isUserInteracting && typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
       this.integratedAngles = [...ServoPanel.currentAngles];
       this.smoothedAngles = [...ServoPanel.currentAngles];
@@ -403,11 +402,14 @@ const TeleopPanel = {
       this.integratedAngles[4] = Math.max(0, this.integratedAngles[4] - stepSpeed);
     }
 
-    // Gripper Control (R2 Trigger)
+    // Gripper Control (R2 Trigger): Resting at 10° -> Drives slowly towards 180° when held -> Returns slowly to 10° when released
     if (!this.isGripperLocked) {
       if (r2Val > 0.05) {
-        // Slowly close gripper from 90° down towards 10°
-        this.integratedAngles[5] = Math.max(10, this.integratedAngles[5] - (r2Val * stepSpeed * 1.5));
+        // When R2 is pressed, start going towards 180° slowly
+        this.integratedAngles[5] = Math.min(180, this.integratedAngles[5] + (r2Val * stepSpeed * 1.5));
+      } else {
+        // When R2 is released, start going back to 10° slowly
+        this.integratedAngles[5] = Math.max(10, this.integratedAngles[5] - (stepSpeed * 1.5));
       }
     }
 
@@ -432,7 +434,6 @@ const TeleopPanel = {
     }
 
     // ONLY dispatch teleoperation angles when user is actively giving control inputs
-    // This allows automated routines ("Lock 90°", "Home", "Joint Sweep Test") to run without being overridden!
     if (this.activeMode === 'joint' && isUserInteracting) {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
         ServoPanel.setAngles(this.smoothedAngles);
