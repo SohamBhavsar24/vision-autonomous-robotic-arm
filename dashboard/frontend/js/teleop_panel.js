@@ -83,13 +83,6 @@ const TeleopPanel = {
       this.btnSaveKinematics.addEventListener('click', () => this.saveKinematicsConfig());
     }
 
-    if (this.btnToggleMode) {
-      this.btnToggleMode.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.toggleMode();
-      });
-    }
-
     window.addEventListener('gamepadconnected', (e) => {
       this.gamepadIndex = e.gamepad.index;
       if (this.statusPill && this.statusText) {
@@ -389,6 +382,16 @@ const TeleopPanel = {
     }
   }
 };
+
+// Global event delegation for 100% reliable click interception
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('#btnToggleTeleopMode');
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    TeleopPanel.toggleMode();
+  }
+});
 
 window.toggleTeleopMode = function() {
   TeleopPanel.toggleMode();
