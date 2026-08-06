@@ -1,5 +1,15 @@
 [
   {
+    "id": "entry-10",
+    "date": "Friday, 07th August 2026",
+    "title": "Phase C Demonstration Dataset Recording Engine, 30Hz Trajectory Sampler & Smooth Replay Architecture",
+    "paragraphs": [
+      "In today's session, we designed and deployed the Phase C Demonstration Dataset Recording and Trajectory Replay System on the Web Control Dashboard (http://localhost:8050) Dataset Management panel. The engine implements a real-time 30Hz trajectory sampler that records human teleoperation demonstration episodes into persistent time-series JSON arrays containing 6-joint angle vectors [θ1, θ2, θ3, θ4, θ5, θ6]. We implemented automatic smooth zero-jerk auto-homing upon stopping a recording session, ensuring the physical arm safely resets to Home Position while excluding post-task homing motions from the training dataset to maintain pure goal-directed demonstration data.",
+      "Furthermore, we built a comprehensive trajectory playback system allowing 1-click smooth demonstration replay across all 6 servos with live frame progress status and 6-joint telemetry overlays. We upgraded the PS5 teleoperation engine with state-machine gripper locking (L2 toggle / R2 continuous speed control) and applied a 5-degree/hard-limit endpoint threshold snap across all 6 servos to eliminate asymptotic low-pass filter rounding shortfalls. All demonstration datasets persist across backend server files (dataset_episodes.json) and client-side storage, fully locking our software and control architecture in preparation for physical 6-DOF arm wiring and assembly."
+    ],
+    "attachment": null
+  },
+  {
     "id": "entry-9",
     "date": "Thursday, 06th August 2026",
     "title": "Cloud Storage Media Backend, Mismatched Key Normalization & Dual-Mode Teleoperation",
