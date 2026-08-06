@@ -568,15 +568,25 @@
       return DEFAULT_ENTRIES;
     }
 
+    const SUPABASE_URL = 'https://pzewxynfhrylnqbkkeeq.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_5OpuR0lsXoop77YXHtP01g_owDDLGe_';
+
     async function syncBackendJournal() {
       const targets = [
+        `${SUPABASE_URL}/rest/v1/journal_entries?select=*&order=created_at.desc`,
         'https://vision-autonomous-robotic-arm.vercel.app/api/journal',
         '/api/journal',
         'dashboard/backend/journal_entries.json'
       ];
       for (const t of targets) {
         try {
-          const res = await fetch(t);
+          const isSupabase = t.includes('supabase.co');
+          const headers = isSupabase ? {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`
+          } : {};
+
+          const res = await fetch(t, { headers });
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
@@ -598,6 +608,18 @@
         entries = entries.filter(e => e.id !== id);
         localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
         renderJournal();
+        
+        // Delete from Supabase REST API
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/journal_entries?id=eq.${id}`, {
+            method: 'DELETE',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+          });
+        } catch (e) {}
+
         await saveEntries(entries);
       }
     }
@@ -606,6 +628,20 @@
       try {
         localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
       } catch (err) {}
+
+      // Upsert into Supabase REST API
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/journal_entries`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify(entries)
+        });
+      } catch (e) {}
 
       const targets = [
         'https://vision-autonomous-robotic-arm.vercel.app/api/journal',

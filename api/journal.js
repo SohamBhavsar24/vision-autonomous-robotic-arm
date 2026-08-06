@@ -1,64 +1,36 @@
-// Vercel Serverless API Endpoint with Self-Healing Cloud Persistence
+// Vercel Serverless API Endpoint with Supabase PostgreSQL Persistence
 // Path: api/journal.js
 
-let currentBlobUrl = 'https://jsonblob.com/api/jsonBlob/019fb297-c286-7609-8165-90d10a10452c';
-let memoryEntriesCache = null;
-
-async function getOrCreateBlobUrl() {
-  if (currentBlobUrl) {
-    try {
-      const checkRes = await fetch(currentBlobUrl);
-      if (checkRes.ok) return currentBlobUrl;
-    } catch (e) {}
-  }
-
-  // Create new blob if 404 or expired
-  try {
-    const createRes = await fetch('https://jsonblob.com/api/jsonBlob', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(memoryEntriesCache || [])
-    });
-    if (createRes.ok) {
-      const loc = createRes.headers.get('Location');
-      if (loc) {
-        currentBlobUrl = loc.startsWith('http') ? loc : `https://jsonblob.com${loc}`;
-        return currentBlobUrl;
-      }
-    }
-  } catch (e) {}
-
-  return currentBlobUrl;
-}
+const SUPABASE_URL = 'https://pzewxynfhrylnqbkkeeq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_5OpuR0lsXoop77YXHtP01g_owDDLGe_';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, apikey, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  const blobUrl = await getOrCreateBlobUrl();
+  const endpoint = `${SUPABASE_URL}/rest/v1/journal_entries`;
 
   if (req.method === 'GET') {
     try {
-      if (blobUrl) {
-        const dbRes = await fetch(blobUrl);
-        if (dbRes.ok) {
-          const data = await dbRes.json();
-          if (Array.isArray(data) && data.length > 0) {
-            memoryEntriesCache = data;
-            return res.status(200).json(data);
-          }
+      const response = await fetch(`${endpoint}?select=*&order=created_at.desc`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          return res.status(200).json(data);
         }
       }
     } catch (e) {}
-
-    if (memoryEntriesCache && memoryEntriesCache.length > 0) {
-      return res.status(200).json(memoryEntriesCache);
-    }
 
     return res.status(200).json([]);
   }
@@ -71,25 +43,36 @@ export default async function handler(req, res) {
       payload = bodyData;
     } else if (bodyData && Array.isArray(bodyData.entries)) {
       payload = bodyData.entries;
+    } else if (bodyData && bodyData.id) {
+      payload = [bodyData];
     }
 
     if (!payload) {
-      return res.status(400).json({ error: 'Missing or invalid entries array' });
+      return res.status(400).json({ error: 'Missing or invalid entries payload' });
     }
 
-    memoryEntriesCache = payload;
-
     try {
-      if (blobUrl) {
-        await fetch(blobUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      }
-    } catch (err) {}
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates,return=representation'
+        },
+        body: JSON.stringify(payload)
+      });
 
-    return res.status(200).json({ status: 'saved', count: payload.length });
+      if (response.ok) {
+        const saved = await response.json();
+        return res.status(200).json({ status: 'saved', count: saved.length, data: saved });
+      } else {
+        const errText = await response.text();
+        return res.status(500).json({ error: errText });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 
   res.status(405).end();
