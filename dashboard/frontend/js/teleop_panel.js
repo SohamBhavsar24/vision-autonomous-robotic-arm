@@ -353,11 +353,6 @@ const TeleopPanel = {
   },
 
   processControlInputs(gp) {
-    // Synchronize initial integrated angles from ServoPanel if available
-    if (typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
-      // Keep integrated base state in sync when not moving
-    }
-
     const stepSpeed = 1.0; // Degrees per frame at full stick deflection (~60°/sec)
 
     // Button state extraction
@@ -368,6 +363,14 @@ const TeleopPanel = {
     const l2Pressed = this.isButtonPressed(gp.buttons[6]);     // L2 Trigger -> Gripper Lock Toggle
     const r2Btn = gp.buttons[7];
     const r2Val = r2Btn ? (r2Btn.value !== undefined ? r2Btn.value : (r2Btn.pressed ? 1 : 0)) : 0;
+
+    const lx = this.applyDeadzone(gp.axes[0] || 0); // Base Servo (Ch 0)
+    const ly = this.applyDeadzone(gp.axes[1] || 0); // Shoulder Servo (Ch 1)
+    const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
+
+    // Check if the user is actively manipulating a stick or button
+    const isUserInteracting = (Math.abs(lx) > 0) || (Math.abs(ly) > 0) || (Math.abs(ry) > 0) ||
+                              xPressed || circlePressed || r1Pressed || l1Pressed || (r2Val > 0.05) || l2Pressed;
 
     // Handle Gripper Lock Toggle (L2)
     if (l2Pressed && !this.wasL2Pressed) {
@@ -397,19 +400,11 @@ const TeleopPanel = {
       if (r2Val > 0.05) {
         // Slowly close gripper from 90° down towards 10°
         this.integratedAngles[5] = Math.max(10, this.integratedAngles[5] - (r2Val * stepSpeed * 1.5));
-      } else {
-        // Slowly open gripper back to 90°
-        this.integratedAngles[5] = Math.min(90, this.integratedAngles[5] + (stepSpeed * 1.5));
       }
     }
 
     if (this.activeMode === 'joint') {
       // Direct Joint Motor Control Mode (Velocity Rate Integrator)
-      const lx = this.applyDeadzone(gp.axes[0] || 0); // Base Servo (Ch 0)
-      const ly = this.applyDeadzone(gp.axes[1] || 0); // Shoulder Servo (Ch 1)
-      const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
-
-      // Smooth Velocity Integration: stick deflection controls speed of angle movement
       if (Math.abs(lx) > 0) {
         this.integratedAngles[0] = Math.max(0, Math.min(180, this.integratedAngles[0] + (lx * stepSpeed * 1.5)));
       }
@@ -428,7 +423,9 @@ const TeleopPanel = {
       this.smoothedAngles[i] = Math.round((targetVal * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
     }
 
-    if (this.activeMode === 'joint') {
+    // ONLY dispatch teleoperation angles when user is actively giving control inputs
+    // This allows automated routines ("Lock 90°", "Home", "Joint Sweep Test") to run without being overridden!
+    if (this.activeMode === 'joint' && isUserInteracting) {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
         ServoPanel.setAngles(this.smoothedAngles);
       }

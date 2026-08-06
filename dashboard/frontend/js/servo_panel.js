@@ -61,6 +61,10 @@ const ServoPanel = {
       this.btnLock90.addEventListener('click', () => {
         App.sendWS('lock90');
         App.log('Action: Smooth transition to Lock All at 90°...');
+        if (window.TeleopPanel) {
+          window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 90];
+          window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 90];
+        }
       });
     }
 
@@ -69,6 +73,10 @@ const ServoPanel = {
       this.btnHome.addEventListener('click', () => {
         App.sendWS('home');
         App.log('Action: Smooth transition to Home Position...');
+        if (window.TeleopPanel) {
+          window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 10];
+          window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 10];
+        }
       });
     }
 
@@ -157,6 +165,10 @@ const ServoPanel = {
       return;
     }
     this.setSlidersFromAngles(angles);
+    if (window.TeleopPanel) {
+      window.TeleopPanel.integratedAngles = [...angles];
+      window.TeleopPanel.smoothedAngles = [...angles];
+    }
   },
 
   /* Fetch list of available serial ports via REST API */
