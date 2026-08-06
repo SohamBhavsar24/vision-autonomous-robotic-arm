@@ -121,9 +121,9 @@ const TeleopPanel = {
     const noteText = document.getElementById('lblTeleopNoteText');
 
     if (this.activeMode === 'ik') {
-      if (btnText) btnText.textContent = 'Cartesian IK Mode';
+      if (btnText) btnText.textContent = 'Direct Joint Control Mode →';
       if (pill) {
-        pill.textContent = 'Cartesian IK';
+        pill.textContent = 'Active: Cartesian IK';
         pill.style.background = 'rgba(46, 125, 50, 0.15)';
         pill.style.color = '#2E7D32';
       }
@@ -138,9 +138,9 @@ const TeleopPanel = {
         `;
       }
     } else {
-      if (btnText) btnText.textContent = 'Direct Joint Control Mode';
+      if (btnText) btnText.textContent = 'Cartesian IK Mode →';
       if (pill) {
-        pill.textContent = 'Direct Joint Control';
+        pill.textContent = 'Active: Direct Joint Control';
         pill.style.background = 'rgba(196, 120, 74, 0.15)';
         pill.style.color = 'var(--accent-primary)';
       }

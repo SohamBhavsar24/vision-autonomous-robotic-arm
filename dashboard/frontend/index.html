@@ -393,11 +393,11 @@
             <p class="card-subtitle">Connect your PS5 controller via Bluetooth or USB to drive the arm in Cartesian IK or Direct Joint Mode.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="btn btn-primary" id="btnToggleTeleopMode" onclick="toggleTeleopMode()" style="font-weight: 600; cursor: pointer;">
-              🎮 Mode: <span id="lblModeBtnText">Cartesian IK Mode</span>
+            <button class="btn btn-primary" id="btnToggleTeleopMode" onclick="toggleTeleopMode()" style="font-weight: 600; cursor: pointer; padding: 10px 18px; font-size: 0.85rem;">
+              🎮 Click to Switch: <span id="lblModeBtnText">Direct Joint Control Mode →</span>
             </button>
-            <div class="status-pill connected" id="lblActiveModePill" style="font-weight: 600;">
-              Cartesian IK
+            <div class="status-pill connected" id="lblActiveModePill" style="font-weight: 600; font-size: 0.85rem; padding: 8px 14px;">
+              Active: Cartesian IK
             </div>
             <div class="status-pill" id="ps5StatusPill">
               <span class="status-dot"></span>
