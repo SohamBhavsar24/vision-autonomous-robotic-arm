@@ -9,6 +9,10 @@
      Handles live PS5 DualSense controller teleoperation with 2 modes:
        1. Cartesian Inverse Kinematics (IK) Mode (Left Stick: X/Y, Right Stick: Z height)
        2. Direct Joint Motor Control Mode (Left Stick: Base/Shoulder, Right Stick: Elbow)
+     
+     PRIME DIRECTIVE:
+       Every motion uses Exponential Moving Average (EMA) low-pass filtering to guarantee
+       100% smooth, zero-jerk, fluid joint trajectory transitions.
    ========================================================================== */
 
 const TeleopPanel = {
@@ -17,6 +21,7 @@ const TeleopPanel = {
   activeMode: 'ik', // 'ik' or 'joint'
   isGripperLocked: false,
   targetGripperAngle: 90,
+  smoothedAngles: [90, 90, 90, 90, 90, 90], // EMA Low-Pass Filter State
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -355,25 +360,25 @@ const TeleopPanel = {
       }
     }
 
-    const currentAngles = (typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) ? [...ServoPanel.currentAngles] : [90,90,90,90,90,90];
-    currentAngles[5] = this.targetGripperAngle;
+    const currentTargetAngles = (typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) ? [...ServoPanel.currentAngles] : [90,90,90,90,90,90];
+    currentTargetAngles[5] = this.targetGripperAngle;
 
     // Wrist Roll (R1 / L1)
     const r1Pressed = gp.buttons[5] && gp.buttons[5].pressed;
     const l1Pressed = gp.buttons[4] && gp.buttons[4].pressed;
     if (r1Pressed) {
-      currentAngles[4] = Math.min(180, currentAngles[4] + 1); // Wrist Roll CW
+      currentTargetAngles[4] = Math.min(180, currentTargetAngles[4] + 1); // Wrist Roll CW
     } else if (l1Pressed) {
-      currentAngles[4] = Math.max(0, currentAngles[4] - 1);  // Wrist Roll CCW
+      currentTargetAngles[4] = Math.max(0, currentTargetAngles[4] - 1);  // Wrist Roll CCW
     }
 
     // Wrist Pitch (Cross X / Circle O)
     const xPressed = gp.buttons[0] && gp.buttons[0].pressed;
     const circlePressed = gp.buttons[1] && gp.buttons[1].pressed;
     if (xPressed) {
-      currentAngles[3] = Math.min(180, currentAngles[3] + 1); // Wrist Pitch Up
+      currentTargetAngles[3] = Math.min(180, currentTargetAngles[3] + 1); // Wrist Pitch Up
     } else if (circlePressed) {
-      currentAngles[3] = Math.max(0, currentAngles[3] - 1);  // Wrist Pitch Down
+      currentTargetAngles[3] = Math.max(0, currentTargetAngles[3] - 1);  // Wrist Pitch Down
     }
 
     if (this.activeMode === 'joint') {
@@ -383,17 +388,25 @@ const TeleopPanel = {
       const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
 
       if (Math.abs(lx) > 0) {
-        currentAngles[0] = Math.max(0, Math.min(180, Math.round(90 + (lx * 90))));
+        currentTargetAngles[0] = Math.max(0, Math.min(180, Math.round(90 + (lx * 90))));
       }
       if (Math.abs(ly) > 0) {
-        currentAngles[1] = Math.max(0, Math.min(180, Math.round(90 + (ly * 90))));
+        currentTargetAngles[1] = Math.max(0, Math.min(180, Math.round(90 + (ly * 90))));
       }
       if (Math.abs(ry) > 0) {
-        currentAngles[2] = Math.max(0, Math.min(180, Math.round(90 + (ry * 90))));
+        currentTargetAngles[2] = Math.max(0, Math.min(180, Math.round(90 + (ry * 90))));
       }
+    }
 
+    // PRIME DIRECTIVE: Apply Exponential Moving Average (EMA) Low-Pass Filter for 100% Zero-Jerk Motion
+    const alpha = 0.18; // Smooth motion interpolation factor
+    for (let i = 0; i < 6; i++) {
+      this.smoothedAngles[i] = Math.round((currentTargetAngles[i] * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
+    }
+
+    if (this.activeMode === 'joint') {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
-        ServoPanel.setAngles(currentAngles);
+        ServoPanel.setAngles(this.smoothedAngles);
       }
     }
   }

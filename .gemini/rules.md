@@ -1,5 +1,11 @@
 # Antigravity Rules — Vision-Based Autonomous Robotic Arm Project
 
+## ⚠️ PRIME DIRECTIVE (THE MOST IMPORTANT RULE OF THE ENTIRE PROJECT)
+
+**EVERY SINGLE MOVEMENT of the 6-DOF robotic arm — no matter when, where, or how it is triggered (PS5 teleoperation joysticks, web sliders, automated routines, Home, Lock 90°, Cartesian IK mode, or autonomous inference) — MUST ALWAYS BE EXTREMELY SMOOTH WITH ZERO SUDDEN MOVEMENTS, ZERO JERK, AND ZERO CURRENT SPIKES.**
+
+---
+
 ## MANDATORY: Context Loading
 
 **Before responding to ANY user request, you MUST:**

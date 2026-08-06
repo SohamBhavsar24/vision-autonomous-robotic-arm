@@ -139,3 +139,12 @@
 - **Decision:** Define the platform corner (where ArUco Marker 2 will be placed) as the World Origin $(X_w=0, Y_w=0)$. The entire $50\text{cm} \times 50\text{cm}$ board operates strictly in positive coordinates ($X_w \in [0, 50]$, $Y_w \in [0, 50]$). The exact physical offset of the Robot Base $(X_{\text{base}}, Y_{\text{base}})$ will be measured and registered in software once physical mounting is completed.
 - **Alternatives Rejected:** Defining the centered Robot Base as $(0, 0)$ which created negative $X$ values for the left side of the platform.
 - **Rationale:** Standard dual-frame robotics transformation: Vision detects all objects in positive World Coordinates $(X_w, Y_w)$, and Python converts to Robot Base coordinates ($X_r = X_w - X_{\text{base}}$, $Y_r = Y_w - Y_{\text{base}}$) before passing to the Inverse Kinematics solver.
+
+---
+
+## Decision #24 — Prime Engineering Directive: 100% Smooth Motion Policy
+- **Date:** 2026-08-06
+- **Status:** LOCKED (THE MOST IMPORTANT RULE OF THE PROJECT)
+- **Decision:** Every single movement of the 6-DOF robotic arm — across PS5 teleoperation joysticks, web control sliders, automated routines (Home, Lock 90°, Solo Sweep), IK Cartesian mode, and autonomous inference — MUST ALWAYS pass through Exponential Moving Average (EMA) low-pass filtering ($\alpha = 0.18$) and Cosine S-curve trajectory interpolation. Zero sudden movements, zero snaps, zero jerks, and zero current spikes are permitted under any condition.
+- **Rationale:** Protects MG996R and MG90S high-torque metal gears from backlash wear, prevents power supply brownouts, guarantees safety, and produces ultra-smooth, organic teleoperation demonstrations for imitation learning dataset collection.
+
