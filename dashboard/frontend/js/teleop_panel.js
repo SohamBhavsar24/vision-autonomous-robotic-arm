@@ -434,11 +434,17 @@ const TeleopPanel = {
       }
     }
 
-    // PRIME DIRECTIVE: Apply Exponential Moving Average (EMA) Low-Pass Filter for 100% Zero-Jerk Motion
-    const alpha = 0.20; // Smooth motion interpolation factor
+    // PRIME DIRECTIVE: Apply Exponential Moving Average (EMA) Low-Pass Filter with exact endpoint threshold snapping
+    const alpha = 0.25; // Smooth motion interpolation factor
     for (let i = 0; i < 6; i++) {
       const targetVal = Math.round(this.integratedAngles[i]);
-      this.smoothedAngles[i] = Math.round((targetVal * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
+      const diff = Math.abs(targetVal - this.smoothedAngles[i]);
+      if (diff <= 3) {
+        // Snap to exact target integer when within 3° threshold to prevent asymptotic integer rounding lock (e.g. 12°, 13°, 178°, 2°)
+        this.smoothedAngles[i] = targetVal;
+      } else {
+        this.smoothedAngles[i] = Math.round((targetVal * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
+      }
     }
 
     // ONLY dispatch teleoperation angles when user is actively giving control inputs or gripper is traveling
