@@ -89,7 +89,9 @@ const TeleopPanel = {
         this.statusPill.className = 'status-pill connected';
         this.statusText.textContent = `Connected: ${e.gamepad.id}`;
       }
-      if (window.App && App.log) App.log(`PS5 Controller Connected: ${e.gamepad.id}`);
+      if (window.App && App.log) {
+        App.log(`PS5 DualSense Controller Connected: ${e.gamepad.id}`);
+      }
     });
 
     window.addEventListener('gamepaddisconnected', (e) => {
@@ -99,7 +101,9 @@ const TeleopPanel = {
           this.statusPill.className = 'status-pill';
           this.statusText.textContent = 'PS5 Controller Disconnected';
         }
-        if (window.App && App.log) App.log('PS5 Controller Disconnected.');
+        if (window.App && App.log) {
+          App.log('PS5 DualSense Controller Disconnected.');
+        }
       }
     });
   },
@@ -231,6 +235,16 @@ const TeleopPanel = {
           this.updateAxes(gp);
           this.processControlInputs(gp);
         }
+      } else {
+        // Scan for gamepads if not yet indexed
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        for (let i = 0; i < gamepads.length; i++) {
+          if (gamepads[i]) {
+            this.gamepadIndex = gamepads[i].index;
+            if (window.App && App.log) App.log(`PS5 DualSense Controller Auto-Detected: ${gamepads[i].id}`);
+            break;
+          }
+        }
       }
       this.animFrameId = requestAnimationFrame(update);
     };
@@ -341,7 +355,7 @@ const TeleopPanel = {
       }
     }
 
-    const currentAngles = typeof ServoPanel !== 'undefined' ? [...ServoPanel.currentAngles] : [90,90,90,90,90,90];
+    const currentAngles = (typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) ? [...ServoPanel.currentAngles] : [90,90,90,90,90,90];
     currentAngles[5] = this.targetGripperAngle;
 
     // Wrist Roll (R1 / L1)
@@ -378,7 +392,9 @@ const TeleopPanel = {
         currentAngles[2] = Math.max(0, Math.min(180, Math.round(90 + (ry * 90))));
       }
 
-      if (typeof ServoPanel !== 'undefined') ServoPanel.setAngles(currentAngles);
+      if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
+        ServoPanel.setAngles(currentAngles);
+      }
     }
   }
 };

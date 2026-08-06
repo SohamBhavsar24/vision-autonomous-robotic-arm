@@ -8,21 +8,15 @@
    PURPOSE:
      Manages 6-DOF joint sliders, Lock 90° assembly mode, Home position button,
      Emergency Stop button, and Serial port connection management.
-
-   RELATED DECISIONS:
-     - Decision #5: Safety System (Emergency Stop)
-     - Decision #6: Serial Protocol (Binary 6-byte streaming)
-     - Decision #15: Arduino CLI Port Management
-     - Decision #19: Active Physical Assembly Tool
-     - Decision #20: Smooth S-Curve Trajectory Interpolation & Zero-Jerk Motion
    ========================================================================== */
 
 const ServoPanel = {
   NUM_SERVOS: 6,
   sliders: [],
   valueDisplays: [],
+  currentAngles: [90, 90, 90, 90, 90, 10],
   lastSendTime: 0,
-  sendIntervalMs: 33, // ~30Hz send rate limit to prevent packet lag
+  sendIntervalMs: 33, // ~30Hz send rate limit
 
   init() {
     this.cacheDOM();
@@ -52,7 +46,8 @@ const ServoPanel = {
     for (let i = 0; i < this.NUM_SERVOS; i++) {
       if (this.sliders[i]) {
         this.sliders[i].addEventListener('input', () => {
-          const val = this.sliders[i].value;
+          const val = parseInt(this.sliders[i].value, 10);
+          this.currentAngles[i] = val;
           if (this.valueDisplays[i]) {
             this.valueDisplays[i].textContent = `${val}°`;
           }
@@ -125,7 +120,7 @@ const ServoPanel = {
   getAnglesFromSliders() {
     const angles = [];
     for (let i = 0; i < this.NUM_SERVOS; i++) {
-      angles.push(parseInt(this.sliders[i] ? this.sliders[i].value : 90, 10));
+      angles.push(parseInt(this.sliders[i] ? this.sliders[i].value : this.currentAngles[i], 10));
     }
     return angles;
   },
@@ -133,9 +128,16 @@ const ServoPanel = {
   /* Set sliders from an array of angles */
   setSlidersFromAngles(angles) {
     for (let i = 0; i < Math.min(angles.length, this.NUM_SERVOS); i++) {
+      this.currentAngles[i] = angles[i];
       if (this.sliders[i]) this.sliders[i].value = angles[i];
       if (this.valueDisplays[i]) this.valueDisplays[i].textContent = `${angles[i]}°`;
     }
+  },
+
+  /* Called by TeleopPanel in Direct Joint Control Mode to drive sliders & hardware */
+  setAngles(angles) {
+    this.setSlidersFromAngles(angles);
+    this.throttledSendAngles();
   },
 
   /* Throttled WebSocket sender to maintain ~30Hz packet rate */
@@ -234,7 +236,7 @@ const ServoPanel = {
   }
 };
 
-// Export to window scope so app.js can call ServoPanel.updateSlidersFromBackend
+// Export to window scope
 window.ServoPanel = ServoPanel;
 
 document.addEventListener('DOMContentLoaded', () => {
