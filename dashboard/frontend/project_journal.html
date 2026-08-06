@@ -453,6 +453,15 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-9",
+        date: "Thursday, 06th August 2026",
+        title: "Cloud Storage Media Backend, Mismatched Key Normalization & Dual-Mode Teleoperation",
+        paragraphs: [
+          "In today's session, we completed a major infrastructure upgrade by transitioning our project journal backend to a full-featured cloud stack powered by Supabase PostgreSQL (journal_entries table) and Supabase Cloud Storage (journal-media public bucket). We resolved a critical PostgREST database issue where mismatched JSON keys across log entry arrays caused database upsert rejections. By implementing PostgREST key normalization, we established 100% reliable 0.1-second text and media sync across mobile PWAs, serverless Vercel APIs, and local control dashboards, complete with direct support for PDF documents, Word logbooks, high-resolution photos, and HTML5 video players.",
+          "Additionally, we upgraded the Web Control Dashboard (http://localhost:8050) Teleoperation panel by constructing a Dual-Mode Teleoperation Engine. The system now supports seamless 1-click toggling between Cartesian Inverse Kinematics (IK) Mode (allowing joystick translation in X, Y, Z space) and Direct Joint Motor Control Mode (allowing direct individual servo angle control for physical arm testing). With dual control modes, live PS5 controller input mapping, active status pills, and complete physical wiring specifications defined for the Arduino Uno, PCA9685 driver, external 5V/6V power supply, and 6 servos, all software and database systems are fully locked in preparation for tomorrow's physical hardware assembly and servo horn alignment."
+        ]
+      },
+      {
         id: "entry-8",
         date: "Thursday, 30th July 2026",
         title: "Secondary Academic Logbook PDF Integration & Serial Device Filtering Decision",
