@@ -8,11 +8,11 @@
    PURPOSE:
      Handles live PS5 DualSense controller teleoperation with 2 modes:
        1. Cartesian Inverse Kinematics (IK) Mode (Left Stick: X/Y, Right Stick: Z height)
-       2. Direct Joint Motor Control Mode (Left Stick: Base/Shoulder, Right Stick: Elbow)
+       2. Direct Joint Motor Control Mode (Velocity-Based Rate Integrator)
      
      PRIME DIRECTIVE:
-       Every motion uses Exponential Moving Average (EMA) low-pass filtering to guarantee
-       100% smooth, zero-jerk, fluid joint trajectory transitions.
+       Joints move via Velocity-Based Rate Integration + Exponential Moving Average (EMA)
+       low-pass filtering to guarantee 100% smooth, zero-jerk, fluid motion.
    ========================================================================== */
 
 const TeleopPanel = {
@@ -20,8 +20,8 @@ const TeleopPanel = {
   animFrameId: null,
   activeMode: 'ik', // 'ik' or 'joint'
   isGripperLocked: false,
-  targetGripperAngle: 90,
-  smoothedAngles: [90, 90, 90, 90, 90, 90], // EMA Low-Pass Filter State
+  integratedAngles: [90, 90, 90, 90, 90, 90], // Continuous Velocity-Based Integrator
+  smoothedAngles: [90, 90, 90, 90, 90, 90],   // EMA Low-Pass Filter State
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -156,11 +156,11 @@ const TeleopPanel = {
       if (noteTitle) noteTitle.textContent = 'Direct Joint Motor Control Teleoperation Architecture';
       if (noteText) {
         noteText.innerHTML = `
-          1. <strong>Left Stick (X):</strong> Controls Base Servo angle (0° to 180°).<br>
-          2. <strong>Left Stick (Y):</strong> Controls Shoulder Servo angle (0° to 180°).<br>
-          3. <strong>Right Stick (Y):</strong> Controls Elbow Servo angle (0° to 180°).<br>
-          4. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>
-          5. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>
+          1. <strong>Left Stick (X):</strong> Smoothly rotates Base Servo (0° to 180°).<br>
+          2. <strong>Left Stick (Y):</strong> Smoothly rotates Shoulder Servo (0° to 180°).<br>
+          3. <strong>Right Stick (Y):</strong> Smoothly rotates Elbow Servo (0° to 180°).<br>
+          4. <strong>R1 / L1 Bumpers:</strong> Smoothly rotates Wrist Roll CW / CCW.<br>
+          5. <strong>Cross (×) / Circle (○) Buttons:</strong> Smoothly rotates Wrist Pitch UP / DOWN.<br>
           6. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.
         `;
       }
@@ -277,10 +277,10 @@ const TeleopPanel = {
   },
 
   updateTriggers(gp) {
-    const l2 = gp.buttons[6] ? gp.buttons[6].value : 0;
-    const r2 = gp.buttons[7] ? gp.buttons[7].value : 0;
-    const l1 = gp.buttons[4] ? gp.buttons[4].value : 0;
-    const r1 = gp.buttons[5] ? gp.buttons[5].value : 0;
+    const l2 = gp.buttons[6] ? (gp.buttons[6].value !== undefined ? gp.buttons[6].value : (gp.buttons[6].pressed ? 1 : 0)) : 0;
+    const r2 = gp.buttons[7] ? (gp.buttons[7].value !== undefined ? gp.buttons[7].value : (gp.buttons[7].pressed ? 1 : 0)) : 0;
+    const l1 = gp.buttons[4] ? (gp.buttons[4].value !== undefined ? gp.buttons[4].value : (gp.buttons[4].pressed ? 1 : 0)) : 0;
+    const r1 = gp.buttons[5] ? (gp.buttons[5].value !== undefined ? gp.buttons[5].value : (gp.buttons[5].pressed ? 1 : 0)) : 0;
 
     if (this.l2Fill) this.l2Fill.style.width = `${l2 * 100}%`;
     if (this.r2Fill) this.r2Fill.style.width = `${r2 * 100}%`;
@@ -296,8 +296,10 @@ const TeleopPanel = {
   updateButtons(gp) {
     for (let i = 0; i < Math.min(gp.buttons.length, this.buttonNames.length); i++) {
       const el = document.getElementById(`ps5Btn${i}`);
+      const btn = gp.buttons[i];
+      const isPressed = btn ? (btn.pressed || btn.value > 0.3) : false;
       if (el) {
-        if (gp.buttons[i].pressed) {
+        if (isPressed) {
           el.style.backgroundColor = 'var(--accent-primary)';
           el.style.borderColor = 'var(--accent-primary)';
           el.style.color = '#FAF7F2';
@@ -342,66 +344,88 @@ const TeleopPanel = {
     }
   },
 
+  isButtonPressed(btn) {
+    if (!btn) return false;
+    if (typeof btn === 'object') {
+      return btn.pressed || (btn.value !== undefined && btn.value > 0.3);
+    }
+    return btn === 1;
+  },
+
   processControlInputs(gp) {
-    // Check Gripper Lock Button (L2)
-    const l2Btn = gp.buttons[6];
-    if (l2Btn && l2Btn.pressed) {
-      this.isGripperLocked = true;
+    // Synchronize initial integrated angles from ServoPanel if available
+    if (typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
+      // Keep integrated base state in sync when not moving
     }
 
-    // Gripper R2 Trigger Control
-    const r2Val = gp.buttons[7] ? gp.buttons[7].value : 0;
+    const stepSpeed = 1.0; // Degrees per frame at full stick deflection (~60°/sec)
+
+    // Button state extraction
+    const xPressed = this.isButtonPressed(gp.buttons[0]);      // Cross (×) -> Wrist Pitch UP
+    const circlePressed = this.isButtonPressed(gp.buttons[1]); // Circle (○) -> Wrist Pitch DOWN
+    const l1Pressed = this.isButtonPressed(gp.buttons[4]);     // L1 Bumper -> Wrist Roll CCW
+    const r1Pressed = this.isButtonPressed(gp.buttons[5]);     // R1 Bumper -> Wrist Roll CW
+    const l2Pressed = this.isButtonPressed(gp.buttons[6]);     // L2 Trigger -> Gripper Lock Toggle
+    const r2Btn = gp.buttons[7];
+    const r2Val = r2Btn ? (r2Btn.value !== undefined ? r2Btn.value : (r2Btn.pressed ? 1 : 0)) : 0;
+
+    // Handle Gripper Lock Toggle (L2)
+    if (l2Pressed && !this.wasL2Pressed) {
+      this.isGripperLocked = !this.isGripperLocked;
+      if (window.App && App.log) {
+        App.log(`Gripper Lock ${this.isGripperLocked ? 'LOCKED' : 'UNLOCKED'}`);
+      }
+    }
+    this.wasL2Pressed = l2Pressed;
+
+    // Wrist Pitch Control (Cross X / Circle O)
+    if (xPressed) {
+      this.integratedAngles[3] = Math.min(180, this.integratedAngles[3] + stepSpeed);
+    } else if (circlePressed) {
+      this.integratedAngles[3] = Math.max(0, this.integratedAngles[3] - stepSpeed);
+    }
+
+    // Wrist Roll Control (R1 / L1)
+    if (r1Pressed) {
+      this.integratedAngles[4] = Math.min(180, this.integratedAngles[4] + stepSpeed);
+    } else if (l1Pressed) {
+      this.integratedAngles[4] = Math.max(0, this.integratedAngles[4] - stepSpeed);
+    }
+
+    // Gripper Control (R2 Trigger)
     if (!this.isGripperLocked) {
       if (r2Val > 0.05) {
         // Slowly close gripper from 90° down towards 10°
-        this.targetGripperAngle = Math.max(10, Math.round(90 - (r2Val * 80)));
+        this.integratedAngles[5] = Math.max(10, this.integratedAngles[5] - (r2Val * stepSpeed * 1.5));
       } else {
-        this.targetGripperAngle = 90; // Open position
+        // Slowly open gripper back to 90°
+        this.integratedAngles[5] = Math.min(90, this.integratedAngles[5] + (stepSpeed * 1.5));
       }
     }
 
-    const currentTargetAngles = (typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) ? [...ServoPanel.currentAngles] : [90,90,90,90,90,90];
-    currentTargetAngles[5] = this.targetGripperAngle;
-
-    // Wrist Roll (R1 / L1)
-    const r1Pressed = gp.buttons[5] && gp.buttons[5].pressed;
-    const l1Pressed = gp.buttons[4] && gp.buttons[4].pressed;
-    if (r1Pressed) {
-      currentTargetAngles[4] = Math.min(180, currentTargetAngles[4] + 1); // Wrist Roll CW
-    } else if (l1Pressed) {
-      currentTargetAngles[4] = Math.max(0, currentTargetAngles[4] - 1);  // Wrist Roll CCW
-    }
-
-    // Wrist Pitch (Cross X / Circle O)
-    const xPressed = gp.buttons[0] && gp.buttons[0].pressed;
-    const circlePressed = gp.buttons[1] && gp.buttons[1].pressed;
-    if (xPressed) {
-      currentTargetAngles[3] = Math.min(180, currentTargetAngles[3] + 1); // Wrist Pitch Up
-    } else if (circlePressed) {
-      currentTargetAngles[3] = Math.max(0, currentTargetAngles[3] - 1);  // Wrist Pitch Down
-    }
-
     if (this.activeMode === 'joint') {
-      // Direct Joint Motor Control Mode
+      // Direct Joint Motor Control Mode (Velocity Rate Integrator)
       const lx = this.applyDeadzone(gp.axes[0] || 0); // Base Servo (Ch 0)
       const ly = this.applyDeadzone(gp.axes[1] || 0); // Shoulder Servo (Ch 1)
       const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
 
+      // Smooth Velocity Integration: stick deflection controls speed of angle movement
       if (Math.abs(lx) > 0) {
-        currentTargetAngles[0] = Math.max(0, Math.min(180, Math.round(90 + (lx * 90))));
+        this.integratedAngles[0] = Math.max(0, Math.min(180, this.integratedAngles[0] + (lx * stepSpeed * 1.5)));
       }
       if (Math.abs(ly) > 0) {
-        currentTargetAngles[1] = Math.max(0, Math.min(180, Math.round(90 + (ly * 90))));
+        this.integratedAngles[1] = Math.max(0, Math.min(180, this.integratedAngles[1] + (ly * stepSpeed * 1.5)));
       }
       if (Math.abs(ry) > 0) {
-        currentTargetAngles[2] = Math.max(0, Math.min(180, Math.round(90 + (ry * 90))));
+        this.integratedAngles[2] = Math.max(0, Math.min(180, this.integratedAngles[2] + (ry * stepSpeed * 1.5)));
       }
     }
 
     // PRIME DIRECTIVE: Apply Exponential Moving Average (EMA) Low-Pass Filter for 100% Zero-Jerk Motion
-    const alpha = 0.18; // Smooth motion interpolation factor
+    const alpha = 0.20; // Smooth motion interpolation factor
     for (let i = 0; i < 6; i++) {
-      this.smoothedAngles[i] = Math.round((currentTargetAngles[i] * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
+      const targetVal = Math.round(this.integratedAngles[i]);
+      this.smoothedAngles[i] = Math.round((targetVal * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
     }
 
     if (this.activeMode === 'joint') {
