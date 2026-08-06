@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-07-25 (Session 5 — Journal App Completion & Dashboard Sync)
+> **Last Updated:** 2026-08-06 (Session 6 — Supabase Media DB Sync, Dual Teleop Modes & Hardware Assembly Kickoff)
 
 ---
 
@@ -19,154 +19,75 @@
 
 ## 2. Current Project Status
 
-### Overall Phase: PRE-HARDWARE ASSEMBLY → DASHBOARD PLANNING
-- The robot arm has NOT been physically assembled yet.
-- Servo calibration firmware is written but not flashed.
-- Robot driver firmware is written but not tested.
-- No Python code has been written yet.
-- Dashboard is in the PLANNING phase (not yet built).
-- No link measurements (L1–L4) have been provided by the user yet.
-- The synopsis PDF has been completed and submitted.
+### Overall Phase: HARDWARE WIRING & ASSEMBLY (PHASE 1 IN PROGRESS)
+- **PCA9685 & Arduino Uno Wiring:** Defined exact pinouts (VCC $\to$ 5V, GND $\to$ GND, SDA $\to$ A4, SCL $\to$ A5, Screw Terminals $\to$ External 5V/6V Power Supply, Channels 0–5 $\to$ Servos 1–6).
+- **Web Dashboard:** Fully operational (`http://localhost:8050`). Features 6-servo sliders, Lock All at 90°, Solo Test buttons, Emergency Stop, Serial auto-connect, 3D Digital Twin URDF viewport, Supabase-backed Project Journal, and Dual Teleoperation Modes.
+- **Journal Backend:** Powered by **Supabase PostgreSQL** (`journal_entries` table) + **Supabase Cloud Storage** (`journal-media` public bucket) with instant 3s auto-sync across mobile PWA and laptop dashboard. Supports PDFs, Word docs, photos, and HTML5 video players.
+- **ROS 2 Digital Twin Specs:** Master zero-prompt instruction guide `TOSHAL_INSTRUCTION.md` created locally for Toshal's AI agents (includes URDF, Gazebo worlds for Stage 1 ArUco & Stage 3 Color blocks, MoveIt 2, and `rosbridge_suite` WebSocket bridge).
 
 ### What Exists in the Codebase
 | File | Status |
 |---|---|
-| `firmware/servo_calibration/servo_calibration.ino` | ✅ Written, NOT flashed |
-| `firmware/robot_driver/robot_driver.ino` | ✅ Written, NOT tested |
+| `firmware/servo_calibration/servo_calibration.ino` | ✅ Written, ready to flash |
+| `firmware/robot_driver/robot_driver.ino` | ✅ Written, ready to flash |
 | `ps5_controller_test.html` | ✅ Written, tested & validated |
-| `start_dashboard.sh` | ✅ Created (one-click launcher) |
-| `dashboard/backend/main.py` | ✅ Phase A complete (FastAPI + WS) |
-| `dashboard/backend/serial_manager.py` | ✅ Phase A complete (Arduino Serial + E-Stop) |
-| `dashboard/backend/requirements.txt` | ✅ Created |
-| `dashboard/frontend/index.html` | ✅ Phase A Warm Cream UI shell |
-| `dashboard/frontend/css/styles.css` | ✅ Phase A Warm Cream design system |
-| `dashboard/frontend/js/app.js` | ✅ Phase A WS & Tab router |
-| `dashboard/frontend/js/servo_panel.js` | ✅ Phase A Sliders, Lock 90°, Home, Sweep Test, E-stop |
-| `dashboard/frontend/js/teleop_panel.js` | ✅ Phase A Live PS5 DualSense Tester + IK preview |
-| `dashboard/README.md` | ✅ Created |
-| `architecture.md` | ✅ Written |
-| `agent_bible.md` | ✅ This file |
-| `project_journal.html` | ✅ Created (Interactive PWA Web Journal & iPhone App on GitHub Pages) |
-| `decisions.md` | ✅ Written |
-| `robotic arm synopsis.pdf` | ✅ Completed, submitted to college |
-
-### What Does NOT Exist Yet
-- Physical robot assembly
-- Any Python code (teleoperation, perception, dashboard, models)
-- IK solver (waiting on physical arm measurements from user)
-- Camera calibration
-- Dataset
-- Trained models
-- Digital twin
+| `start_dashboard.sh` | ✅ One-click launcher |
+| `dashboard/backend/main.py` | ✅ FastAPI + WebSockets + Kinematics & Journal REST endpoints |
+| `dashboard/backend/serial_manager.py` | ✅ Arduino Serial + Bluetooth Port Filtering + E-Stop |
+| `dashboard/frontend/index.html` | ✅ Warm Cream UI shell + Teleop Mode Switcher + Journal App |
+| `dashboard/frontend/js/teleop_panel.js` | ✅ Live PS5 DualSense Tester + Dual Modes (IK vs Joint Control) |
+| `project_journal.html` | ✅ Supabase PostgreSQL & Storage media uploader PWA |
+| `api/journal.js` | ✅ Supabase Serverless API handler |
+| `TOSHAL_INSTRUCTION.md` | ✅ Complete ROS 2 Digital Twin guide (local / git-ignored) |
+| `architecture.md` | ✅ System architecture document |
+| `agent_bible.md` | ✅ This file (updated Session 6) |
 
 ---
 
 ## 3. Locked Engineering Decisions
 
-These decisions have been discussed, debated, and finalized. Do NOT re-question them.
-
 | # | Decision | Details |
 |---|---|---|
-| 1 | Perception Architecture | Hybrid: OpenCV extracts features → Neural network learns motion only |
-| 2 | Stage 1 Perception | ArUco markers on sponge blocks (with cardboard backing for flatness) |
-| 3 | Stage 2 Perception | Color & contour detection (HSV thresholding) |
+| 1 | Perception Architecture | Hybrid: OpenCV extracts features $\to$ Neural network learns motion only |
+| 2 | Stage 1 Perception | ArUco markers on sponge blocks (cardboard-backed for flatness) |
+| 3 | Stage 2 & 3 Perception | Color & contour detection (HSV thresholding for Red, Blue, Green blocks) |
 | 4 | Coordinate System | Calibrated real-world coordinates (cm from robot base), NOT pixels |
-| 5 | Teleoperation Control | Cartesian IK (PS5 joystick controls X,Y,Z end-effector position) |
+| 5 | Teleoperation Control | Dual Modes: Cartesian IK (PS5 stick controls X,Y,Z) & Direct Joint Control |
 | 6 | Serial Protocol | Binary 6-byte packets at 115200 baud, 30 Hz target |
 | 7 | Safety | Physical emergency stop switch + 500ms watchdog auto-home on Arduino |
-| 8 | Block Material | Sponge cubes (lightweight, prevents gripper stall) |
+| 8 | Block Material | Sponge cubes ($4\text{cm} \times 4\text{cm} \times 4\text{cm}$, lightweight, prevents gripper stall) |
 | 9 | Stage 1 Setup | Box is FIXED, block is randomly placed |
-| 10 | Stage 2 Setup | All objects (2 blocks + 2 boxes) randomly placed |
+| 10 | Stage 2 Setup | All objects (blocks & boxes) randomly placed |
 | 11 | Dashboard | Web-based (HTML/CSS/JS + Python WebSocket backend) |
 | 12 | Deployment Target | Raspberry Pi 5 (4GB RAM) |
 | 13 | Camera 2 Role | Side camera is for dataset logging only; NOT used by the neural network |
-| 14 | Home Position Assembly | Mount arm parts to maximize physical workspace range; use joint offsets in software to handle the math (do NOT compromise mechanical range for mathematical convenience) |
-| 15 | Arduino Port Management | Use Arduino CLI (`arduino-cli`) for port detection & firmware flashing throughout development; switch to direct pyserial on Raspberry Pi 5 |
+| 14 | Home Position Assembly | Mount arm parts to maximize physical workspace range; use joint offsets in software |
+| 15 | Arduino Port Management | Direct pyserial + Bluetooth audio port filtering (`IGNORED_PORT_KEYWORDS`) |
 | 16 | Dashboard Auth | No authentication — local network only |
 | 17 | Dashboard Responsiveness | Laptop + Tablet (min 768px width). Phone NOT supported |
-| 18 | Dashboard Theme | Warm light mode — cream/linen/sand palette. NO white, NO dark mode, NO neon/electric colors. Fonts: DM Serif Display (headings), Source Sans 3 (body), IBM Plex Mono (data). NO generic vibe-coded fonts like Inter/Roboto |
-| 19 | Assembly Strategy | Build Dashboard Phase A first so it serves as the live interactive tool for testing, locking at 90°, and testing range during physical assembly |
-| 20 | Zero-Jerk Motion | All automated joint transitions (Home, Lock 90°, Sweep Test) use Cosine S-Curve trajectory interpolation to eliminate mechanical jerks and current spikes |
-| 21 | Kinematic Calibration | Provide web-based Kinematic Calibration fields ($L_1..L_4$, $\Delta\theta_{1..6}$, Gripper angles) in Teleoperation tab persisted to `kinematics_config.json` |
-| 23 | Dedicated Digital Twin Tab | Provide top-level sidebar tab `Digital Twin` (`#panel-digital-twin`) featuring a large 500px 3D viewport canvas for Toshal's Baby ROS URDF model |
+| 18 | Dashboard Theme | Warm light mode — cream/linen/sand palette (`#FAF7F2`). NO dark mode |
+| 19 | Assembly Strategy | Build Dashboard Phase A first as interactive assembly & testing tool |
+| 20 | Zero-Jerk Motion | Cosine S-Curve trajectory interpolation for all automated joint transitions |
+| 21 | Kinematic Calibration | Web-based calibration ($L_1..L_4$, servo zero offsets, gripper angles) saved to `kinematics_config.json` |
+| 22 | Cloud Storage & Media | Supabase PostgreSQL (`journal_entries`) + Supabase Storage (`journal-media`) for PDFs, Word docs, photos, and videos |
+| 23 | Dedicated Digital Twin Tab | 3D Viewport canvas listening on WebSocket port 9090 for ROS 2 `rosbridge` telemetry |
 
 ---
 
-## 4. Important Context the Agent Must Remember
+## 4. Conversation History Summary
 
-1. **The user prefers to build incrementally.** Never jump ahead. Always validate the current step before moving to the next.
-2. **The user will push back if I get ahead of myself.** Respect the user's pace and engineering intuition.
-3. **Dashboard Phase A is an active assembly tool.** The user wants to use the dashboard sliders, "Lock at 90°" button, and "Home" button while physically assembling the 6-DOF arm.
-4. **The arm is NOT assembled yet.** We will build Dashboard Phase A first to assist in assembly, then assemble, then measure links (L1–L4).
-5. **Variable lighting.** The workspace does NOT have fixed/controlled lighting. This is why ArUco markers are critical for Stage 1.
-6. **The synopsis PDF is done.** It has been submitted. The user also created a PPT for it using Manus AI.
-7. **The user has 3 team members** with distinct roles: Soham (software/integration), Divyansh (dataset/training), Toshal (CAD/digital twin).
-8. **My role:** Act as robotics research supervisor, senior software engineer, embedded systems engineer, CV engineer, and AI researcher. Critically evaluate decisions. Do not just agree.
-9. **Current Physical Setup:** Only the raw $50\text{cm} \times 50\text{cm}$ wooden platform exists physically. No ArUco markers have been printed or attached yet, and no camera pole is mounted yet. The dual-frame coordinate geometry (Marker ID 2 at corner $(0,0)$) is a planned design ready for implementation when physical assembly and camera setup begins.
+### Session 6 (2026-08-06) — COMPLETED
+- **Supabase Cloud Database & Storage Upgrade:** Connected `project_journal.html` to Supabase REST API (`https://pzewxynfhrylnqbkkeeq.supabase.co/rest/v1/journal_entries`) and public Storage Bucket (`journal-media`). Added file upload input for PDFs, Word docs, photos, and HTML5 video players.
+- **PostgREST Key Normalization & Seeding:** Mapped array keys for Supabase PostgREST upserts and seeded all 8 logbook entries (including `Log Book-1.docx` and `logbook2.pdf`).
+- **Bluetooth Port Filtering:** Expanded `serial_manager.py` keyword filter to reject virtual macOS Bluetooth audio serial ports (`stone`, `airdopes`, `airpods`, `speaker`, `headset`).
+- **ROS 2 Digital Twin Master Execution Guide:** Created `TOSHAL_INSTRUCTION.md` locally (and added to `.gitignore`) containing complete project context, 6-DOF URDF/Xacro specs, MG996R/MG90S motor dynamics, Gazebo `.world` files (Stage 1 ArUco & Stage 3 Color blocks), MoveIt 2 configs, and `rosbridge_suite` WebSocket bridge on port 9090.
+- **Dual Teleoperation Modes:** Implemented **Cartesian IK Mode** vs **Direct Joint Motor Control Mode** switcher on Web Dashboard Teleoperation tab with zero-dependency inline execution.
+- **PCA9685 Wiring & Servo Horn Lock:** Provided step-by-step wiring guide for Arduino Uno $\leftrightarrow$ PCA9685 $\leftrightarrow$ 5V/6V External Servo Power Supply $\leftrightarrow$ 6 Servos.
 
 ---
 
-## 5. Conversation History Summary
+## 5. Next Steps (Immediate)
 
-### Session 1 (2026-07-06)
-- Received full project brief from the user.
-- Reviewed architecture and raised critical issues: servo feedback problem, perception robustness, coordinate frames, control loop latency.
-- **Decisions made:** ArUco for Stage 1, real-world coordinates, IK for teleoperation, emergency stop.
-- Wrote `servo_calibration.ino` and `robot_driver.ino`.
-- Discussed optimal assembly angles: mount at midpoint of mechanical range, not necessarily 90° = straight up.
-- Discussed sponge blocks with cardboard-backed ArUco markers.
-- Clarified Camera 2 (side) is only for dataset recording, not for the neural network.
-
-### Session 2 (2026-07-16)
-- User requested PPT generation prompt for Manus AI.
-- User requested image generation prompt for setup visualization.
-
-### Session 3 (2026-07-23)
-- User requested a web-based dashboard for the entire project lifecycle.
-- Resolved open questions: Arduino CLI for port management, no auth, laptop+tablet only, warm light theme.
-- Created `architecture.md`, `agent_bible.md`, `decisions.md`, `.gemini/rules.md`.
-- Created `ps5_controller_test.html` — User tested and confirmed PS5 controller teleoperation via browser Gamepad API is 100% working.
-- Configured GitHub remote & classic PAT. Successfully pushed project to `https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git`.
-- Decision #19: User clarified Dashboard Phase A will be built first as the live physical assembly & testing tool.
-
-### Session 4 (2026-07-24) — COMPLETED
-- Built Web Dashboard Phase A (FastAPI + WebSockets + Warm Linen UI + Sliders + E-Stop + Solo Test Buttons + Port CLI auto-connect).
-- Added persistent REST API endpoints (`/api/kinematics`) for saving physical link measurements ($L_1..L_4$) and servo zero offsets in `kinematics_config.json`.
-- Repositioned 3D Digital Twin tab to bottom of sidebar and updated status to "Standing By (Awaiting URDF)". Anonymized all UI text.
-- Generated vector SVG ArUco markers (IDs 0, 1, 2) and printable HTML sheet (`print_aruco_sheet.html`).
-- Finalized $50\text{cm} \times 50\text{cm}$ platform geometry & dual-frame transformation (Marker ID 2 at corner = World Frame $(0,0)$, Robot Base = $(25\text{cm}, 5\text{cm})$).
-- Created interactive Web Journal (`project_journal.html`), iPhone PWA native app with custom 3D robotic arm home screen icon, and deployed live to GitHub Pages (`https://sohambhavsar24.github.io/vision-autonomous-robotic-arm/`).
-
-### Session 5 (2026-07-25 / 2026-07-26) — COMPLETED
-- Upgraded interactive Web Journal PWA with real-time header search bar, live 2-way Cloud Database persistence (`jsonblob.com`), and log entry deletion (`🗑️`).
-- Logged Entry #6 (**Media Payload Overhead, Cloud DB Limits & Text Logger Pivot Decision**), documenting the engineering friction of video/PDF Base64 uploads and the strategic pivot to a 100% clean, ultra-fast text logging engine.
-- Deployed serverless journal backend to Vercel (`https://vision-autonomous-robotic-arm.vercel.app`) for instant real-time text log sync across iPhone PWA app, Laptop Safari, and local Web Dashboard (`http://localhost:8050`).
-- Integrated dedicated **Journal** tab directly into local Web Dashboard (`http://localhost:8050`) below the Digital Twin tab.
-- Finalized Session 5 journal entry and locked all web control infrastructure. Ready for physical hardware assembly!
-
----
-
-## 6. Next Steps (Immediate)
-
-1. **Physical Hardware Assembly (assisted by Web Dashboard Phase A)** — Connect Arduino Uno + PCA9685 + 6 Servos, open Web Dashboard at `http://localhost:8050`, use "Lock at 90°" button to align horns, physically assemble the 6-DOF arm on the $50\text{cm} \times 50\text{cm}$ wooden platform, and test individual servos using "Test Solo" buttons.
-2. **Kinematic Calibration** — Measure physical link lengths ($L_1, L_2, L_3, L_4$) in centimeters using a ruler and enter them into the Kinematic Calibration form on the Web Dashboard Teleoperation tab.
-3. **Write Analytical IK Solver** — Implement Python Cartesian IK solver (`ik_solver.py`) once link measurements are saved.
-
----
-
-## 7. File Structure (Current)
-
-```
-/Users/sohambhavsar/Desktop/Autonomoous arm/
-├── architecture.md                        ← System architecture document
-├── agent_bible.md                         ← THIS FILE (context continuity)
-├── decisions.md                           ← Append-only decision log
-├── ps5_controller_test.html              ← PS5 controller test & PoC
-├── robotic arm synopsis.pdf               ← Submitted to college
-├── firmware/
-│   ├── servo_calibration/
-│   │   └── servo_calibration.ino          ← Sets all servos to 90° for assembly
-│   └── robot_driver/
-│       └── robot_driver.ino               ← Production firmware (serial + PCA9685 + watchdog)
-└── dashboard/                             ← NOT YET CREATED
-```
+1. **Physical Servo Horn Alignment** — Connect Arduino Uno + PCA9685 + 6 Servos, launch local Web Dashboard (`python3 dashboard/backend/main.py`), click **"Lock All at 90°"**, attach plastic servo horns at $90^\circ$, and complete 6-DOF physical arm assembly on $50\text{cm} \times 50\text{cm}$ platform board.
+2. **Measure Link Lengths ($L_1..L_4$)** — Measure physical link lengths in centimeters using a ruler and save via Kinematic Calibration panel.
+3. **Write `ik_solver.py` & `vision_tracker.py`** — Write Python Cartesian IK solver and OpenCV 30Hz ArUco coordinate tracking pipeline.
