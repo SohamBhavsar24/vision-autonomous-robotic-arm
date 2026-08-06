@@ -7,8 +7,9 @@
 
    PURPOSE:
      Handles Phase C demonstration recording, trajectory sampling at 30Hz,
-     auto-homing on stop, persistent local/backend episode storage,
-     smooth trajectory replay, and episode deletion.
+     live 6-joint angle telemetry streaming, auto-homing on stop, persistent
+     local/backend episode storage, smooth trajectory replay with process status,
+     and episode deletion.
    ========================================================================== */
 
 const DatasetPanel = {
@@ -31,6 +32,8 @@ const DatasetPanel = {
     this.recordPill = document.getElementById('lblRecordStatusPill');
     this.frameCountSpan = document.getElementById('lblFrameCount');
     this.episodesList = document.getElementById('datasetEpisodesList');
+    this.liveAnglesBox = document.getElementById('lblLiveAnglesBox');
+    this.anglesValSpan = document.getElementById('lblAnglesVal');
   },
 
   bindEvents() {
@@ -45,6 +48,11 @@ const DatasetPanel = {
     } else {
       this.startRecording();
     }
+  },
+
+  formatAnglesText(angles) {
+    if (!Array.isArray(angles) || angles.length < 6) return '';
+    return `Base: ${angles[0]}° | Shoulder: ${angles[1]}° | Elbow: ${angles[2]}° | Wrist Pitch: ${angles[3]}° | Wrist Roll: ${angles[4]}° | Gripper: ${angles[5]}°`;
   },
 
   startRecording() {
@@ -66,6 +74,10 @@ const DatasetPanel = {
       this.recordPill.style.display = 'inline-flex';
     }
 
+    if (this.liveAnglesBox) {
+      this.liveAnglesBox.style.display = 'block';
+    }
+
     if (this.frameCountSpan) {
       this.frameCountSpan.textContent = '0';
     }
@@ -84,6 +96,10 @@ const DatasetPanel = {
       if (this.frameCountSpan) {
         this.frameCountSpan.textContent = this.currentTrajectory.length;
       }
+
+      if (this.anglesValSpan) {
+        this.anglesValSpan.textContent = this.formatAnglesText(angles);
+      }
     }, this.sampleIntervalMs);
   },
 
@@ -101,6 +117,10 @@ const DatasetPanel = {
 
     if (this.recordPill) {
       this.recordPill.style.display = 'none';
+    }
+
+    if (this.liveAnglesBox) {
+      this.liveAnglesBox.style.display = 'none';
     }
 
     const frameCount = this.currentTrajectory.length;
@@ -191,6 +211,21 @@ const DatasetPanel = {
     if (!ep || !ep.trajectory || ep.trajectory.length === 0) return;
 
     this.isPlaying = true;
+
+    // Find Play button element for this specific episode
+    const playBtn = document.getElementById(`btnPlay-${episodeId}`);
+    const statusSpan = document.getElementById(`lblStatus-${episodeId}`);
+
+    if (playBtn) {
+      playBtn.disabled = true;
+      playBtn.textContent = 'Replaying Trajectory...';
+      playBtn.style.opacity = '0.7';
+    }
+
+    if (this.liveAnglesBox) {
+      this.liveAnglesBox.style.display = 'block';
+    }
+
     if (window.App && App.log) {
       App.log(`REPLAYING TRAJECTORY: Episode #${ep.number} (${ep.frameCount} frames, ~${ep.durationSec}s)...`);
     }
@@ -200,6 +235,22 @@ const DatasetPanel = {
       if (frameIndex >= ep.trajectory.length) {
         clearInterval(this.playTimer);
         this.isPlaying = false;
+
+        if (playBtn) {
+          playBtn.disabled = false;
+          playBtn.textContent = 'Play Trajectory';
+          playBtn.style.opacity = '1';
+        }
+
+        if (statusSpan) {
+          statusSpan.textContent = 'Replay Complete';
+          statusSpan.style.color = '#2E7D32';
+        }
+
+        if (this.liveAnglesBox) {
+          this.liveAnglesBox.style.display = 'none';
+        }
+
         if (window.App && App.log) App.log(`Episode #${ep.number} Replay Complete. Moving smoothly to Home Position...`);
         if (window.App && App.sendWS) App.sendWS('home');
         return;
@@ -209,6 +260,16 @@ const DatasetPanel = {
       if (window.ServoPanel && ServoPanel.setAngles) {
         ServoPanel.setAngles(frame.angles);
       }
+
+      if (this.anglesValSpan) {
+        this.anglesValSpan.textContent = this.formatAnglesText(frame.angles);
+      }
+
+      if (statusSpan) {
+        statusSpan.textContent = `Replaying Frame ${frameIndex + 1} / ${ep.trajectory.length}...`;
+        statusSpan.style.color = 'var(--accent-primary)';
+      }
+
       frameIndex++;
     }, this.sampleIntervalMs);
   },
@@ -246,10 +307,11 @@ const DatasetPanel = {
             </h4>
             <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);">
               ${ep.date} • ${ep.frameCount} frames (~${ep.durationSec}s)
+              <span id="lblStatus-${ep.id}" style="margin-left: 8px; font-weight: 600;"></span>
             </div>
           </div>
           <div style="display: flex; align-items: center; gap: 10px;">
-            <button class="btn btn-primary" onclick="DatasetPanel.playEpisode('${ep.id}')" style="padding: 8px 16px; font-size: 0.82rem; font-weight: 600;">
+            <button class="btn btn-primary" id="btnPlay-${ep.id}" onclick="DatasetPanel.playEpisode('${ep.id}')" style="padding: 8px 16px; font-size: 0.82rem; font-weight: 600;">
               Play Trajectory
             </button>
             <button class="btn btn-secondary" onclick="DatasetPanel.deleteEpisode('${ep.id}')" style="padding: 8px 14px; font-size: 0.82rem; color: #E53935; border-color: rgba(229, 57, 53, 0.3);">

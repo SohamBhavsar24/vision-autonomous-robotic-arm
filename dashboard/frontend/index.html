@@ -613,7 +613,7 @@
               <h3 class="card-title">Demonstration Dataset Recording & Trajectory Replay (Phase C)</h3>
               <p class="card-subtitle">Record human teleoperation demonstrations with 30Hz trajectory logging, auto-homing, and smooth trajectory replay.</p>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
               <button class="btn btn-primary" id="btnRecordDataset" style="font-weight: 600; cursor: pointer; padding: 10px 20px;">
                 Start Recording Demonstration
               </button>
@@ -621,6 +621,11 @@
                 RECORDING... (<span id="lblFrameCount">0</span> frames)
               </div>
             </div>
+          </div>
+
+          <!-- Live 6-Joint Angle Telemetry Box (Visible during Recording and Replay) -->
+          <div id="lblLiveAnglesBox" style="display: none; font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent-primary); background: var(--bg-page); border: 1px solid var(--border-subtle); padding: 10px 16px; border-radius: 8px; margin-bottom: 16px;">
+            <strong>Live Streaming Joint Telemetry:</strong> <span id="lblAnglesVal" style="color: var(--text-main); font-weight: 600;">Base: 90° | Shoulder: 90° | Elbow: 90° | Wrist Pitch: 90° | Wrist Roll: 90° | Gripper: 10°</span>
           </div>
 
           <div style="margin-top: 24px;">
@@ -646,9 +651,9 @@
   </div>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.10"></script>
-  <script src="js/servo_panel.js?v=1.0.10"></script>
-  <script src="js/teleop_panel.js?v=1.0.10"></script>
-  <script src="js/dataset_panel.js?v=1.0.10"></script>
+  <script src="js/app.js?v=1.0.11"></script>
+  <script src="js/servo_panel.js?v=1.0.11"></script>
+  <script src="js/teleop_panel.js?v=1.0.11"></script>
+  <script src="js/dataset_panel.js?v=1.0.11"></script>
 </body>
 </html>
