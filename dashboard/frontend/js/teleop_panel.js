@@ -9,7 +9,6 @@
      Handles live PS5 DualSense controller teleoperation with 2 modes:
        1. Cartesian Inverse Kinematics (IK) Mode (Left Stick: X/Y, Right Stick: Z height)
        2. Direct Joint Motor Control Mode (Left Stick: Base/Shoulder, Right Stick: Elbow)
-     Includes dynamic game-style controller mapping diagram switching.
    ========================================================================== */
 
 const TeleopPanel = {
@@ -58,11 +57,9 @@ const TeleopPanel = {
     // Teleop Mode Switcher DOM elements
     this.btnToggleMode = document.getElementById('btnToggleTeleopMode');
     this.lblModeBtnText = document.getElementById('lblModeBtnText');
-    this.lblDiagramTitle = document.getElementById('lblDiagramTitle');
     this.lblActiveModePill = document.getElementById('lblActiveModePill');
-    this.lblDiagramSubtitle = document.getElementById('lblDiagramSubtitle');
-    this.imgControllerDiagram = document.getElementById('imgControllerDiagram');
-    this.cardArchitectureNotes = document.getElementById('cardArchitectureNotes');
+    this.lblTeleopNoteTitle = document.getElementById('lblTeleopNoteTitle');
+    this.lblTeleopNoteText = document.getElementById('lblTeleopNoteText');
 
     if (this.axesList) {
       this.axesList.innerHTML = '<div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); padding: 12px 0;">No controller connected.<br>Press any button on PS5 DualSense to display live axes.</div>';
@@ -96,7 +93,7 @@ const TeleopPanel = {
         this.statusPill.className = 'status-pill connected';
         this.statusText.textContent = `Connected: ${e.gamepad.id}`;
       }
-      App.log(`PS5 Controller Connected: ${e.gamepad.id}`);
+      if (window.App && App.log) App.log(`PS5 Controller Connected: ${e.gamepad.id}`);
     });
 
     window.addEventListener('gamepaddisconnected', (e) => {
@@ -106,7 +103,7 @@ const TeleopPanel = {
           this.statusPill.className = 'status-pill';
           this.statusText.textContent = 'PS5 Controller Disconnected';
         }
-        App.log('PS5 Controller Disconnected.');
+        if (window.App && App.log) App.log('PS5 Controller Disconnected.');
       }
     });
   },
@@ -121,24 +118,44 @@ const TeleopPanel = {
   },
 
   updateModeUI() {
+    const btnText = document.getElementById('lblModeBtnText');
+    const pill = document.getElementById('lblActiveModePill');
+    const noteTitle = document.getElementById('lblTeleopNoteTitle');
+    const noteText = document.getElementById('lblTeleopNoteText');
+
     if (this.activeMode === 'ik') {
-      if (this.lblModeBtnText) this.lblModeBtnText.textContent = 'Direct Joint Control';
-      if (this.lblDiagramTitle) this.lblDiagramTitle.textContent = 'Cartesian Inverse Kinematics (IK) Teleoperation Diagram';
-      if (this.lblActiveModePill) {
-        this.lblActiveModePill.textContent = 'Active Mode: Cartesian IK';
-        this.lblActiveModePill.className = 'status-pill connected';
+      if (btnText) btnText.textContent = 'Cartesian IK Mode';
+      if (pill) {
+        pill.textContent = 'Cartesian IK';
+        pill.className = 'status-pill connected';
       }
-      if (this.lblDiagramSubtitle) this.lblDiagramSubtitle.textContent = 'Left Stick: X/Y Translation • Right Stick: Z Height • Triggers: Gripper Close/Lock';
-      if (this.imgControllerDiagram) this.imgControllerDiagram.src = 'img/ps5_controller_ik_mode.jpg';
+      if (noteTitle) noteTitle.textContent = 'Cartesian Inverse Kinematics (IK) Teleoperation Architecture';
+      if (noteText) {
+        noteText.innerHTML = `
+          1. <strong>Left Stick (X / Y):</strong> Moves the end-effector in Cartesian table space (centimeters relative to base).<br>
+          2. <strong>Right Stick (Z):</strong> Moves end-effector Z-height up and down towards table.<br>
+          3. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>
+          4. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>
+          5. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.
+        `;
+      }
     } else {
-      if (this.lblModeBtnText) this.lblModeBtnText.textContent = 'Cartesian IK Mode';
-      if (this.lblDiagramTitle) this.lblDiagramTitle.textContent = 'Direct Joint Motor Control Teleoperation Diagram';
-      if (this.lblActiveModePill) {
-        this.lblActiveModePill.textContent = 'Active Mode: Direct Joint Control';
-        this.lblActiveModePill.className = 'status-pill';
+      if (btnText) btnText.textContent = 'Direct Joint Control Mode';
+      if (pill) {
+        pill.textContent = 'Direct Joint Control';
+        pill.className = 'status-pill';
       }
-      if (this.lblDiagramSubtitle) this.lblDiagramSubtitle.textContent = 'Left Stick: Base & Shoulder Servos • Right Stick: Elbow Servo • Triggers: Gripper Close/Lock';
-      if (this.imgControllerDiagram) this.imgControllerDiagram.src = 'img/ps5_controller_joint_mode.jpg';
+      if (noteTitle) noteTitle.textContent = 'Direct Joint Motor Control Teleoperation Architecture';
+      if (noteText) {
+        noteText.innerHTML = `
+          1. <strong>Left Stick (X):</strong> Controls Base Servo angle (0° to 180°).<br>
+          2. <strong>Left Stick (Y):</strong> Controls Shoulder Servo angle (0° to 180°).<br>
+          3. <strong>Right Stick (Y):</strong> Controls Elbow Servo angle (0° to 180°).<br>
+          4. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>
+          5. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>
+          6. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.
+        `;
+      }
     }
   },
 
@@ -192,11 +209,11 @@ const TeleopPanel = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ L1: l1, L2: l2, L3: l3, L4: l4, offsets, gripper_closed: gc, gripper_open: go })
       });
-      if (res.ok) {
+      if (res.ok && window.App && App.log) {
         App.log(`Saved Kinematic Calibration: L1=${l1}cm, L2=${l2}cm, L3=${l3}cm, L4=${l4}cm`);
       }
     } catch (e) {
-      App.log(`Failed to save kinematic calibration: ${e.message}`);
+      if (window.App && App.log) App.log(`Failed to save kinematic calibration: ${e.message}`);
     }
   },
 
@@ -325,7 +342,7 @@ const TeleopPanel = {
       }
     }
 
-    const currentAngles = [...ServoPanel.currentAngles];
+    const currentAngles = typeof ServoPanel !== 'undefined' ? [...ServoPanel.currentAngles] : [90,90,90,90,90,90];
     currentAngles[5] = this.targetGripperAngle;
 
     // Wrist Roll (R1 / L1)
@@ -362,7 +379,7 @@ const TeleopPanel = {
         currentAngles[2] = Math.max(0, Math.min(180, Math.round(90 + (ry * 90))));
       }
 
-      ServoPanel.setAngles(currentAngles);
+      if (typeof ServoPanel !== 'undefined') ServoPanel.setAngles(currentAngles);
     }
   }
 };

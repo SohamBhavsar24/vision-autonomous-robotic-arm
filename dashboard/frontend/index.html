@@ -390,12 +390,15 @@
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
           <div>
             <h3 class="card-title">PS5 DualSense Controller Teleoperation & Live Tester</h3>
-            <p class="card-subtitle">Select teleoperation mode, view controller mapping diagram, and test live inputs.</p>
+            <p class="card-subtitle">Connect your PS5 controller via Bluetooth or USB to drive the arm in Cartesian IK or Direct Joint Mode.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 12px;">
             <button class="btn btn-primary" id="btnToggleTeleopMode" onclick="TeleopPanel.toggleMode()" style="font-weight: 600; cursor: pointer;">
-              🎮 Switch Mode: <span id="lblModeBtnText">Direct Joint Control</span>
+              🎮 Mode: <span id="lblModeBtnText">Cartesian IK Mode</span>
             </button>
+            <div class="status-pill connected" id="lblActiveModePill" style="font-weight: 600;">
+              Cartesian IK
+            </div>
             <div class="status-pill" id="ps5StatusPill">
               <span class="status-dot"></span>
               <span id="ps5StatusText">Press any button on PS5 controller...</span>
@@ -404,18 +407,6 @@
         </div>
 
         <div class="dashboard-grid">
-
-          <!-- Game-Style Controller Mapping Diagram Card -->
-          <div class="card" style="grid-column: span 12; border-top: 3px solid var(--accent-primary);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-              <h3 class="card-title" id="lblDiagramTitle">Cartesian Inverse Kinematics (IK) Teleoperation Diagram</h3>
-              <span class="status-pill connected" id="lblActiveModePill" style="font-size: 0.75rem;">Active Mode: Cartesian IK</span>
-            </div>
-            <p class="card-subtitle" id="lblDiagramSubtitle">Game-style button mapping diagram for real-time 30Hz arm control.</p>
-            <div style="margin-top: 12px; text-align: center;">
-              <img id="imgControllerDiagram" src="img/ps5_controller_ik_mode.jpg" alt="PS5 Controller Mapping Diagram" style="width: 100%; max-width: 960px; border-radius: 10px; border: 1px solid var(--border-card); box-shadow: 0 4px 16px rgba(0,0,0,0.15);">
-            </div>
-          </div>
           
           <!-- Analog Joysticks -->
           <div class="card" style="grid-column: span 6;">
@@ -501,16 +492,15 @@
             <div id="ps5AxesList" style="margin-top: 12px;"></div>
           </div>
 
-          <!-- Inverse Kinematics Pipeline Integration Note -->
+          <!-- Inverse Kinematics / Joint Control Architecture Note -->
           <div class="card" style="grid-column: span 12; border-left: 4px solid var(--accent-primary);">
-            <h3 class="card-title">Cartesian Inverse Kinematics (IK) Teleoperation Architecture (Phase C)</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
-              <strong>How Teleoperation Demonstration Collection Will Work:</strong><br>
+            <h3 class="card-title" id="lblTeleopNoteTitle">Cartesian Inverse Kinematics (IK) Teleoperation Architecture</h3>
+            <p id="lblTeleopNoteText" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
               1. <strong>Left Stick (X / Y):</strong> Moves the end-effector in Cartesian table space (centimeters relative to base).<br>
-              2. <strong>R2 / L2 Triggers:</strong> Controls end-effector Z-height (raise / lower arm towards table).<br>
-              3. <strong>Right Stick & R1/L1:</strong> Controls Wrist Pitch/Roll orientation and Gripper open/close state.<br>
-              4. <strong>Python IK Engine (`ik_solver.py`):</strong> Receives the target $(X, Y, Z, \theta_{pitch}, \theta_{roll})$ from the PS5 controller, calculates exact joint angles $(\theta_1, \theta_2, \theta_3, \theta_4, \theta_5, \theta_6)$, and streams them at 30Hz to the Arduino.<br>
-              <em>This Cartesian control pipeline ensures human operators record smooth, high-quality trajectories for imitation learning.</em>
+              2. <strong>Right Stick (Z):</strong> Moves end-effector Z-height up and down towards table.<br>
+              3. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>
+              4. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>
+              5. <strong>R2 / L2 Triggers:</strong> R2 slowly closes gripper claw; L2 locks gripper position.
             </p>
           </div>
 
