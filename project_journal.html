@@ -635,6 +635,15 @@
         localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(entries));
       } catch (err) {}
 
+      // Normalize array keys for Supabase PostgREST
+      const normalized = entries.map(item => ({
+        id: item.id,
+        date: item.date,
+        title: item.title,
+        paragraphs: item.paragraphs || [],
+        attachment: item.attachment || null
+      }));
+
       // Upsert into Supabase REST API
       try {
         await fetch(`${SUPABASE_URL}/rest/v1/journal_entries`, {
@@ -645,7 +654,7 @@
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates'
           },
-          body: JSON.stringify(entries)
+          body: JSON.stringify(normalized)
         });
       } catch (e) {}
 
@@ -658,7 +667,7 @@
           await fetch(t, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(entries)
+            body: JSON.stringify(normalized)
           });
           break;
         } catch (e) {}
