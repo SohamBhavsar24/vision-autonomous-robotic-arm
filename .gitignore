@@ -47,3 +47,6 @@ firmware/**/build/
 # Compiled binaries
 *.hex
 *.elf
+
+# Private instruction notes
+TOSHAL_INSTRUCTION.md
