@@ -880,58 +880,46 @@
         const statusDiv = document.getElementById('fileUploadStatus');
         if (statusDiv) {
           statusDiv.style.display = 'block';
-          statusDiv.textContent = `Uploading ${file.name} to Supabase Cloud Storage...`;
+          statusDiv.textContent = `Uploading ${file.name} to Cloud Storage...`;
         }
 
         try {
           const fileExt = file.name.split('.').pop().toLowerCase();
-          const formData = new FormData();
-          formData.append('file', file);
+          const cleanFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+          const uploadUrl = `${SUPABASE_URL}/storage/v1/object/journal-media/${cleanFileName}`;
 
-          let uploaded = false;
-          // Try local backend uploader first (handles files of any size without CORS/cloud limits)
-          try {
-            const apiRes = await fetch('/api/upload', {
-              method: 'POST',
-              body: formData
-            });
-            if (apiRes.ok) {
-              const apiData = await apiRes.json();
-              if (apiData && apiData.url) {
-                attachment = {
-                  name: file.name,
-                  type: fileExt,
-                  url: apiData.url
-                };
-                uploaded = true;
+          // Direct Supabase Cloud Upload (100% Standalone PWA — Works when laptop is closed!)
+          const uploadRes = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'x-upsert': 'true',
+              'Content-Type': file.type || 'application/octet-stream'
+            },
+            body: file
+          });
+
+          if (uploadRes.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/journal-media/${cleanFileName}`;
+            attachment = {
+              name: file.name,
+              type: fileExt,
+              url: publicUrl
+            };
+          } else {
+            console.warn('Direct Supabase Storage returned non-OK, trying local fallback...');
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+              const apiRes = await fetch('/api/upload', { method: 'POST', body: formData });
+              if (apiRes.ok) {
+                const apiData = await apiRes.json();
+                if (apiData && apiData.url) {
+                  attachment = { name: file.name, type: fileExt, url: apiData.url };
+                }
               }
-            }
-          } catch (e) {}
-
-          // Fallback to direct Supabase Cloud Storage upload
-          if (!uploaded) {
-            const cleanFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-            const uploadUrl = `${SUPABASE_URL}/storage/v1/object/journal-media/${cleanFileName}`;
-
-            const uploadRes = await fetch(uploadUrl, {
-              method: 'POST',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'x-upsert': 'true',
-                'Content-Type': file.type || 'application/octet-stream'
-              },
-              body: file
-            });
-
-            if (uploadRes.ok) {
-              const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/journal-media/${cleanFileName}`;
-              attachment = {
-                name: file.name,
-                type: fileExt,
-                url: publicUrl
-              };
-            }
+            } catch (fallbackErr) {}
           }
         } catch (uploadErr) {
           console.warn('Media upload exception:', uploadErr);
