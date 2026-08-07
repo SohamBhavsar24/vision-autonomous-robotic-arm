@@ -592,16 +592,21 @@
 
     function parseEntryTimestamp(entry) {
       if (!entry) return 0;
+      let baseTs = 0;
       if (entry.date) {
         const cleanDate = entry.date.replace(/(\d+)(st|nd|rd|th)/, '$1');
         const ts = Date.parse(cleanDate);
-        if (!isNaN(ts)) return ts;
+        if (!isNaN(ts)) baseTs = ts;
       }
       if (entry.id && typeof entry.id === 'string' && entry.id.startsWith('entry-')) {
         const num = parseInt(entry.id.replace('entry-', ''), 10);
-        if (!isNaN(num)) return num;
+        if (!isNaN(num)) {
+          // Timestamp-based IDs (like entry-1786125467391) take absolute priority for real-time sorting
+          if (num > 1000000000000) return num;
+          return baseTs + num;
+        }
       }
-      return 0;
+      return baseTs;
     }
 
     function sortEntriesDatewise(entries) {
@@ -609,7 +614,8 @@
       return [...entries].sort((a, b) => {
         const tsA = parseEntryTimestamp(a);
         const tsB = parseEntryTimestamp(b);
-        return tsB - tsA; // LATEST / MOST RECENT AT TOP!
+        if (tsB !== tsA) return tsB - tsA;
+        return String(b.id || '').localeCompare(String(a.id || ''));
       });
     }
 
