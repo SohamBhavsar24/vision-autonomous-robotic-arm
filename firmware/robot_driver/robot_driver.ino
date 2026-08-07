@@ -69,33 +69,28 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
 const int NUM_SERVOS = 6;
 
+// Spaced PCA9685 Servo Channels: Base=0, Shoulder=2, Elbow=4, WristPitch=6, WristRoll=8, Gripper=10
+const uint8_t SERVO_CHANNELS[NUM_SERVOS] = {0, 2, 4, 6, 8, 10};
+
 // Home Position angles (0–180) for each servo
 // These define the safe resting configuration the robot returns to on startup
-// and whenever communication is lost. Adjust after physical assembly.
-// NOTE: These may need to be updated once the IK solver defines the true home pose.
 const uint8_t HOME_ANGLES[NUM_SERVOS] = {90, 90, 90, 90, 90, 10}; 
 
 // Track the last commanded angle for each servo
-// Since we have no encoder feedback, this is our only "state" estimate
 uint8_t current_angles[NUM_SERVOS];
-
-// Watchdog timer variables (Decision #5 — Safety)
-unsigned long last_command_time = 0;
-const unsigned long TIMEOUT_MS = 500; // 500ms without a command = connection lost
 
 // Buffer to store incoming serial data (exactly 6 bytes per command packet)
 byte serialBuffer[NUM_SERVOS];
 
 void setup() {
-  // High baud rate is critical for low-latency teleoperation (Decision #6)
   Serial.begin(115200);
   Serial.setTimeout(10); // Don't block on incomplete reads
 
+  Wire.begin();
+  delay(100);
   pwm.begin();
-  pwm.setOscillatorFrequency(27000000); // Standard PCA9685 internal oscillator
   pwm.setPWMFreq(SERVO_FREQ);
-
-  delay(10);
+  delay(100);
   
   // Always start in a known, safe position
   moveToHome();
@@ -110,7 +105,8 @@ int angleToPulse(int angle) {
 void setServoAngle(uint8_t servoNum, uint8_t angle) {
   // Hard clamp to 0–180 to prevent invalid PWM signals
   angle = constrain(angle, 0, 180);
-  pwm.setPWM(servoNum, 0, angleToPulse(angle));
+  uint8_t pcaChannel = SERVO_CHANNELS[servoNum];
+  pwm.setPWM(pcaChannel, 0, angleToPulse(angle));
   current_angles[servoNum] = angle;
 }
 
@@ -130,22 +126,5 @@ void loop() {
     for (int i = 0; i < NUM_SERVOS; i++) {
        setServoAngle(i, serialBuffer[i]);
     }
-    
-    // Reset the watchdog timer — we just received a valid command
-    last_command_time = millis();
-    
-    // Flush any extra bytes that accumulated in the buffer
-    // This prevents lag buildup if the host sends faster than we process
-    while (Serial.available() > 0) {
-      Serial.read();
-    }
-  }
-  
-  // SAFETY WATCHDOG: If no command received for 500ms, assume host crashed
-  // and return to a safe Home Position to prevent the arm from staying in
-  // an awkward or dangerous pose indefinitely
-  if (millis() - last_command_time > TIMEOUT_MS && last_command_time != 0) {
-    moveToHome();
-    last_command_time = 0; // Reset so we don't spam moveToHome every loop
   }
 }
