@@ -747,7 +747,11 @@
       let fileUrl = att.url || fileName;
       let type = (att.type || '').toLowerCase();
 
-      if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(type) || fileUrl.match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
+      const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(type) || 
+                      !!fileUrl.match(/\.(png|jpg|jpeg|gif|webp)$/i) ||
+                      (att.name && !!att.name.match(/\.(png|jpg|jpeg|gif|webp)$/i));
+
+      if (isImage) {
         return `
           <div class="attachment-box" style="margin-top: 12px;">
             <img src="${fileUrl}" alt="${fileName}" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-card); max-height: 400px; object-fit: contain;">
@@ -755,10 +759,14 @@
         `;
       }
 
-      if (['mp4', 'mov', 'webm'].includes(type) || fileUrl.match(/\.(mp4|mov|webm)$/i)) {
+      const isVideo = ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv', '3gp', 'quicktime'].includes(type) || 
+                      !!fileUrl.match(/\.(mp4|mov|webm|m4v|avi|mkv|3gp)$/i) ||
+                      (att.name && !!att.name.match(/\.(mp4|mov|webm|m4v|avi|mkv|3gp)$/i));
+
+      if (isVideo) {
         return `
           <div class="attachment-box" style="margin-top: 12px;">
-            <video controls src="${fileUrl}" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-card); max-height: 400px;"></video>
+            <video controls playsinline src="${fileUrl}" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-card); max-height: 450px; background: #000; width: 100%;"></video>
           </div>
         `;
       }
@@ -885,6 +893,7 @@
             headers: {
               'apikey': SUPABASE_KEY,
               'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'x-upsert': 'true',
               'Content-Type': file.type || 'application/octet-stream'
             },
             body: file
@@ -897,9 +906,14 @@
               type: fileExt,
               url: publicUrl
             };
+          } else {
+            const errText = await uploadRes.text();
+            console.error('Supabase Storage Upload Error:', errText);
+            alert(`Media upload failed (${uploadRes.status}): ${uploadRes.statusText || 'Unable to upload file to cloud storage'}`);
           }
         } catch (uploadErr) {
-          console.warn('Media upload error:', uploadErr);
+          console.warn('Media upload exception:', uploadErr);
+          alert('Network error while uploading video to cloud storage. Please check connection and try again.');
         }
       }
 
