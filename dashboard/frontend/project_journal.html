@@ -885,35 +885,56 @@
 
         try {
           const fileExt = file.name.split('.').pop().toLowerCase();
-          const cleanFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-          const uploadUrl = `${SUPABASE_URL}/storage/v1/object/journal-media/${cleanFileName}`;
+          const formData = new FormData();
+          formData.append('file', file);
 
-          const uploadRes = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'x-upsert': 'true',
-              'Content-Type': file.type || 'application/octet-stream'
-            },
-            body: file
-          });
+          let uploaded = false;
+          // Try local backend uploader first (handles files of any size without CORS/cloud limits)
+          try {
+            const apiRes = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData
+            });
+            if (apiRes.ok) {
+              const apiData = await apiRes.json();
+              if (apiData && apiData.url) {
+                attachment = {
+                  name: file.name,
+                  type: fileExt,
+                  url: apiData.url
+                };
+                uploaded = true;
+              }
+            }
+          } catch (e) {}
 
-          if (uploadRes.ok) {
-            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/journal-media/${cleanFileName}`;
-            attachment = {
-              name: file.name,
-              type: fileExt,
-              url: publicUrl
-            };
-          } else {
-            const errText = await uploadRes.text();
-            console.error('Supabase Storage Upload Error:', errText);
-            alert(`Media upload failed (${uploadRes.status}): ${uploadRes.statusText || 'Unable to upload file to cloud storage'}`);
+          // Fallback to direct Supabase Cloud Storage upload
+          if (!uploaded) {
+            const cleanFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            const uploadUrl = `${SUPABASE_URL}/storage/v1/object/journal-media/${cleanFileName}`;
+
+            const uploadRes = await fetch(uploadUrl, {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'x-upsert': 'true',
+                'Content-Type': file.type || 'application/octet-stream'
+              },
+              body: file
+            });
+
+            if (uploadRes.ok) {
+              const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/journal-media/${cleanFileName}`;
+              attachment = {
+                name: file.name,
+                type: fileExt,
+                url: publicUrl
+              };
+            }
           }
         } catch (uploadErr) {
           console.warn('Media upload exception:', uploadErr);
-          alert('Network error while uploading video to cloud storage. Please check connection and try again.');
         }
       }
 

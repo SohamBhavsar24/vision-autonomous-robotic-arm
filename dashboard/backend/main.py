@@ -34,8 +34,10 @@ import os
 import json
 import asyncio
 import logging
+import urllib.request
+import urllib.error
 from typing import List, Dict, Any
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -49,6 +51,47 @@ app = FastAPI(
     title="Robotic Arm Control Dashboard Backend",
     version="1.0.0"
 )
+
+UPLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/uploads"))
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+SUPABASE_URL = "https://pzewxynfhrylnqbkkeeq.supabase.co"
+SUPABASE_KEY = "sb_publishable_5OpuR0lsXoop77YXHtP01g_owDDLGe_"
+
+@app.post("/api/upload")
+async def upload_media_file(file: UploadFile = File(...)):
+    """Uploads media (video/photo/doc) locally and syncs to Supabase Cloud Storage."""
+    clean_name = f"{int(asyncio.get_event_loop().time() * 1000)}_{file.filename.replace(' ', '_')}"
+    local_path = os.path.join(UPLOADS_DIR, clean_name)
+    
+    contents = await file.read()
+    with open(local_path, "wb") as f:
+        f.write(contents)
+        
+    public_url = f"/uploads/{clean_name}"
+    
+    # Attempt background sync to Supabase Cloud Storage
+    try:
+        supa_url = f"{SUPABASE_URL}/storage/v1/object/journal-media/{clean_name}"
+        req = urllib.request.Request(supa_url, data=contents, method="POST")
+        req.add_header("apikey", SUPABASE_KEY)
+        req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+        req.add_header("x-upsert", "true")
+        req.add_header("Content-Type", file.content_type or "application/octet-stream")
+        
+        with urllib.request.urlopen(req) as resp:
+            if resp.status in (200, 201):
+                public_url = f"{SUPABASE_URL}/storage/v1/object/public/journal-media/{clean_name}"
+    except Exception as e:
+        logger.warning(f"Cloud storage sync warning (using local URL): {e}")
+
+    file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else ""
+    return {
+        "status": "success",
+        "name": file.filename,
+        "type": file_ext,
+        "url": public_url
+    }
 
 # Allow CORS for development
 app.add_middleware(
