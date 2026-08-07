@@ -854,6 +854,87 @@
       if (e.target === modalOverlay) modalOverlay.style.display = 'none';
     });
 
+    async function compressVideoFile(file) {
+      if (!file || !file.type.startsWith('video/')) return file;
+      const sizeMB = file.size / (1024 * 1024);
+      if (sizeMB <= 15) return file; // Already small enough for instant upload
+
+      const statusDiv = document.getElementById('fileUploadStatus');
+      if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.textContent = `Optimizing video size (${sizeMB.toFixed(1)}MB -> <15MB)...`;
+      }
+
+      return new Promise((resolve) => {
+        try {
+          const video = document.createElement('video');
+          video.muted = true;
+          video.playsInline = true;
+          const url = URL.createObjectURL(file);
+          video.src = url;
+
+          video.onloadedmetadata = () => {
+            let width = video.videoWidth || 1280;
+            let height = video.videoHeight || 720;
+            if (height > 720) {
+              width = Math.round((width * 720) / height);
+              height = 720;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            const stream = canvas.captureStream(30);
+            let mimeType = 'video/webm';
+            if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
+            else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) mimeType = 'video/webm;codecs=vp8';
+
+            const recorder = new MediaRecorder(stream, {
+              mimeType: mimeType,
+              videoBitsPerSecond: 1500000 // 1.5 Mbps
+            });
+
+            const chunks = [];
+            recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+            recorder.onstop = () => {
+              URL.revokeObjectURL(url);
+              const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+              const blob = new Blob(chunks, { type: mimeType });
+              const compressed = new File([blob], file.name.replace(/\.[^/.]+$/, '') + `_opt.${ext}`, { type: mimeType });
+              resolve(compressed);
+            };
+
+            recorder.start();
+            video.currentTime = 0;
+            video.play();
+
+            function anim() {
+              if (video.paused || video.ended) {
+                if (recorder.state === 'recording') recorder.stop();
+                return;
+              }
+              ctx.drawImage(video, 0, 0, width, height);
+              requestAnimationFrame(anim);
+            }
+            anim();
+          };
+
+          video.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve(file);
+          };
+          setTimeout(() => {
+            if (video.readyState < 2) resolve(file);
+          }, 10000);
+
+        } catch (err) {
+          resolve(file);
+        }
+      });
+    }
+
     // Handle Form Submit for Text & Media Log Entries (0.1s instant cloud sync)
     journalForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -876,7 +957,13 @@
 
       let attachment = null;
       if (fileInput && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
+        let file = fileInput.files[0];
+        
+        // Auto-compress large videos (>15MB) in browser for fast, reliable cloud uploads
+        if (file.type.startsWith('video/')) {
+          file = await compressVideoFile(file);
+        }
+
         const statusDiv = document.getElementById('fileUploadStatus');
         if (statusDiv) {
           statusDiv.style.display = 'block';
