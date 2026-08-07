@@ -453,6 +453,15 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-11",
+        date: "Friday, 07th August 2026",
+        title: "Physical Servo Hardware Assembly, Power Rail Debugging & Spaced Channel Protocol",
+        paragraphs: [
+          "In today's session, we commenced physical 6-DOF robotic arm hardware wiring and mechanical assembly on our 50cm x 50cm wooden platform board. We wired the Arduino Uno (VCC to 5V, GND to GND, A4 to SDA, A5 to SCL) to the PCA9685 16-channel PWM driver and connected external 5V/6V power. During initial testing of the Base Servo (Channel 0), we diagnosed a hardware power delivery issue where the PCA9685 onboard reverse-polarity protection MOSFET had high contact resistance. Bypassing the screw terminal by feeding battery positive (+) directly into the PCA9685 V+ pin header restored 100% full power to the servo rail.",
+          "To eliminate physical servo cable crowding on the PCA9685 board, we updated our control architecture and production Arduino firmware (robot_driver.ino) to use spaced even channels [Channels 0, 2, 4, 6, 8, 10]. We successfully mounted and tested the physical Base (Ch 0), Shoulder (Ch 2), and Elbow (Ch 4) joints, confirming smooth zero-jerk movement and precise slider responsiveness across all three assembled arm segments."
+        ]
+      },
+      {
         id: "entry-10",
         date: "Friday, 07th August 2026",
         title: "Phase C Demonstration Dataset Recording Engine, 30Hz Trajectory Sampler & Smooth Replay Architecture",
@@ -622,7 +631,6 @@
     async function syncBackendJournal() {
       const targets = [
         `${SUPABASE_URL}/rest/v1/journal_entries?select=*&order=created_at.desc`,
-        'https://vision-autonomous-robotic-arm.vercel.app/api/journal',
         '/api/journal',
         'dashboard/backend/journal_entries.json'
       ];
@@ -638,10 +646,15 @@
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-              const sortedData = sortEntriesDatewise(data);
-              const current = localStorage.getItem('robotic_arm_journal_entries');
-              if (current !== JSON.stringify(sortedData)) {
-                localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(sortedData));
+              const map = new Map();
+              DEFAULT_ENTRIES.forEach(e => map.set(e.id, e));
+              getStoredEntries().forEach(e => map.set(e.id, e));
+              data.forEach(e => map.set(e.id, e));
+
+              const mergedSorted = sortEntriesDatewise(Array.from(map.values()));
+              const currentRaw = localStorage.getItem('robotic_arm_journal_entries');
+              if (currentRaw !== JSON.stringify(mergedSorted)) {
+                localStorage.setItem('robotic_arm_journal_entries', JSON.stringify(mergedSorted));
                 renderJournal();
               }
               break;

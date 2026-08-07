@@ -85,19 +85,16 @@
 
 ## 4. Conversation History Summary
 
-### Session 6 (2026-08-06 / 2026-08-07) — COMPLETED
-- **Supabase Cloud Database & Storage Upgrade:** Connected `project_journal.html` to Supabase REST API (`journal_entries` table) and public Storage Bucket (`journal-media`). Added file upload input for PDFs, Word docs, photos, and HTML5 video players.
-- **Bluetooth Port Filtering:** Expanded `serial_manager.py` keyword filter to reject virtual macOS Bluetooth audio serial ports (`stone`, `airdopes`, `airpods`, `speaker`, `headset`).
-- **Dual Teleoperation Modes:** Implemented **Cartesian IK Mode** vs **Direct Joint Velocity Rate Control Mode** switcher on Web Dashboard Teleoperation tab.
-- **Velocity-Based Rate Integrator & Button Fixes:** Upgraded PS5 teleoperation to smooth velocity rate integration so analog joysticks drive joint travel speed without instant position snapping. Fixed all PS5 buttons (Cross, Circle, L1, R1, L2, R2).
-- **Prime Directive (100% Smooth Motion Policy):** Enforced EMA Low-Pass Filtering ($\alpha = 0.25$) with 5°/hard endpoint snapping (0°, 10°, 180°) across ALL 6 SERVOS.
-- **Phase C Demonstration Dataset Management:** Built full dataset recording & replay system on `#panel-dataset`. Features 30Hz trajectory sampling, live 6-joint angle telemetry readout, auto-homing on stop (excluded from training dataset), latest-first list ordering, `Play Trajectory` smooth replay with progress status, and episode deletion. Saved persistent entries to `dataset_episodes.json` and published Journal Entry #10 to Supabase.
+### Session 7 (2026-08-07) — IN PROGRESS / HARDWARE ASSEMBLY & TESTING
+- **Physical Hardware Wiring & Power Rail Debugging:** Wired Arduino Uno to PCA9685 driver and external power supply. Diagnosed PCA9685 onboard screw terminal MOSFET resistance fault; feeding battery positive (+) directly into PCA9685 `V+` pin header restored 100% full 5V/6V power to the servo rail.
+- **Spaced PCA9685 Channel Protocol:** Updated control architecture and `robot_driver.ino` firmware to route 6 servos to spaced even channels `{0, 2, 4, 6, 8, 10}` to eliminate physical plug crowding on the PCA9685 board.
+- **Arm Segment Testing:** Successfully mounted and physically tested the **Base (Ch 0)**, **Shoulder (Ch 2)**, and **Elbow (Ch 4)** MG996R servo joints with live Web Dashboard slider control.
+- **Journal Merging Engine:** Upgraded `syncBackendJournal()` in `project_journal.html` with non-destructive ID-based Map merging to prevent log entries from ever being overwritten by partial network fetches. Published Journal Entry #11 to Supabase PostgreSQL.
 
 ---
 
-## 5. Next Steps (Session 7 — Physical Arm Wiring & Assembly)
+## 5. Next Steps (Session 7 / Session 8 — Complete Arm Assembly & Calibration)
 
-1. **Hardware Wiring Step 1:** Connect PCA9685 to Arduino Uno (VCC$\to$5V, GND$\to$GND, SDA$\to$A4, SCL$\to$A5) and connect external 5V/6V power supply to PCA9685 screw terminals.
-2. **Hardware Wiring Step 2:** Connect 6 servos to PCA9685 Channels 0–5 (Ch 0: Base, Ch 1: Shoulder, Ch 2: Elbow, Ch 3: Wrist Pitch, Ch 4: Wrist Roll, Ch 5: Gripper).
-3. **Servo Horn Alignment:** Launch local backend (`python3 dashboard/backend/main.py`), auto-connect Arduino, click **"Lock All at 90°"**, attach plastic servo horns at $90^\circ$, and complete 6-DOF physical arm assembly on $50\text{cm} \times 50\text{cm}$ platform board.
-4. **Measure Link Lengths ($L_1..L_4$)** — Measure physical link lengths in centimeters using a ruler and save via Kinematic Calibration panel.
+1. **Mount Remaining Servos:** Attach Wrist Pitch (Ch 6), Wrist Roll (Ch 8), and Gripper Claw (Ch 10) servos to the PCA9685.
+2. **Physical Horn Alignment:** Lock all motors at $90^\circ$ and secure mechanical horns at physical midpoints.
+3. **Measure Link Lengths ($L_1..L_4$):** Measure physical link lengths in centimeters using a ruler and save via Kinematic Calibration panel.
