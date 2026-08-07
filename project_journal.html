@@ -857,19 +857,28 @@
     async function compressVideoFile(file) {
       if (!file || !file.type.startsWith('video/')) return file;
       const sizeMB = file.size / (1024 * 1024);
-      if (sizeMB <= 15) return file; // Already small enough for instant upload
+      if (sizeMB <= 15) return file; // Already small enough for direct upload
 
       const statusDiv = document.getElementById('fileUploadStatus');
       if (statusDiv) {
         statusDiv.style.display = 'block';
-        statusDiv.textContent = `Optimizing video size (${sizeMB.toFixed(1)}MB -> <15MB)...`;
+        statusDiv.textContent = `Optimizing ${sizeMB.toFixed(0)}MB video to <15MB web format... Please wait a moment.`;
       }
 
       return new Promise((resolve) => {
+        let isDone = false;
+        const cleanup = (result) => {
+          if (!isDone) {
+            isDone = true;
+            resolve(result);
+          }
+        };
+
         try {
           const video = document.createElement('video');
           video.muted = true;
           video.playsInline = true;
+          video.preload = 'auto';
           const url = URL.createObjectURL(file);
           video.src = url;
 
@@ -891,9 +900,11 @@
             if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
             else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) mimeType = 'video/webm;codecs=vp8';
 
+            // Lower target bitrate to 1.0 Mbps for large >100MB source files
+            const targetBitrate = sizeMB > 100 ? 1000000 : 1500000;
             const recorder = new MediaRecorder(stream, {
               mimeType: mimeType,
-              videoBitsPerSecond: 1500000 // 1.5 Mbps
+              videoBitsPerSecond: targetBitrate
             });
 
             const chunks = [];
@@ -903,12 +914,13 @@
               const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
               const blob = new Blob(chunks, { type: mimeType });
               const compressed = new File([blob], file.name.replace(/\.[^/.]+$/, '') + `_opt.${ext}`, { type: mimeType });
-              resolve(compressed);
+              cleanup(compressed);
             };
 
             recorder.start();
+            try { video.playbackRate = 2.0; } catch (e) {}
             video.currentTime = 0;
-            video.play();
+            video.play().catch(() => cleanup(file));
 
             function anim() {
               if (video.paused || video.ended) {
@@ -923,14 +935,19 @@
 
           video.onerror = () => {
             URL.revokeObjectURL(url);
-            resolve(file);
+            cleanup(file);
           };
+
+          // 45-second timeout for loading heavy 285MB video metadata
           setTimeout(() => {
-            if (video.readyState < 2) resolve(file);
-          }, 10000);
+            if (!isDone && video.readyState < 2) {
+              console.warn('Video compression load timeout, proceeding with original...');
+              cleanup(file);
+            }
+          }, 45000);
 
         } catch (err) {
-          resolve(file);
+          cleanup(file);
         }
       });
     }
