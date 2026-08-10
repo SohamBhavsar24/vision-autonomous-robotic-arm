@@ -136,6 +136,8 @@ class DatasetEpisodesRequest(BaseModel):
     episodes: List[Dict[str, Any]]
 
 
+from dataset_formatter import save_compact_dataset_file
+
 @app.get("/api/dataset")
 async def get_dataset_episodes():
     """Returns persistent list of recorded demonstration episodes."""
@@ -150,9 +152,8 @@ async def get_dataset_episodes():
 
 @app.post("/api/dataset")
 async def save_dataset_episodes(req: DatasetEpisodesRequest):
-    """Saves persistent list of demonstration episodes."""
-    with open(DATASET_PATH, "w") as f:
-        json.dump(req.episodes, f, indent=2)
+    """Saves persistent list of demonstration episodes with compact single-line trajectory formatting."""
+    save_compact_dataset_file(req.episodes, DATASET_PATH)
     return {"status": "saved", "count": len(req.episodes)}
 
 
