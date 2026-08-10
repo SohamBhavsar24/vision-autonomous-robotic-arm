@@ -209,6 +209,32 @@ const DatasetPanel = {
     } catch (e) {}
   },
 
+  smoothTransitionToAngles(startAngles, targetAngles, durationMs, onUpdate, onComplete) {
+    const steps = Math.max(10, Math.round(durationMs / this.sampleIntervalMs));
+    let stepCount = 0;
+    const timer = setInterval(() => {
+      stepCount++;
+      const progress = stepCount / steps;
+      // Cosine S-curve smooth zero-jerk interpolation (Prime Directive Policy)
+      const easeProgress = (1 - Math.cos(Math.PI * progress)) / 2;
+
+      const current = startAngles.map((startVal, i) => {
+        const targetVal = targetAngles[i];
+        return Math.round(startVal + (targetVal - startVal) * easeProgress);
+      });
+
+      if (window.ServoPanel && ServoPanel.setAngles) {
+        ServoPanel.setAngles(current);
+      }
+      if (onUpdate) onUpdate(current, Math.round(progress * 100));
+
+      if (stepCount >= steps) {
+        clearInterval(timer);
+        if (onComplete) onComplete();
+      }
+    }, this.sampleIntervalMs);
+  },
+
   playEpisode(episodeId) {
     if (this.isRecording) {
       alert('Cannot play trajectory while recording is active.');
@@ -231,7 +257,7 @@ const DatasetPanel = {
 
     if (playBtn) {
       playBtn.disabled = true;
-      playBtn.textContent = 'Replaying Trajectory...';
+      playBtn.textContent = 'Aligning to Start Pose...';
       playBtn.style.opacity = '0.7';
     }
 
@@ -240,51 +266,96 @@ const DatasetPanel = {
     }
 
     if (window.App && App.log) {
-      App.log(`REPLAYING TRAJECTORY: Episode #${ep.number} (${ep.frameCount} frames, ~${ep.durationSec}s)...`);
+      App.log(`PREPARING REPLAY: Smoothly aligning arm to Episode #${ep.number} start pose...`);
     }
 
-    let frameIndex = 0;
-    this.playTimer = setInterval(() => {
-      if (frameIndex >= ep.trajectory.length) {
-        clearInterval(this.playTimer);
-        this.isPlaying = false;
+    const currentLiveAngles = this.getCurrentJointAngles();
+    const startPose = ep.trajectory[0].angles;
 
-        if (playBtn) {
-          playBtn.disabled = false;
-          playBtn.textContent = 'Play Trajectory';
-          playBtn.style.opacity = '1';
-        }
-
+    // Phase 1: Smooth 1-second S-Curve transition from current pose to start pose
+    this.smoothTransitionToAngles(
+      currentLiveAngles,
+      startPose,
+      1000, // 1000ms transition time
+      (angles) => {
         if (statusSpan) {
-          statusSpan.textContent = 'Replay Complete';
-          statusSpan.style.color = '#2E7D32';
+          statusSpan.textContent = 'Aligning to Start Pose...';
+          statusSpan.style.color = 'var(--accent-primary)';
+        }
+        if (this.anglesValSpan) {
+          this.anglesValSpan.textContent = this.formatAnglesText(angles);
+        }
+      },
+      () => {
+        // Phase 2: Play actual recorded trajectory
+        if (playBtn) playBtn.textContent = 'Replaying Trajectory...';
+        if (window.App && App.log) {
+          App.log(`PLAYING TRAJECTORY: Episode #${ep.number} (${ep.frameCount} frames, ~${ep.durationSec}s)...`);
         }
 
-        if (this.liveAnglesBox) {
-          this.liveAnglesBox.style.display = 'none';
-        }
+        let frameIndex = 0;
+        this.playTimer = setInterval(() => {
+          if (frameIndex >= ep.trajectory.length) {
+            clearInterval(this.playTimer);
 
-        if (window.App && App.log) App.log(`Episode #${ep.number} Replay Complete. Moving smoothly to Home Position...`);
-        if (window.App && App.sendWS) App.sendWS('home');
-        return;
+            // Phase 3: Smooth 1-second transition back to Home Position
+            if (window.App && App.log) App.log(`Episode #${ep.number} Trajectory Complete. Smoothly returning to Home Position...`);
+            const endPose = ep.trajectory[ep.trajectory.length - 1].angles;
+            const homePose = [90, 90, 90, 90, 90, 10];
+
+            this.smoothTransitionToAngles(
+              endPose,
+              homePose,
+              1000,
+              (angles) => {
+                if (statusSpan) {
+                  statusSpan.textContent = 'Returning Home...';
+                  statusSpan.style.color = '#2E7D32';
+                }
+                if (this.anglesValSpan) {
+                  this.anglesValSpan.textContent = this.formatAnglesText(angles);
+                }
+              },
+              () => {
+                this.isPlaying = false;
+                if (playBtn) {
+                  playBtn.disabled = false;
+                  playBtn.textContent = 'Play Trajectory';
+                  playBtn.style.opacity = '1';
+                }
+
+                if (statusSpan) {
+                  statusSpan.textContent = 'Replay Complete';
+                  statusSpan.style.color = '#2E7D32';
+                }
+
+                if (this.liveAnglesBox) {
+                  this.liveAnglesBox.style.display = 'none';
+                }
+              }
+            );
+
+            return;
+          }
+
+          const frame = ep.trajectory[frameIndex];
+          if (window.ServoPanel && ServoPanel.setAngles) {
+            ServoPanel.setAngles(frame.angles);
+          }
+
+          if (this.anglesValSpan) {
+            this.anglesValSpan.textContent = this.formatAnglesText(frame.angles);
+          }
+
+          if (statusSpan) {
+            statusSpan.textContent = `Replaying Frame ${frameIndex + 1} / ${ep.trajectory.length}...`;
+            statusSpan.style.color = 'var(--accent-primary)';
+          }
+
+          frameIndex++;
+        }, this.sampleIntervalMs);
       }
-
-      const frame = ep.trajectory[frameIndex];
-      if (window.ServoPanel && ServoPanel.setAngles) {
-        ServoPanel.setAngles(frame.angles);
-      }
-
-      if (this.anglesValSpan) {
-        this.anglesValSpan.textContent = this.formatAnglesText(frame.angles);
-      }
-
-      if (statusSpan) {
-        statusSpan.textContent = `Replaying Frame ${frameIndex + 1} / ${ep.trajectory.length}...`;
-        statusSpan.style.color = 'var(--accent-primary)';
-      }
-
-      frameIndex++;
-    }, this.sampleIntervalMs);
+    );
   },
 
   async deleteEpisode(episodeId) {
