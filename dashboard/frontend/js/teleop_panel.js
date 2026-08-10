@@ -448,7 +448,7 @@ const TeleopPanel = {
     }
 
     // ONLY dispatch teleoperation angles when user is actively giving control inputs or gripper is traveling
-    if (this.activeMode === 'joint' && isUserInteracting) {
+    if (isUserInteracting) {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
         ServoPanel.setAngles(this.smoothedAngles);
       }

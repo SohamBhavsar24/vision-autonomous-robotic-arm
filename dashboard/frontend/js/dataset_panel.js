@@ -55,6 +55,19 @@ const DatasetPanel = {
     return `Base: ${angles[0]}° | Shoulder: ${angles[1]}° | Elbow: ${angles[2]}° | Wrist Pitch: ${angles[3]}° | Wrist Roll: ${angles[4]}° | Gripper: ${angles[5]}°`;
   },
 
+  getCurrentJointAngles() {
+    if (window.TeleopPanel && Array.isArray(window.TeleopPanel.smoothedAngles) && window.TeleopPanel.smoothedAngles.length === 6) {
+      return [...window.TeleopPanel.smoothedAngles];
+    }
+    if (window.ServoPanel && typeof window.ServoPanel.getAnglesFromSliders === 'function') {
+      return window.ServoPanel.getAnglesFromSliders();
+    }
+    if (window.ServoPanel && Array.isArray(window.ServoPanel.currentAngles)) {
+      return [...window.ServoPanel.currentAngles];
+    }
+    return [90, 90, 90, 90, 90, 10];
+  },
+
   startRecording() {
     if (this.isPlaying) {
       alert('Cannot start recording while a trajectory replay is active.');
@@ -89,7 +102,7 @@ const DatasetPanel = {
     // 30Hz sampling loop
     const startTime = Date.now();
     this.recordTimer = setInterval(() => {
-      const angles = typeof ServoPanel !== 'undefined' ? [...ServoPanel.currentAngles] : [90, 90, 90, 90, 90, 10];
+      const angles = this.getCurrentJointAngles();
       const elapsedMs = Date.now() - startTime;
       this.currentTrajectory.push({ t: elapsedMs, angles });
 
