@@ -76,8 +76,9 @@ const uint8_t SERVO_CHANNELS[NUM_SERVOS] = {0, 2, 4, 6, 8, 10};
 // These define the safe resting configuration the robot returns to on startup
 const uint8_t HOME_ANGLES[NUM_SERVOS] = {90, 90, 90, 90, 90, 10}; 
 
-// Track the last commanded angle for each servo
+// Track the last commanded angle and pulse for each servo
 uint8_t current_angles[NUM_SERVOS];
+float current_pulses[NUM_SERVOS];
 
 // Buffer to store incoming serial data (exactly 6 bytes per command packet)
 byte serialBuffer[NUM_SERVOS];
@@ -93,9 +94,9 @@ void setup() {
   pwm.setPWMFreq(SERVO_FREQ);
   delay(100);
   
-  // Initialize current_angles to 255 to force initial PWM write
   for (int i = 0; i < NUM_SERVOS; i++) {
     current_angles[i] = 255;
+    current_pulses[i] = -1.0;
   }
 
   // Always start in a known, safe position
@@ -107,18 +108,25 @@ int angleToPulse(int angle) {
   return map(angle, 0, 180, SERVOMIN, SERVOMAX);
 }
 
-// Command a single servo to a specific angle, with safety clamping and unchanged-angle filtering
+// Command a single servo to a specific angle with smooth pulse-level EMA interpolation
 void setServoAngle(uint8_t servoNum, uint8_t angle) {
-  // Hard clamp to 0–180 to prevent invalid PWM signals
   angle = constrain(angle, 0, 180);
+  int targetPulse = angleToPulse(angle);
   
-  // Prevent PCA9685 PWM timer reset chatter on unchanged servos
-  if (current_angles[servoNum] == angle) {
-    return;
+  if (current_angles[servoNum] == angle && current_pulses[servoNum] == targetPulse) {
+    return; // Don't interrupt PCA9685 PWM timer if target is reached
   }
 
+  if (current_pulses[servoNum] < 0) {
+    current_pulses[servoNum] = targetPulse;
+  } else {
+    // Smooth pulse-level EMA interpolation (eliminates integer staircase motor chatter)
+    current_pulses[servoNum] = (current_pulses[servoNum] * 0.5) + (targetPulse * 0.5);
+  }
+
+  int finalPulse = round(current_pulses[servoNum]);
   uint8_t pcaChannel = SERVO_CHANNELS[servoNum];
-  pwm.setPWM(pcaChannel, 0, angleToPulse(angle));
+  pwm.setPWM(pcaChannel, 0, finalPulse);
   current_angles[servoNum] = angle;
 }
 
@@ -132,8 +140,17 @@ void moveToHome() {
 #define FRAME_HEADER 0xFF
 
 void loop() {
+  // If multiple 7-byte packets accumulated in RX buffer, consume stale older packets to process ONLY newest position
+  while (Serial.available() >= 14) {
+    if (Serial.peek() == FRAME_HEADER) {
+      for (int i = 0; i < 7; i++) Serial.read(); // Flush stale packet
+    } else {
+      Serial.read();
+    }
+  }
+
   // Read incoming serial packets with 0xFF header byte framing for 100% anti-jitter alignment
-  while (Serial.available() >= 7) {
+  if (Serial.available() >= 7) {
     if (Serial.peek() == FRAME_HEADER) {
       Serial.read(); // Consume header byte 0xFF
       Serial.readBytes(serialBuffer, NUM_SERVOS);
