@@ -400,9 +400,10 @@ class SerialManager:
             return self._send_bytes_internal(clamped_angles)
 
     def _send_bytes_internal(self, angles: List[int]) -> Tuple[bool, str]:
-        """Internal helper to write raw 6-byte packet over serial."""
+        """Internal helper to write raw 7-byte packet with 0xFF header byte framing over serial."""
         try:
-            packet = bytes(angles)
+            # Prepend 0xFF header byte to guarantee 100% anti-jitter packet boundary alignment
+            packet = bytes([0xFF] + list(angles))
             self._serial.write(packet)
             self._serial.flush()
             return True, "Packet sent"

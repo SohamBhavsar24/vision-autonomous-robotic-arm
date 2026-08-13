@@ -117,19 +117,20 @@ void moveToHome() {
   }
 }
 
-void loop() {
-  // If multiple packets accumulated in RX buffer, consume until only the LATEST 6-byte packet remains
-  while (Serial.available() >= (NUM_SERVOS * 2)) {
-    for (int i = 0; i < NUM_SERVOS; i++) Serial.read();
-  }
+#define FRAME_HEADER 0xFF
 
-  // Check if we have a complete 6-byte packet waiting
-  if (Serial.available() >= NUM_SERVOS) {
-    Serial.readBytes(serialBuffer, NUM_SERVOS);
-    
-    // Apply commanded angles to all 6 servos immediately
-    for (int i = 0; i < NUM_SERVOS; i++) {
-       setServoAngle(i, serialBuffer[i]);
+void loop() {
+  // Read incoming serial packets with 0xFF header byte framing for 100% anti-jitter alignment
+  while (Serial.available() >= 7) {
+    if (Serial.peek() == FRAME_HEADER) {
+      Serial.read(); // Consume header byte 0xFF
+      Serial.readBytes(serialBuffer, NUM_SERVOS);
+      for (int i = 0; i < NUM_SERVOS; i++) {
+        setServoAngle(i, serialBuffer[i]);
+      }
+    } else {
+      // Discard misaligned byte until 0xFF header marker is reached
+      Serial.read();
     }
   }
 }
