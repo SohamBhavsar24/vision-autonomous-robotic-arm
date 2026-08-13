@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-08-07 (Session 6 Complete — Ready for Session 7 Hardware Wiring & Assembly)
+> **Last Updated:** 2026-08-13 (Session 8 Complete — Hardware Wiring & Jitter Filtering Tuned, Ready for Complete Arm Assembly)
 
 ---
 
@@ -85,16 +85,17 @@
 
 ## 4. Conversation History Summary
 
-### Session 7 (2026-08-07) — IN PROGRESS / HARDWARE ASSEMBLY & TESTING
-- **Physical Hardware Wiring & Power Rail Debugging:** Wired Arduino Uno to PCA9685 driver and external power supply. Diagnosed PCA9685 onboard screw terminal MOSFET resistance fault; feeding battery positive (+) directly into PCA9685 `V+` pin header restored 100% full 5V/6V power to the servo rail.
-- **Spaced PCA9685 Channel Protocol:** Updated control architecture and `robot_driver.ino` firmware to route 6 servos to spaced even channels `{0, 2, 4, 6, 8, 10}` to eliminate physical plug crowding on the PCA9685 board.
-- **Arm Segment Testing:** Successfully mounted and physically tested the **Base (Ch 0)**, **Shoulder (Ch 2)**, and **Elbow (Ch 4)** MG996R servo joints with live Web Dashboard slider control.
-- **Journal Merging Engine:** Upgraded `syncBackendJournal()` in `project_journal.html` with non-destructive ID-based Map merging to prevent log entries from ever being overwritten by partial network fetches. Published Journal Entry #11 to Supabase PostgreSQL.
+### Session 8 (2026-08-13) — HARDWARE REFINEMENT, REPLAY INTERPOLATION & DATASET ARCHITECTURE
+- **30Hz Trajectory Recorder Telemetry Sync:** Updated `DatasetPanel.getCurrentJointAngles()` to capture live PS5/IK/teleop joint telemetry during demonstration recording.
+- **Zero-Jerk Trajectory Replay Lead-In:** Implemented S-Curve cosine interpolation lead-in and lead-out transitions for 1-click dataset replay to satisfy Prime Directive smooth motion policy.
+- **Compact Dataset Storage Architecture:** Built custom dataset formatter reducing line count by **91%** and created 1-click PyTorch/HDF5 (`.h5` / `.npz`) exporter (`export_dataset.py`).
+- **Hardware Serial Anti-Jitter Protocol:** Implemented `0xFF` Start-of-Frame Header Byte Framing and 400kHz Fast I2C mode. Fixed false 60Hz WebSocket teleop loop flooding.
+- **Natural Controller Direction Tuning:** Reversed Base (Left Joystick LEFT moves Base LEFT) and Elbow (Right Joystick FORWARD moves Elbow FORWARD) in Direct Joint mode per user spec.
 
 ---
 
-## 5. Next Steps (Session 7 / Session 8 — Complete Arm Assembly & Calibration)
+## 5. Next Steps (Complete Physical Arm Assembly & Kinematic Calibration)
 
-1. **Mount Remaining Servos:** Attach Wrist Pitch (Ch 6), Wrist Roll (Ch 8), and Gripper Claw (Ch 10) servos to the PCA9685.
-2. **Physical Horn Alignment:** Lock all motors at $90^\circ$ and secure mechanical horns at physical midpoints.
-3. **Measure Link Lengths ($L_1..L_4$):** Measure physical link lengths in centimeters using a ruler and save via Kinematic Calibration panel.
+1. **Complete Mechanical Assembly:** Mount remaining Wrist Pitch (Ch 6), Wrist Roll (Ch 8), and Gripper (Ch 10) servos to the physical arm structure.
+2. **Servo Horn Alignment:** Connect to dashboard at `http://localhost:8050`, click **Lock at 90°**, and secure plastic servo horns at physical midpoints.
+3. **Measure Link Lengths ($L_1..L_4$):** Measure physical link lengths in centimeters using a ruler and enter parameters into the Kinematic Calibration panel.
