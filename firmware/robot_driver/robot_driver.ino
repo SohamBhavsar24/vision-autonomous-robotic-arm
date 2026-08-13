@@ -103,21 +103,25 @@ void setup() {
   moveToHome();
 }
 
-// Convert a 0–180 degree angle to exact floating-point PCA9685 pulse width count
-float angleToPulseFloat(uint8_t angle) {
-  return 150.0f + ((float)angle * 450.0f / 180.0f);
+// Convert a 0–180 degree angle to the PCA9685 pulse width count
+int angleToPulse(int angle) {
+  return map(angle, 0, 180, SERVOMIN, SERVOMAX);
 }
 
-// Command a single servo to a specific angle with liquid-smooth float pulse EMA interpolation
+// Command a single servo to a specific angle with smooth pulse-level EMA interpolation
 void setServoAngle(uint8_t servoNum, uint8_t angle) {
   angle = constrain(angle, 0, 180);
-  float targetPulse = angleToPulseFloat(angle);
+  int targetPulse = angleToPulse(angle);
   
-  if (current_pulses[servoNum] < 0.0f) {
+  if (current_angles[servoNum] == angle && current_pulses[servoNum] == targetPulse) {
+    return; // Don't interrupt PCA9685 PWM timer if target is reached
+  }
+
+  if (current_pulses[servoNum] < 0) {
     current_pulses[servoNum] = targetPulse;
   } else {
-    // Liquid-smooth float pulse EMA low-pass filter (dampens all residual micro-jitters)
-    current_pulses[servoNum] = (current_pulses[servoNum] * 0.70f) + (targetPulse * 0.30f);
+    // Smooth pulse-level EMA interpolation (eliminates integer staircase motor chatter)
+    current_pulses[servoNum] = (current_pulses[servoNum] * 0.5) + (targetPulse * 0.5);
   }
 
   int finalPulse = round(current_pulses[servoNum]);
