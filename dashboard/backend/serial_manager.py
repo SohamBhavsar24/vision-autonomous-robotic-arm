@@ -411,16 +411,16 @@ class SerialManager:
             self.is_connected = False
             return False, f"Write error: {e}"
 
-    def lock_all_90(self, broadcast_callback=None) -> Tuple[bool, str]:
+    async def lock_all_90(self, broadcast_callback=None) -> Tuple[bool, str]:
         """Locks all 6 servos smoothly to 90 degrees for mechanical assembly."""
         self.is_estop = False
         angles = [90, 90, 90, 90, 90, 90]
-        return self.smooth_transition_to_angles(angles, duration_sec=1.0, broadcast_callback=broadcast_callback)
+        return await self.smooth_transition_to_angles(angles, duration_sec=1.0, broadcast_callback=broadcast_callback)
 
-    def move_to_home(self, broadcast_callback=None) -> Tuple[bool, str]:
+    async def move_to_home(self, broadcast_callback=None) -> Tuple[bool, str]:
         """Moves all servos smoothly to predefined Home Position angles (Decision #20)."""
         self.is_estop = False
-        return self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
+        return await self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
 
     def emergency_stop(self) -> Tuple[bool, str]:
         """

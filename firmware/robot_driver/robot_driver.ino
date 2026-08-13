@@ -118,6 +118,11 @@ void moveToHome() {
 }
 
 void loop() {
+  // If multiple packets accumulated in RX buffer, consume until only the LATEST 6-byte packet remains
+  while (Serial.available() >= (NUM_SERVOS * 2)) {
+    for (int i = 0; i < NUM_SERVOS; i++) Serial.read();
+  }
+
   // Check if we have a complete 6-byte packet waiting
   if (Serial.available() >= NUM_SERVOS) {
     Serial.readBytes(serialBuffer, NUM_SERVOS);
