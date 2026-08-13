@@ -87,11 +87,17 @@ void setup() {
   Serial.setTimeout(10); // Don't block on incomplete reads
 
   Wire.begin();
+  Wire.setClock(400000L); // 400kHz Fast I2C Bus Mode to prevent transmission bottlenecks
   delay(100);
   pwm.begin();
   pwm.setPWMFreq(SERVO_FREQ);
   delay(100);
   
+  // Initialize current_angles to 255 to force initial PWM write
+  for (int i = 0; i < NUM_SERVOS; i++) {
+    current_angles[i] = 255;
+  }
+
   // Always start in a known, safe position
   moveToHome();
 }
@@ -101,10 +107,16 @@ int angleToPulse(int angle) {
   return map(angle, 0, 180, SERVOMIN, SERVOMAX);
 }
 
-// Command a single servo to a specific angle, with safety clamping
+// Command a single servo to a specific angle, with safety clamping and unchanged-angle filtering
 void setServoAngle(uint8_t servoNum, uint8_t angle) {
   // Hard clamp to 0–180 to prevent invalid PWM signals
   angle = constrain(angle, 0, 180);
+  
+  // Prevent PCA9685 PWM timer reset chatter on unchanged servos
+  if (current_angles[servoNum] == angle) {
+    return;
+  }
+
   uint8_t pcaChannel = SERVO_CHANNELS[servoNum];
   pwm.setPWM(pcaChannel, 0, angleToPulse(angle));
   current_angles[servoNum] = angle;
