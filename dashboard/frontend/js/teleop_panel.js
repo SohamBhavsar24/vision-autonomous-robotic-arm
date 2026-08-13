@@ -393,16 +393,13 @@ const TeleopPanel = {
       }
     }
 
-    // Flag indicating if Gripper is actively moving (either expanding with R2 or returning to 10°)
-    const isGripperActive = !this.isGripperLocked && (Math.round(this.integratedAngles[5]) > 10 || r2Val > 0.05);
+    // Check if the user is actively manipulating any stick, button, or trigger
+    const isJoystickInput = (Math.abs(lx) > 0.05) || (Math.abs(ly) > 0.05) || (Math.abs(ry) > 0.05) ||
+                            xPressed || circlePressed || r1Pressed || l1Pressed || l2Pressed || (r2Val > 0.05);
 
-    // Check if the user is actively manipulating any stick, button, or active gripper travel
-    const isUserInteracting = (Math.abs(lx) > 0) || (Math.abs(ly) > 0) || (Math.abs(ry) > 0) ||
-                              xPressed || circlePressed || r1Pressed || l1Pressed || isGripperActive || l2Pressed;
-
-    // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls and gripper is not moving,
+    // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls,
     // sync PS5 integrated state with current ServoPanel sliders/angles.
-    if (!isUserInteracting && typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
+    if (!isJoystickInput && typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
       this.integratedAngles = [...ServoPanel.currentAngles];
       this.smoothedAngles = [...ServoPanel.currentAngles];
     }
@@ -423,14 +420,14 @@ const TeleopPanel = {
 
     if (this.activeMode === 'joint') {
       // Direct Joint Motor Control Mode (Velocity Rate Integrator)
-      if (Math.abs(lx) > 0) {
+      if (Math.abs(lx) > 0.05) {
         // Reversed Base direction per user spec: Left Joystick LEFT moves Base LEFT
         this.integratedAngles[0] = Math.max(0, Math.min(180, this.integratedAngles[0] - (lx * stepSpeed * 1.5)));
       }
-      if (Math.abs(ly) > 0) {
+      if (Math.abs(ly) > 0.05) {
         this.integratedAngles[1] = Math.max(0, Math.min(180, this.integratedAngles[1] + (ly * stepSpeed * 1.5)));
       }
-      if (Math.abs(ry) > 0) {
+      if (Math.abs(ry) > 0.05) {
         // Reversed Elbow direction per user spec: Right Joystick FORWARD moves Elbow FORWARD
         this.integratedAngles[2] = Math.max(0, Math.min(180, this.integratedAngles[2] - (ry * stepSpeed * 1.5)));
       }
@@ -449,8 +446,8 @@ const TeleopPanel = {
       }
     }
 
-    // ONLY dispatch teleoperation angles when user is actively giving control inputs or gripper is traveling
-    if (isUserInteracting) {
+    // ONLY dispatch teleoperation angles when user is actively giving control inputs via joystick or buttons
+    if (isJoystickInput) {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
         ServoPanel.setAngles(this.smoothedAngles);
       }
