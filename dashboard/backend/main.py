@@ -140,6 +140,12 @@ class DatasetEpisodesRequest(BaseModel):
 
 from dataset_formatter import save_compact_dataset_file
 
+@app.on_event("shutdown")
+def shutdown_event():
+    logger.info("Stopping vision manager camera streams...")
+    vision_manager_cam1.stop_camera()
+
+
 @app.get("/api/video_feed/1")
 async def video_feed_cam1():
     """Live MJPEG video feed for Camera 1 (Logitech C270 Workspace View) with real-time OpenCV ArUco Marker ID 0 detection."""

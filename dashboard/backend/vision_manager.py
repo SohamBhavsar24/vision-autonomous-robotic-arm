@@ -28,6 +28,7 @@ class VisionManager:
     def __init__(self, camera_index: int = 0):
         self.camera_index = camera_index
         self.cap: Optional[cv2.VideoCapture] = None
+        self.is_running = True
 
         # Target valid IDs for our project
         self.VALID_IDS = {0, 1, 2}
@@ -77,12 +78,24 @@ class VisionManager:
 
         if self.cap.isOpened():
             self.is_camera_connected = True
+            self.is_running = True
             logger.info(f"Camera index {self.camera_index} opened successfully.")
             return True
         else:
             self.is_camera_connected = False
             logger.warning(f"Failed to open camera index {self.camera_index}.")
             return False
+
+    def stop_camera(self):
+        """Cleanly releases camera resource on shutdown."""
+        self.is_running = False
+        if self.cap is not None:
+            try:
+                self.cap.release()
+            except Exception:
+                pass
+            self.cap = None
+        self.is_camera_connected = False
 
     def detect_and_annotate(self, frame: np.ndarray) -> np.ndarray:
         """Executes strict ArUco detection and draws bounding boxes ONLY for valid IDs (0, 1, 2)."""
@@ -157,49 +170,55 @@ class VisionManager:
         return frame
 
     def generate_mjpeg_stream(self) -> Generator[bytes, None, None]:
-        """Generator function producing continuous MJPEG byte stream for FastAPI."""
-        if not self.init_camera():
-            while True:
-                blank_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-                blank_frame[:] = (36, 38, 42)
+        """Generator function producing continuous MJPEG byte stream for FastAPI with clean shutdown."""
+        self.is_running = True
+        try:
+            if not self.init_camera():
+                while self.is_running:
+                    blank_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                    blank_frame[:] = (36, 38, 42)
 
-                for x in range(0, 640, 40):
-                    cv2.line(blank_frame, (x, 0), (x, 480), (45, 48, 52), 1)
-                for y in range(0, 480, 40):
-                    cv2.line(blank_frame, (0, y), (640, y), (45, 48, 52), 1)
+                    for x in range(0, 640, 40):
+                        cv2.line(blank_frame, (x, 0), (x, 480), (45, 48, 52), 1)
+                    for y in range(0, 480, 40):
+                        cv2.line(blank_frame, (0, y), (640, y), (45, 48, 52), 1)
 
-                cv2.putText(blank_frame, "Camera 1 (Workspace View)", (140, 220),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (242, 247, 250), 2, cv2.LINE_AA)
-                cv2.putText(blank_frame, "Camera standing by... Plug USB camera or allow webcam access", (60, 260),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (74, 120, 196), 1, cv2.LINE_AA)
+                    cv2.putText(blank_frame, "Camera 1 (Workspace View)", (140, 220),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (242, 247, 250), 2, cv2.LINE_AA)
+                    cv2.putText(blank_frame, "Camera standing by... Plug USB camera or allow webcam access", (60, 260),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (74, 120, 196), 1, cv2.LINE_AA)
 
-                ret, jpeg = cv2.imencode('.jpg', blank_frame)
-                if ret:
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
-                time.sleep(0.1)
+                    ret, jpeg = cv2.imencode('.jpg', blank_frame)
+                    if ret:
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+                    time.sleep(0.1)
 
-        while True:
-            success, frame = self.cap.read()
-            if not success:
-                logger.warning("Camera read frame failed. Re-initializing...")
-                self.cap.release()
-                time.sleep(0.5)
-                self.init_camera()
-                continue
+            while self.is_running:
+                if self.cap is None or not self.cap.isOpened():
+                    time.sleep(0.1)
+                    continue
 
-            # Run strict ArUco detection & annotation
-            annotated_frame = self.detect_and_annotate(frame)
+                success, frame = self.cap.read()
+                if not success:
+                    logger.warning("Camera read frame failed. Re-initializing...")
+                    time.sleep(0.2)
+                    continue
 
-            # Compress to JPG
-            ret, jpeg = cv2.imencode('.jpg', annotated_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-            if not ret:
-                continue
+                # Run strict ArUco detection & annotation
+                annotated_frame = self.detect_and_annotate(frame)
 
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+                # Compress to JPG
+                ret, jpeg = cv2.imencode('.jpg', annotated_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                if not ret:
+                    continue
 
-            time.sleep(0.033)
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+
+                time.sleep(0.033)
+        finally:
+            logger.info("Video stream generator ended cleanly.")
 
 
 # Global singleton instance
