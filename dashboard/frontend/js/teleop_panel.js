@@ -23,8 +23,8 @@ const TeleopPanel = {
   animFrameId: null,
   activeMode: 'ik', // 'ik' or 'joint'
   isGripperLocked: false,
-  integratedAngles: [90, 90, 90, 90, 90, 165], // Continuous Velocity-Based Integrator
-  smoothedAngles: [90, 90, 90, 90, 90, 165],   // EMA Low-Pass Filter State
+  integratedAngles: [90, 90, 90, 90, 90, 145], // Continuous Velocity-Based Integrator
+  smoothedAngles: [90, 90, 90, 90, 90, 145],   // EMA Low-Pass Filter State
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -375,7 +375,7 @@ const TeleopPanel = {
     if (l2Pressed && !this.wasL2Pressed) {
       this.isGripperLocked = !this.isGripperLocked;
       if (window.App && App.log) {
-        App.log(`Gripper Lock ${this.isGripperLocked ? 'LOCKED (Position Saved)' : 'UNLOCKED (Returning to 165°)'}`);
+        App.log(`Gripper Lock ${this.isGripperLocked ? 'LOCKED (Position Saved)' : 'UNLOCKED (Returning to 145°)'}`);
       }
     }
     this.wasL2Pressed = l2Pressed;
@@ -385,11 +385,11 @@ const TeleopPanel = {
       // While locked, R2 is ignored; gripper stays locked at current angle
     } else {
       if (r2Val > 0.05) {
-        // While R2 is pressed, gripper motor closes from 165° down to strict 85° limit (prevents motor stall)
+        // While R2 is pressed, gripper motor closes from 145° down to strict 85° limit (prevents motor stall)
         this.integratedAngles[5] = Math.max(85, this.integratedAngles[5] - (r2Val * stepSpeed * 2.0));
       } else {
-        // When R2 is released (or after L2 unlock), gripper opens back to 165°
-        this.integratedAngles[5] = Math.min(165, this.integratedAngles[5] + (stepSpeed * 1.5));
+        // When R2 is released (or after L2 unlock), gripper opens back to 145°
+        this.integratedAngles[5] = Math.min(145, this.integratedAngles[5] + (stepSpeed * 1.5));
       }
     }
 
@@ -438,7 +438,7 @@ const TeleopPanel = {
     for (let i = 0; i < 6; i++) {
       const targetVal = Math.round(this.integratedAngles[i]);
       const diff = Math.abs(targetVal - this.smoothedAngles[i]);
-      if (diff <= 5 || targetVal === 0 || targetVal === 180 || targetVal === 165 || targetVal === 85) {
+      if (diff <= 5 || targetVal === 0 || targetVal === 180 || targetVal === 145 || targetVal === 85) {
         // Snap immediately to exact target integer when target is at hard limit (0°, 10°, 180°) or within 5° threshold across ALL 6 SERVOS
         this.smoothedAngles[i] = targetVal;
       } else {

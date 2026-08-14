@@ -47,7 +47,7 @@ DEFAULT_BAUD = 115200
 
 # Gripper Angle Calibration Constants (User will calibrate post-assembly)
 GRIPPER_CLOSED_ANGLE = 85
-GRIPPER_OPEN_ANGLE = 165
+GRIPPER_OPEN_ANGLE = 145
 
 DEFAULT_HOME_ANGLES = [90, 90, 90, 90, 90, GRIPPER_OPEN_ANGLE]
 
