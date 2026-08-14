@@ -146,7 +146,8 @@ const TeleopPanel = {
           2. <strong>Right Stick (Z):</strong> Moves end-effector Z-height up and down towards table.<br>
           3. <strong>R1 / L1 Bumpers:</strong> Rotates Wrist Roll clockwise / anti-clockwise.<br>
           4. <strong>Cross (×) / Circle (○) Buttons:</strong> Changes Wrist Pitch angle.<br>
-          5. <strong>R2 / L2 Triggers:</strong> R2 drives gripper towards 180°; releasing R2 returns to 10°; L2 locks/unlocks position.
+          5. <strong>R2 / L2 Triggers:</strong> R2 closes gripper towards 85°; releasing R2 opens to 140°; L2 locks/unlocks position.<br>
+          6. <strong>Options Button (≡):</strong> Smoothly returns all 6 joints to Home Position [90°, 90°, 90°, 90°, 90°, 140°].
         `;
       }
     } else {
@@ -164,7 +165,8 @@ const TeleopPanel = {
           3. <strong>Right Stick (Y):</strong> Smoothly rotates Elbow Servo (0° to 180°).<br>
           4. <strong>R1 / L1 Bumpers:</strong> Smoothly rotates Wrist Roll CW / CCW.<br>
           5. <strong>Cross (×) / Circle (○) Buttons:</strong> Smoothly rotates Wrist Pitch UP / DOWN.<br>
-          6. <strong>R2 / L2 Triggers:</strong> R2 drives gripper towards 180°; releasing R2 returns to 10°; L2 locks/unlocks position.
+          6. <strong>R2 / L2 Triggers:</strong> R2 closes gripper towards 85°; releasing R2 opens to 140°; L2 locks/unlocks position.<br>
+          7. <strong>Options Button (≡):</strong> Smoothly returns all 6 joints to Home Position [90°, 90°, 90°, 90°, 90°, 140°].
         `;
       }
     }
@@ -358,18 +360,31 @@ const TeleopPanel = {
   processControlInputs(gp) {
     const stepSpeed = 1.0; // Degrees per frame at full stick deflection (~60°/sec)
 
-    // Button state extraction
     const xPressed = this.isButtonPressed(gp.buttons[0]);      // Cross (×) -> Wrist Pitch UP
     const circlePressed = this.isButtonPressed(gp.buttons[1]); // Circle (○) -> Wrist Pitch DOWN
     const l1Pressed = this.isButtonPressed(gp.buttons[4]);     // L1 Bumper -> Wrist Roll CCW
     const r1Pressed = this.isButtonPressed(gp.buttons[5]);     // R1 Bumper -> Wrist Roll CW
     const l2Pressed = this.isButtonPressed(gp.buttons[6]);     // L2 Trigger -> Gripper Lock Toggle
+    const optionsPressed = this.isButtonPressed(gp.buttons[9]);// Options (≡) -> Move to Home Position
     const r2Btn = gp.buttons[7];
     const r2Val = r2Btn ? (r2Btn.value !== undefined ? r2Btn.value : (r2Btn.pressed ? 1 : 0)) : 0;
 
     const lx = this.applyDeadzone(gp.axes[0] || 0); // Base Servo (Ch 0)
     const ly = this.applyDeadzone(gp.axes[1] || 0); // Shoulder Servo (Ch 1)
     const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
+
+    // Handle Options Button Press (Move to Home Position smoothly)
+    if (optionsPressed && !this.wasOptionsPressed) {
+      if (window.App && App.sendWS) {
+        App.sendWS('home');
+        if (window.App && App.log) {
+          App.log('Action: PS5 Options button pressed — Smooth transition to Home Position...');
+        }
+      }
+      this.integratedAngles = [90, 90, 90, 90, 90, 140];
+      this.smoothedAngles = [90, 90, 90, 90, 90, 140];
+    }
+    this.wasOptionsPressed = optionsPressed;
 
     // Handle Gripper Lock Toggle (L2)
     if (l2Pressed && !this.wasL2Pressed) {
@@ -395,7 +410,7 @@ const TeleopPanel = {
 
     // Check if the user is actively manipulating any stick, button, or trigger
     const isJoystickInput = (Math.abs(lx) > 0.05) || (Math.abs(ly) > 0.05) || (Math.abs(ry) > 0.05) ||
-                            xPressed || circlePressed || r1Pressed || l1Pressed || l2Pressed || (r2Val > 0.05);
+                            xPressed || circlePressed || r1Pressed || l1Pressed || l2Pressed || optionsPressed || (r2Val > 0.05);
 
     // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls,
     // sync PS5 integrated state with current ServoPanel sliders/angles.
