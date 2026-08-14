@@ -126,8 +126,8 @@ class KinematicsConfigRequest(BaseModel):
     L3: float = 12.0
     L4: float = 8.0
     offsets: List[int] = [0, 0, 0, 0, 0, 0]
-    gripper_closed: int = 10
-    gripper_open: int = 90
+    gripper_closed: int = 90
+    gripper_open: int = 165
 
 class JournalEntriesRequest(BaseModel):
     entries: List[Dict[str, Any]]
@@ -189,7 +189,7 @@ async def get_kinematics_config():
     return {
         "L1": 10.0, "L2": 14.0, "L3": 12.0, "L4": 8.0,
         "offsets": [0, 0, 0, 0, 0, 0],
-        "gripper_closed": 10, "gripper_open": 90
+        "gripper_closed": 90, "gripper_open": 165
     }
 
 

@@ -74,7 +74,7 @@ const uint8_t SERVO_CHANNELS[NUM_SERVOS] = {0, 2, 4, 6, 8, 10};
 
 // Home Position angles (0–180) for each servo
 // These define the safe resting configuration the robot returns to on startup
-const uint8_t HOME_ANGLES[NUM_SERVOS] = {90, 90, 90, 90, 90, 10}; 
+const uint8_t HOME_ANGLES[NUM_SERVOS] = {90, 90, 90, 90, 90, 165}; 
 
 // Track the last commanded angle and pulse for each servo
 uint8_t current_angles[NUM_SERVOS];

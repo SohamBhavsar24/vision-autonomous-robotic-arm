@@ -14,7 +14,7 @@ const ServoPanel = {
   NUM_SERVOS: 6,
   sliders: [],
   valueDisplays: [],
-  currentAngles: [90, 90, 90, 90, 90, 10],
+  currentAngles: [90, 90, 90, 90, 90, 165],
   lastSendTime: 0,
   sendIntervalMs: 33, // ~30Hz send rate limit
 
@@ -74,8 +74,8 @@ const ServoPanel = {
         App.sendWS('home');
         App.log('Action: Smooth transition to Home Position...');
         if (window.TeleopPanel) {
-          window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 10];
-          window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 10];
+          window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 165];
+          window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 165];
         }
       });
     }

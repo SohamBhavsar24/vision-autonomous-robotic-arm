@@ -65,7 +65,7 @@ const DatasetPanel = {
     if (window.ServoPanel && Array.isArray(window.ServoPanel.currentAngles)) {
       return [...window.ServoPanel.currentAngles];
     }
-    return [90, 90, 90, 90, 90, 10];
+    return [90, 90, 90, 90, 90, 165];
   },
 
   startRecording() {
@@ -147,8 +147,8 @@ const DatasetPanel = {
     if (window.App && App.sendWS) {
       App.sendWS('home');
       if (window.TeleopPanel) {
-        window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 10];
-        window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 10];
+        window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 165];
+        window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 165];
       }
     }
 
@@ -301,7 +301,7 @@ const DatasetPanel = {
             // Phase 3: Smooth 1-second transition back to Home Position
             if (window.App && App.log) App.log(`Episode #${ep.number} Trajectory Complete. Smoothly returning to Home Position...`);
             const endPose = ep.trajectory[ep.trajectory.length - 1].angles;
-            const homePose = [90, 90, 90, 90, 90, 10];
+            const homePose = [90, 90, 90, 90, 90, 165];
 
             this.smoothTransitionToAngles(
               endPose,

@@ -23,8 +23,8 @@ const TeleopPanel = {
   animFrameId: null,
   activeMode: 'ik', // 'ik' or 'joint'
   isGripperLocked: false,
-  integratedAngles: [90, 90, 90, 90, 90, 10], // Continuous Velocity-Based Integrator
-  smoothedAngles: [90, 90, 90, 90, 90, 10],   // EMA Low-Pass Filter State
+  integratedAngles: [90, 90, 90, 90, 90, 165], // Continuous Velocity-Based Integrator
+  smoothedAngles: [90, 90, 90, 90, 90, 165],   // EMA Low-Pass Filter State
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -375,7 +375,7 @@ const TeleopPanel = {
     if (l2Pressed && !this.wasL2Pressed) {
       this.isGripperLocked = !this.isGripperLocked;
       if (window.App && App.log) {
-        App.log(`Gripper Lock ${this.isGripperLocked ? 'LOCKED (Position Saved)' : 'UNLOCKED (Returning to 10°)'}`);
+        App.log(`Gripper Lock ${this.isGripperLocked ? 'LOCKED (Position Saved)' : 'UNLOCKED (Returning to 165°)'}`);
       }
     }
     this.wasL2Pressed = l2Pressed;
@@ -385,11 +385,11 @@ const TeleopPanel = {
       // While locked, R2 is ignored; gripper stays locked at current angle
     } else {
       if (r2Val > 0.05) {
-        // While R2 is pressed, gripper motor starts heading towards 180° slowly
-        this.integratedAngles[5] = Math.min(180, this.integratedAngles[5] + (r2Val * stepSpeed * 1.5));
+        // While R2 is pressed, gripper motor starts closing from 165° towards 90° (or 0°)
+        this.integratedAngles[5] = Math.max(0, this.integratedAngles[5] - (r2Val * stepSpeed * 2.0));
       } else {
-        // When R2 is released (or after L2 unlock), gripper starts going back to 10° slowly
-        this.integratedAngles[5] = Math.max(10, this.integratedAngles[5] - (stepSpeed * 1.5));
+        // When R2 is released (or after L2 unlock), gripper starts opening back to 165°
+        this.integratedAngles[5] = Math.min(165, this.integratedAngles[5] + (stepSpeed * 1.5));
       }
     }
 

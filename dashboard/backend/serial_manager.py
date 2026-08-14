@@ -46,10 +46,10 @@ NUM_SERVOS = 6
 DEFAULT_BAUD = 115200
 
 # Gripper Angle Calibration Constants (User will calibrate post-assembly)
-GRIPPER_CLOSED_ANGLE = 10
-GRIPPER_OPEN_ANGLE = 90
+GRIPPER_CLOSED_ANGLE = 90
+GRIPPER_OPEN_ANGLE = 165
 
-DEFAULT_HOME_ANGLES = [90, 90, 90, 90, 90, GRIPPER_CLOSED_ANGLE]
+DEFAULT_HOME_ANGLES = [90, 90, 90, 90, 90, GRIPPER_OPEN_ANGLE]
 
 # List of macOS/Linux virtual Bluetooth & audio ports that must NEVER be listed or connected
 IGNORED_PORT_KEYWORDS = [
