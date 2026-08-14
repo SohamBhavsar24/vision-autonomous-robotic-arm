@@ -385,10 +385,10 @@ const TeleopPanel = {
       // While locked, R2 is ignored; gripper stays locked at current angle
     } else {
       if (r2Val > 0.05) {
-        // While R2 is pressed, gripper motor starts closing from 165° towards 90° (or 0°)
-        this.integratedAngles[5] = Math.max(0, this.integratedAngles[5] - (r2Val * stepSpeed * 2.0));
+        // While R2 is pressed, gripper motor closes from 165° down to strict 85° limit (prevents motor stall)
+        this.integratedAngles[5] = Math.max(85, this.integratedAngles[5] - (r2Val * stepSpeed * 2.0));
       } else {
-        // When R2 is released (or after L2 unlock), gripper starts opening back to 165°
+        // When R2 is released (or after L2 unlock), gripper opens back to 165°
         this.integratedAngles[5] = Math.min(165, this.integratedAngles[5] + (stepSpeed * 1.5));
       }
     }
@@ -438,7 +438,7 @@ const TeleopPanel = {
     for (let i = 0; i < 6; i++) {
       const targetVal = Math.round(this.integratedAngles[i]);
       const diff = Math.abs(targetVal - this.smoothedAngles[i]);
-      if (diff <= 5 || targetVal === 0 || targetVal === 180 || targetVal === 10) {
+      if (diff <= 5 || targetVal === 0 || targetVal === 180 || targetVal === 165 || targetVal === 85) {
         // Snap immediately to exact target integer when target is at hard limit (0°, 10°, 180°) or within 5° threshold across ALL 6 SERVOS
         this.smoothedAngles[i] = targetVal;
       } else {

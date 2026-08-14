@@ -111,6 +111,12 @@ int angleToPulse(int angle) {
 // Command a single servo to a specific angle with smooth pulse-level EMA interpolation
 void setServoAngle(uint8_t servoNum, uint8_t angle) {
   angle = constrain(angle, 0, 180);
+
+  // Hardware motor protection clamp for Servo 5 (Gripper): NEVER go below 85° or above 165°
+  if (servoNum == 5) {
+    angle = constrain(angle, 85, 165);
+  }
+
   int targetPulse = angleToPulse(angle);
   
   if (current_angles[servoNum] == angle && current_pulses[servoNum] == targetPulse) {
