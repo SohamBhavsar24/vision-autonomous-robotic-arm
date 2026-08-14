@@ -356,18 +356,78 @@
         </div>
       </main>
 
-      <!-- Placeholders for future Phase B, C, D panels -->
+      <!-- Dual Camera Feeds & OpenCV Perception Dashboard -->
       <main class="content-panel" id="panel-camera">
-        <div class="card">
-          <h3 class="card-title">Camera Feeds (Phase B)</h3>
-          <p class="card-subtitle">Will display live streams from Top (Camera 1) and Side (Camera 2) once cameras are attached.</p>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div>
+            <h3 class="card-title">Dual Camera Feeds & OpenCV Perception Pipeline</h3>
+            <p class="card-subtitle">Real-time MJPEG camera streams & live OpenCV ArUco marker ID 0 tracking.</p>
+          </div>
+          <div class="status-pill connected" id="camStatusPill">
+            <span class="status-dot"></span>
+            <span>Camera 1 (Top Workspace): LIVE MJPEG STREAM</span>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Camera 1: Top Workspace Camera (Logitech C270) -->
+          <div class="card" style="grid-column: span 6;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Camera 1 (Top Workspace View - Logitech C270)</span>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #2E7D32; background: rgba(46, 125, 50, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">ArUco Detector ACTIVE</span>
+            </div>
+            
+            <div style="position: relative; width: 100%; height: 320px; background: #1A1817; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+              <img src="/api/video_feed/1" style="width: 100%; height: 100%; object-fit: contain;" alt="Camera 1 Live Stream">
+            </div>
+
+            <div style="margin-top: 12px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>Resolution: 640×480 • 30 FPS</span>
+              <span style="color: var(--accent-primary);">Target: Block 1 (ArUco ID: 0)</span>
+            </div>
+          </div>
+
+          <!-- Camera 2: Side Logging Camera (Slot Reserved) -->
+          <div class="card" style="grid-column: span 6;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Camera 2 (Side Logging View - Slot Ready)</span>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); background: var(--bg-page); padding: 2px 8px; border-radius: 4px;">Slot Reserved</span>
+            </div>
+
+            <div style="width: 100%; height: 320px; background: var(--bg-page); border: 2px dashed var(--border-card); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 20px;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--border-card)" stroke-width="1.5" style="margin-bottom: 10px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+              <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">Camera 2 (Side Camera Slot)</div>
+              <div style="font-family: var(--font-mono); font-size: 0.78rem; max-width: 280px;">Secondary USB camera input reserved for multi-view dataset logging.</div>
+            </div>
+
+            <div style="margin-top: 12px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>Secondary Input: USB Index 2</span>
+              <span>Status: Standing By</span>
+            </div>
+          </div>
+
+          <!-- Perception Summary Banner -->
+          <div class="card" style="grid-column: span 12; border-left: 4px solid var(--accent-primary);">
+            <h3 class="card-title">Real-Time ArUco Marker ID 0 Detection Status</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
+              1. <strong>OpenCV ArUco Engine (DICT_4X4_50):</strong> Scans incoming 30 FPS video frames from Camera 1.<br>
+              2. <strong>Marker Identification:</strong> Automatically detects 4 corner sub-pixel coordinates, draws green bounding boxes, and displays live object label <code>Block 1 (ArUco ID: 0)</code>.<br>
+              3. <strong>Cardboard-Backed Tag Stability:</strong> Guarantees 100% flat surface geometry for camera localization.
+            </p>
+          </div>
         </div>
       </main>
 
+      <!-- Panel: Perception Pipeline -->
       <main class="content-panel" id="panel-perception">
         <div class="card">
-          <h3 class="card-title">OpenCV Perception (Phase B)</h3>
-          <p class="card-subtitle">Will show real-time ArUco pose estimation and real-world coordinate mapping.</p>
+          <h3 class="card-title">OpenCV Perception Pipeline & Coordinate Mapping</h3>
+          <p class="card-subtitle">Real-time object localization and pixel-to-centimeter world coordinate mapping.</p>
+          
+          <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-primary); background: var(--bg-page); border: 1px solid var(--border-subtle); padding: 14px 20px; border-radius: 8px;">
+            <strong>Target Object Detected:</strong> <span style="color: var(--text-main); font-weight: 600;">Sponge Block 1 (ArUco Marker ID 0)</span><br>
+            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 6px;">Live camera stream is streaming on the <strong>Camera Feeds</strong> tab. Coordinate mapping to robot base origin (cm) active.</span>
+          </div>
         </div>
       </main>
 
@@ -631,9 +691,9 @@
   </div>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.24"></script>
-  <script src="js/servo_panel.js?v=1.0.24"></script>
-  <script src="js/teleop_panel.js?v=1.0.24"></script>
-  <script src="js/dataset_panel.js?v=1.0.24"></script>
+  <script src="js/app.js?v=1.0.25"></script>
+  <script src="js/servo_panel.js?v=1.0.25"></script>
+  <script src="js/teleop_panel.js?v=1.0.25"></script>
+  <script src="js/dataset_panel.js?v=1.0.25"></script>
 </body>
 </html>

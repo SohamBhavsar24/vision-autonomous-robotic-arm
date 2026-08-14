@@ -38,11 +38,13 @@ import urllib.request
 import urllib.error
 from typing import List, Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from serial_manager import serial_manager
+from vision_manager import vision_manager_cam1
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("DashboardBackend")
@@ -137,6 +139,24 @@ class DatasetEpisodesRequest(BaseModel):
 
 
 from dataset_formatter import save_compact_dataset_file
+
+@app.get("/api/video_feed/1")
+async def video_feed_cam1():
+    """Live MJPEG video feed for Camera 1 (Logitech C270 Workspace View) with real-time OpenCV ArUco Marker ID 0 detection."""
+    return StreamingResponse(
+        vision_manager_cam1.generate_mjpeg_stream(),
+        media_type="multipart/x-mixed-replace; boundary=frame"
+    )
+
+
+@app.get("/api/vision/status")
+async def get_vision_status():
+    """Returns camera connection status and latest detected ArUco marker IDs."""
+    return {
+        "camera1_connected": vision_manager_cam1.is_camera_connected,
+        "detected_marker_ids": vision_manager_cam1.last_detected_ids
+    }
+
 
 @app.get("/api/dataset")
 async def get_dataset_episodes():
