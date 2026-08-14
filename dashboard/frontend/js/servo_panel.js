@@ -14,7 +14,7 @@ const ServoPanel = {
   NUM_SERVOS: 6,
   sliders: [],
   valueDisplays: [],
-  currentAngles: [90, 90, 90, 90, 90, 145],
+  currentAngles: [90, 90, 90, 90, 90, 140],
   lastSendTime: 0,
   sendIntervalMs: 33, // ~30Hz send rate limit
 
@@ -46,7 +46,10 @@ const ServoPanel = {
     for (let i = 0; i < this.NUM_SERVOS; i++) {
       if (this.sliders[i]) {
         this.sliders[i].addEventListener('input', () => {
-          const val = parseInt(this.sliders[i].value, 10);
+          let val = parseInt(this.sliders[i].value, 10);
+          if (i === 5) {
+            val = Math.min(140, Math.max(85, val)); // Hard clamp: Gripper never exceeds 140° or drops below 85°
+          }
           this.currentAngles[i] = val;
           if (this.valueDisplays[i]) {
             this.valueDisplays[i].textContent = `${val}°`;
@@ -74,8 +77,8 @@ const ServoPanel = {
         App.sendWS('home');
         App.log('Action: Smooth transition to Home Position...');
         if (window.TeleopPanel) {
-          window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 145];
-          window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 145];
+          window.TeleopPanel.integratedAngles = [90, 90, 90, 90, 90, 140];
+          window.TeleopPanel.smoothedAngles = [90, 90, 90, 90, 90, 140];
         }
       });
     }
@@ -128,7 +131,11 @@ const ServoPanel = {
   getAnglesFromSliders() {
     const angles = [];
     for (let i = 0; i < this.NUM_SERVOS; i++) {
-      angles.push(parseInt(this.sliders[i] ? this.sliders[i].value : this.currentAngles[i], 10));
+      let val = parseInt(this.sliders[i] ? this.sliders[i].value : this.currentAngles[i], 10);
+      if (i === 5) {
+        val = Math.min(140, Math.max(85, val)); // Hard clamp: Gripper package NEVER exceeds 140° or drops below 85°
+      }
+      angles.push(val);
     }
     return angles;
   },

@@ -74,7 +74,7 @@ const uint8_t SERVO_CHANNELS[NUM_SERVOS] = {0, 2, 4, 6, 8, 10};
 
 // Home Position angles (0–180) for each servo
 // These define the safe resting configuration the robot returns to on startup
-const uint8_t HOME_ANGLES[NUM_SERVOS] = {90, 90, 90, 90, 90, 145}; 
+const uint8_t HOME_ANGLES[NUM_SERVOS] = {90, 90, 90, 90, 90, 140}; 
 
 // Track the last commanded angle and pulse for each servo
 uint8_t current_angles[NUM_SERVOS];
@@ -112,9 +112,9 @@ int angleToPulse(int angle) {
 void setServoAngle(uint8_t servoNum, uint8_t angle) {
   angle = constrain(angle, 0, 180);
 
-  // Hardware motor protection clamp for Servo 5 (Gripper): NEVER go below 85° or above 145°
+  // Hardware motor protection clamp for Servo 5 (Gripper): NEVER go below 85° or above 140°
   if (servoNum == 5) {
-    angle = constrain(angle, 85, 145);
+    angle = constrain(angle, 85, 140);
   }
 
   int targetPulse = angleToPulse(angle);
