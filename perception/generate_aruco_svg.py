@@ -1,38 +1,28 @@
 #!/usr/bin/env python3
 """
-Pure Python ArUco Marker Generator (DICT_4X4_50)
-Generates high-resolution SVG and PNG markers without external dependencies.
+Official OpenCV ArUco Marker Generator (DICT_4X4_50)
+Generates 100% mathematically exact SVG & PNG vector markers using OpenCV's official dictionary.
 """
 
 import os
+import cv2
+import numpy as np
 
 OUTPUT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "aruco_markers"))
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Exact 4x4 bit matrices for OpenCV DICT_4X4_50 IDs 0, 1, 2
-MARKER_BITS = {
-    0: [
-        [1, 0, 1, 1],
-        [0, 1, 0, 0],
-        [0, 1, 0, 1],
-        [1, 0, 0, 1]
-    ],
-    1: [
-        [0, 0, 1, 0],
-        [1, 0, 1, 1],
-        [0, 1, 0, 1],
-        [0, 0, 0, 0]
-    ],
-    2: [
-        [0, 1, 0, 0],
-        [1, 0, 0, 1],
-        [0, 1, 1, 0],
-        [1, 0, 1, 0]
-    ]
-}
+# Load OpenCV official DICT_4X4_50 dictionary
+aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
-def generate_svg(marker_id, bits):
-    """Generates a crisp 4cm x 4cm SVG vector marker with 1-cell black border and white margin."""
+def extract_official_bits(marker_id: int):
+    """Extracts exact 4x4 binary matrix (0=black, 1=white) directly from OpenCV dictionary."""
+    img_6x6 = cv2.aruco.generateImageMarker(aruco_dict, marker_id, 6, borderBits=1)
+    inner_4x4 = (img_6x6[1:5, 1:5] // 255).tolist()
+    return inner_4x4
+
+def generate_svg(marker_id: int):
+    """Generates crisp 4cm x 4cm SVG vector marker matching OpenCV DICT_4X4_50."""
+    bits = extract_official_bits(marker_id)
     grid_size = 6 # 1 border + 4 data + 1 border
     cell_size = 50 # SVG internal units
     total_dim = grid_size * cell_size # 300x300 px
@@ -43,7 +33,7 @@ def generate_svg(marker_id, bits):
         f'  <rect width="{total_dim}" height="{total_dim}" fill="white" />',
         f'  <!-- Outer Black Border -->',
         f'  <rect x="0" y="0" width="{total_dim}" height="{total_dim}" fill="black" />',
-        f'  <!-- White Inner Padding Box (4x4 data area background) -->',
+        f'  <!-- White Inner Padding Box -->',
         f'  <rect x="{cell_size}" y="{cell_size}" width="{4*cell_size}" height="{4*cell_size}" fill="white" />'
     ]
     
@@ -58,20 +48,33 @@ def generate_svg(marker_id, bits):
     svg.append('</svg>')
     return '\n'.join(svg)
 
-# Generate SVGs
-for mid, bits in MARKER_BITS.items():
-    filename = f"aruco_id_{mid}.svg"
-    filepath = os.path.join(OUTPUT_DIR, filename)
-    with open(filepath, "w") as f:
-        f.write(generate_svg(mid, bits))
-    print(f"[OK] Generated SVG ArUco Marker ID {mid} -> {filepath}")
+# Generate official SVGs & PNGs for IDs 0, 1, 2
+markers_info = [
+    (0, "Block_1_Marker_0.png", "aruco_id_0.svg", "Block 1 (Sponge Cube 1) - ArUco ID 0"),
+    (1, "Block_2_Marker_1.png", "aruco_id_1.svg", "Block 2 (Sponge Cube 2) - ArUco ID 1"),
+    (2, "Target_Box_Marker_2.png", "aruco_id_2.svg", "Target Box Destination - ArUco ID 2"),
+]
+
+for mid, png_name, svg_name, label in markers_info:
+    # 1. Write SVG
+    svg_path = os.path.join(OUTPUT_DIR, svg_name)
+    with open(svg_path, "w") as f:
+        f.write(generate_svg(mid))
+
+    # 2. Write PNG with OpenCV
+    img_400 = cv2.aruco.generateImageMarker(aruco_dict, mid, 400, borderBits=1)
+    img_padded = cv2.copyMakeBorder(img_400, 40, 40, 40, 40, cv2.BORDER_CONSTANT, value=255)
+    png_path = os.path.join(OUTPUT_DIR, png_name)
+    cv2.imwrite(png_path, img_padded)
+
+    print(f"[OK] Generated Official OpenCV ArUco ID {mid} -> {svg_name} & {png_name}")
 
 # Generate Printable HTML Sheet
 html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Printable ArUco Markers (Stage 1 - DICT_4X4_50)</title>
+  <title>Official Printable ArUco Markers (DICT_4X4_50)</title>
   <style>
     body {{
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -136,8 +139,8 @@ html_content = f"""<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <h2>Stage 1 ArUco Marker Print Sheet (DICT_4X4_50)</h2>
-  <div style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">Ready for printing • Pre-scaled to 4cm × 4cm</div>
+  <h2>Stage 1 Official ArUco Marker Print Sheet (DICT_4X4_50)</h2>
+  <div style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">Mathematically Exact OpenCV Dictionary • Pre-scaled to 4cm × 4cm</div>
   
   <div class="instructions">
     <strong style="color: #c4784a; font-size: 1rem;">Printing & Mounting Guide:</strong>
@@ -177,4 +180,4 @@ html_filepath = os.path.join(OUTPUT_DIR, "print_aruco_sheet.html")
 with open(html_filepath, "w") as f:
     f.write(html_content)
 
-print(f"[SUCCESS] Created printable SVG ArUco sheet -> {html_filepath}")
+print(f"[SUCCESS] Regenerated 100% official OpenCV ArUco files in -> {OUTPUT_DIR}")
