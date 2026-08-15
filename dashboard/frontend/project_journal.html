@@ -736,15 +736,29 @@
       }
     }
 
-    function triggerDownloadAttachment(entryId, filename, defaultUrl) {
+    async function triggerDownloadAttachment(entryId, filename, defaultUrl) {
       let targetUrl = defaultUrl || 'robotic_arm_synopsis.pdf';
-      const a = document.createElement('a');
-      a.href = targetUrl;
-      a.download = filename || 'document.pdf';
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      try {
+        // Fetch blob for cross-origin Supabase / remote media URLs so browser triggers direct download
+        const res = await fetch(targetUrl);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename || 'media_file';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      } catch (e) {
+        const a = document.createElement('a');
+        a.href = targetUrl;
+        a.download = filename || 'media_file';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
     }
 
     function renderAttachment(att, entryId) {
@@ -761,6 +775,11 @@
         return `
           <div class="attachment-box" style="margin-top: 12px;">
             <img src="${fileUrl}" alt="${fileName}" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-card); max-height: 400px; object-fit: contain;">
+            <div style="margin-top: 8px;">
+              <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge" style="font-size: 0.8rem; padding: 6px 14px;">
+                ⬇️ Download Image: ${fileName}
+              </button>
+            </div>
           </div>
         `;
       }
@@ -773,15 +792,20 @@
         return `
           <div class="attachment-box" style="margin-top: 12px;">
             <video controls playsinline src="${fileUrl}" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-card); max-height: 450px; background: #000; width: 100%;"></video>
+            <div style="margin-top: 8px;">
+              <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge" style="font-size: 0.8rem; padding: 6px 14px;">
+                ⬇️ Download Video: ${fileName}
+              </button>
+            </div>
           </div>
         `;
       }
 
-      let badgeText = `View / Download Document: ${fileName}`;
+      let badgeText = `⬇️ View / Download Document: ${fileName}`;
       if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
-        badgeText = `View / Download Word Logbook: ${fileName}`;
+        badgeText = `⬇️ View / Download Word Logbook: ${fileName}`;
       } else if (fileName.endsWith('.pdf')) {
-        badgeText = `View / Download PDF Document: ${fileName}`;
+        badgeText = `⬇️ View / Download PDF Document: ${fileName}`;
       }
 
       return `
