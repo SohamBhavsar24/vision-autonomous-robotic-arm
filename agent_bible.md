@@ -68,7 +68,7 @@
 | 11 | Dashboard | Web-based (HTML/CSS/JS + Python WebSocket backend) |
 | 12 | Deployment Target | Raspberry Pi 5 (4GB RAM) |
 | 13 | Camera 2 Role | Side camera is for dataset logging only; NOT used by the neural network |
-| 14 | Home Position Assembly | Mount arm parts to maximize physical workspace range; use joint offsets in software |
+| 14 | Home Position & 90° Zero Reference | When all 5 arm joints are set to 90° (and Gripper at 140°), the physical arm stands straight upright, facing forward towards the workspace plank |
 | 15 | Arduino Port Management | Direct pyserial + Bluetooth audio port filtering (`IGNORED_PORT_KEYWORDS`) |
 | 16 | Dashboard Auth | No authentication — local network only |
 | 17 | Dashboard Responsiveness | Laptop + Tablet (min 768px width). Phone NOT supported |
