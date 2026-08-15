@@ -373,18 +373,34 @@ const TeleopPanel = {
     const ly = this.applyDeadzone(gp.axes[1] || 0); // Shoulder Servo (Ch 1)
     const ry = this.applyDeadzone(gp.axes[3] || 0); // Elbow Servo (Ch 2)
 
-    // Handle Options Button Press (Move to Home Position smoothly)
+    // Handle Options Button Press (Move to Home Position smoothly via Cosine S-Curve)
     if (optionsPressed && !this.wasOptionsPressed) {
       if (window.App && App.sendWS) {
         App.sendWS('home');
         if (window.App && App.log) {
-          App.log('Action: PS5 Options button pressed — Smooth transition to Home Position...');
+          App.log('Action: PS5 Options button pressed — Smooth Cosine S-Curve transition to Home Position...');
         }
       }
-      this.integratedAngles = [90, 90, 90, 90, 90, 140];
-      this.smoothedAngles = [90, 90, 90, 90, 90, 140];
+      this.isHomingSmoothly = true;
+      this.homingProgress = 0.0;
+      this.homingStartAngles = [...this.integratedAngles];
     }
     this.wasOptionsPressed = optionsPressed;
+
+    // Smooth Cosine S-Curve Homing Interpolation (~1.2 seconds / 72 frames)
+    if (this.isHomingSmoothly) {
+      this.homingProgress += 1.0 / 72.0;
+      if (this.homingProgress >= 1.0) {
+        this.homingProgress = 1.0;
+        this.isHomingSmoothly = false;
+      }
+      const ease = 0.5 * (1.0 - Math.cos(Math.PI * this.homingProgress));
+      const targetHome = [90, 90, 90, 90, 90, 140];
+      for (let i = 0; i < 6; i++) {
+        this.integratedAngles[i] = this.homingStartAngles[i] + (targetHome[i] - this.homingStartAngles[i]) * ease;
+        this.smoothedAngles[i] = Math.round(this.integratedAngles[i]);
+      }
+    }
 
     // Handle Gripper Lock Toggle (L2)
     if (l2Pressed && !this.wasL2Pressed) {
