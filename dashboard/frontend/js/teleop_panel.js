@@ -98,7 +98,7 @@ const TeleopPanel = {
         this.statusText.textContent = `Connected: ${e.gamepad.id}`;
       }
       if (window.App && App.log) {
-        App.log(`PS5 DualSense Controller Connected: ${e.gamepad.id}`);
+        App.log(`Teleoperation Mode Switched: ${this.activeMode.toUpperCase()} (${this.activeMode === 'ik' ? 'Cartesian 3D Space: X/Y/Z Joystick Control' : 'Direct Joint Rate Control'})`);
       }
     });
 
@@ -461,6 +461,39 @@ const TeleopPanel = {
       if (Math.abs(ry) > 0.05) {
         // Reversed Elbow direction per user spec: Right Joystick FORWARD moves Elbow FORWARD
         this.integratedAngles[2] = Math.max(0, Math.min(180, this.integratedAngles[2] - (ry * stepSpeed * 1.5)));
+      }
+    } else if (this.activeMode === 'ik') {
+      // Cartesian 3D Space IK Mode (X / Y / Z Space Velocity Control)
+      if (!this.cartesianPos) {
+        this.cartesianPos = { x: 0.0, y: 20.0, z: 10.0, pitch_deg: -30.0, roll_deg: 90.0 };
+      }
+      
+      const posSpeed = 0.3; // cm per frame (~18 cm/sec)
+      if (Math.abs(lx) > 0.05) {
+        // Left stick LX: moves X (Left/Right)
+        this.cartesianPos.x += (lx * posSpeed);
+      }
+      if (Math.abs(ly) > 0.05) {
+        // Left stick LY: moves Y (Forward/Backward)
+        this.cartesianPos.y -= (ly * posSpeed);
+      }
+      if (Math.abs(ry) > 0.05) {
+        // Right stick RY: moves Z (Up/Down)
+        this.cartesianPos.z -= (ry * posSpeed);
+      }
+
+      // Solve IK for current Cartesian 3D target
+      const ikAngles = this.solveIK(
+        this.cartesianPos.x,
+        this.cartesianPos.y,
+        this.cartesianPos.z,
+        this.cartesianPos.pitch_deg,
+        this.cartesianPos.roll_deg,
+        this.integratedAngles[5]
+      );
+      
+      for (let i = 0; i < 5; i++) {
+        this.integratedAngles[i] = ikAngles[i];
       }
     }
 
