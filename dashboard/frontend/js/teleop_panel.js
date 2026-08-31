@@ -117,13 +117,11 @@ const TeleopPanel = {
   },
 
   toggleMode() {
-    this.activeMode = (this.activeMode === 'ik') ? 'joint' : 'ik';
+    this.activeMode = (this.activeMode === 'joint') ? 'ik' : 'joint';
+    this.cartesianPos = this.forwardKinematics(this.integratedAngles);
     console.log('[TeleopPanel] Mode toggled to:', this.activeMode);
-    this.updateModeUI();
 
-    if (window.App && App.log) {
-      App.log(`Switched Teleoperation Mode to: ${this.activeMode === 'ik' ? 'Cartesian IK Mode' : 'Direct Joint Motor Control Mode'}`);
-    }
+    this.updateModeUI();
   },
 
   updateModeUI() {
@@ -150,6 +148,9 @@ const TeleopPanel = {
           6. <strong>Options Button (≡):</strong> Smoothly returns all 6 joints to Home Position [90°, 90°, 90°, 90°, 90°, 140°].
         `;
       }
+      if (window.App && App.log) {
+        App.log(`Teleoperation Mode Switched: CARTESIAN IK (Current X:${this.cartesianPos.x}cm, Y:${this.cartesianPos.y}cm, Z:${this.cartesianPos.z}cm)`);
+      }
     } else {
       if (btnText) btnText.textContent = 'Cartesian IK Mode →';
       if (pill) {
@@ -169,7 +170,42 @@ const TeleopPanel = {
           7. <strong>Options Button (≡):</strong> Smoothly returns all 6 joints to Home Position [90°, 90°, 90°, 90°, 90°, 140°].
         `;
       }
+      if (window.App && App.log) {
+        App.log('Teleoperation Mode Switched: DIRECT JOINT RATE CONTROL');
+      }
     }
+  },
+
+  forwardKinematics(angles) {
+    const [theta1, theta2, theta3, theta4] = angles || [90, 90, 90, 90];
+    const L1 = this.L1 || 9.5;
+    const L2 = this.L2 || 12.0;
+    const L3 = this.L3 || 9.0;
+    const L4 = this.L4 || 14.0;
+
+    const b = (theta1 - 90.0) * (Math.PI / 180.0);
+    const s = (180.0 - theta2) * (Math.PI / 180.0);
+    const e_rel = (theta3 - 45.0) * (Math.PI / 180.0);
+    const e = s - e_rel;
+    const p_rel = (theta4 - 90.0) * (Math.PI / 180.0);
+    const p = e + p_rel;
+
+    const r_w = L2 * Math.cos(s) + L3 * Math.cos(e);
+    const z_w = L2 * Math.sin(s) + L3 * Math.sin(e);
+
+    const r = r_w + L4 * Math.cos(p);
+    const z = L1 + z_w + L4 * Math.sin(p);
+
+    const x = r * Math.sin(b);
+    const y = r * Math.cos(b);
+
+    return {
+      x: parseFloat(x.toFixed(1)),
+      y: parseFloat(y.toFixed(1)),
+      z: parseFloat(z.toFixed(1)),
+      pitch_deg: parseFloat((p * (180.0 / Math.PI)).toFixed(1)),
+      roll_deg: (angles && angles[4]) || 90.0
+    };
   },
 
   async loadKinematicsConfig() {
@@ -433,6 +469,7 @@ const TeleopPanel = {
     if (!isJoystickInput && typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
       this.integratedAngles = [...ServoPanel.currentAngles];
       this.smoothedAngles = [...ServoPanel.currentAngles];
+      this.cartesianPos = this.forwardKinematics(this.integratedAngles);
     }
 
     // Wrist Pitch Control (Cross X / Circle O)
@@ -465,13 +502,13 @@ const TeleopPanel = {
     } else if (this.activeMode === 'ik') {
       // Cartesian 3D Space IK Mode (X / Y / Z Space Velocity Control)
       if (!this.cartesianPos) {
-        this.cartesianPos = { x: 0.0, y: 20.0, z: 10.0, pitch_deg: -30.0, roll_deg: 90.0 };
+        this.cartesianPos = this.forwardKinematics(this.integratedAngles);
       }
       
-      const posSpeed = 0.3; // cm per frame (~18 cm/sec)
+      const posSpeed = 0.4; // cm per frame (~24 cm/sec)
       if (Math.abs(lx) > 0.05) {
         // Left stick LX: moves X (Left/Right)
-        this.cartesianPos.x += (lx * posSpeed);
+        this.cartesianPos.x -= (lx * posSpeed);
       }
       if (Math.abs(ly) > 0.05) {
         // Left stick LY: moves Y (Forward/Backward)
@@ -487,8 +524,8 @@ const TeleopPanel = {
         this.cartesianPos.x,
         this.cartesianPos.y,
         this.cartesianPos.z,
-        this.cartesianPos.pitch_deg,
-        this.cartesianPos.roll_deg,
+        this.cartesianPos.pitch_deg || 45.0,
+        this.cartesianPos.roll_deg || 90.0,
         this.integratedAngles[5]
       );
       
