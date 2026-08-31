@@ -180,116 +180,79 @@ const TeleopPanel = {
     }
   },
 
-  solveIK(x, y, z, pitch_deg = null, roll_deg = 90.0, gripper = 140) {
+  solveIK(x, y, z, theta4_val = 90, theta5_val = 90, theta6_val = 140) {
     const L1 = parseFloat(this.L1) || 9.5;
     const L2 = parseFloat(this.L2) || 12.0;
     const L3 = parseFloat(this.L3) || 9.0;
-    const L4 = parseFloat(this.L4) || 14.0;
 
     if (isNaN(x) || isNaN(y) || isNaN(z)) {
-      return [90, 90, 90, 90, 90, 140];
+      return [90, 90, 90, theta4_val, theta5_val, theta6_val];
     }
 
     if (y < 1.0) y = 1.0;
 
-    // 1. Base Angle
+    // 1. Base Angle (θ1)
     const theta1 = 90.0 + (Math.atan2(x, y) * (180.0 / Math.PI));
+
+    // 2. Radial distance from base
     const r = Math.hypot(x, y);
+    const z_rel = z - L1;
 
-    let best_angles = null;
+    // 3. Planar distance D from shoulder (0,0) to wrist joint (r, z_rel)
+    const D = Math.hypot(r, z_rel);
+    const max_reach = L2 + L3;
+    const min_reach = Math.abs(L2 - L3);
+    const D_clamped = Math.max(min_reach + 0.001, Math.min(max_reach - 0.001, D));
 
-    // Candidate pitch angles
-    const pitch_candidates = [];
-    if (pitch_deg !== null && !isNaN(pitch_deg)) {
-      pitch_candidates.push(Math.round(pitch_deg));
-    }
-    for (let p = -90; p <= 45; p += 2) {
-      if (!pitch_candidates.includes(p)) pitch_candidates.push(p);
-    }
+    // 4. Law of Cosines for Elbow (θ3)
+    const cos_gamma = (L2 * L2 + L3 * L3 - D_clamped * D_clamped) / (2.0 * L2 * L3);
+    const gamma = Math.acos(Math.max(-1.0, Math.min(1.0, cos_gamma)));
+    const theta3 = 45.0 + ((Math.PI - gamma) * (180.0 / Math.PI));
 
-    for (let i = 0; i < pitch_candidates.length; i++) {
-      const p_cand = pitch_candidates[i];
-      const phi = p_cand * (Math.PI / 180.0);
-      const r_w = r - L4 * Math.cos(phi);
-      const z_w = z - L1 - L4 * Math.sin(phi);
-
-      const D = Math.hypot(r_w, z_w);
-      if (Math.abs(L2 - L3) <= D && D <= (L2 + L3)) {
-        const cos_gamma = (L2 * L2 + L3 * L3 - D * D) / (2.0 * L2 * L3);
-        const gamma = Math.acos(Math.max(-1.0, Math.min(1.0, cos_gamma)));
-        const t3 = 45.0 + ((Math.PI - gamma) * (180.0 / Math.PI));
-
-        const alpha1 = Math.atan2(z_w, r_w);
-        const cos_alpha2 = (L2 * L2 + D * D - L3 * L3) / (2.0 * L2 * D);
-        const alpha2 = Math.acos(Math.max(-1.0, Math.min(1.0, cos_alpha2)));
-        const psi = alpha1 + alpha2;
-        const t2 = 180.0 - (psi * (180.0 / Math.PI));
-
-        const e = psi - (Math.PI - gamma);
-        const p_rel = phi - e;
-        const t4 = 90.0 + (p_rel * (180.0 / Math.PI));
-
-        if (t2 >= 15 && t2 <= 165 && t3 >= 15 && t3 <= 165 && t4 >= 10 && t4 <= 170) {
-          best_angles = [
-            Math.round(theta1),
-            Math.round(t2),
-            Math.round(t3),
-            Math.round(t4),
-            Math.round(roll_deg || 90),
-            Math.round(gripper || 140)
-          ];
-          break;
-        }
-      }
-    }
-
-    if (!best_angles) {
-      best_angles = [Math.round(theta1), 90, 90, 90, Math.round(roll_deg || 90), Math.round(gripper || 140)];
-    }
+    // 5. Law of Cosines for Shoulder (θ2)
+    const alpha1 = Math.atan2(z_rel, r);
+    const cos_alpha2 = (L2 * L2 + D_clamped * D_clamped - L3 * L3) / (2.0 * L2 * D_clamped);
+    const alpha2 = Math.acos(Math.max(-1.0, Math.min(1.0, cos_alpha2)));
+    const psi = alpha1 + alpha2;
+    const theta2 = 180.0 - (psi * (180.0 / Math.PI));
 
     const safeNum = (v, def = 90) => isNaN(v) ? def : v;
 
     return [
-      Math.max(0, Math.min(180, Math.round(safeNum(best_angles[0], 90)))),
-      Math.max(15, Math.min(165, Math.round(safeNum(best_angles[1], 90)))),
-      Math.max(15, Math.min(165, Math.round(safeNum(best_angles[2], 90)))),
-      Math.max(10, Math.min(170, Math.round(safeNum(best_angles[3], 90)))),
-      Math.max(0, Math.min(180, Math.round(safeNum(best_angles[4], 90)))),
-      Math.max(85, Math.min(140, Math.round(safeNum(best_angles[5], 140))))
+      Math.max(0, Math.min(180, Math.round(safeNum(theta1, 90)))),
+      Math.max(15, Math.min(165, Math.round(safeNum(theta2, 90)))),
+      Math.max(15, Math.min(165, Math.round(safeNum(theta3, 90)))),
+      Math.max(0, Math.min(180, Math.round(safeNum(theta4_val, 90)))),
+      Math.max(0, Math.min(180, Math.round(safeNum(theta5_val, 90)))),
+      Math.max(85, Math.min(140, Math.round(safeNum(theta6_val, 140))))
     ];
   },
 
   forwardKinematics(angles) {
     if (!angles || !Array.isArray(angles) || angles.some(a => isNaN(a))) {
-      return { x: 0.0, y: 16.3, z: 37.8, pitch_deg: 45.0, roll_deg: 90.0 };
+      return { x: 0.0, y: 15.0, z: 15.0, pitch_deg: 90.0, roll_deg: 90.0 };
     }
-    const [theta1, theta2, theta3, theta4] = angles;
+    const [theta1, theta2, theta3] = angles;
     const L1 = parseFloat(this.L1) || 9.5;
     const L2 = parseFloat(this.L2) || 12.0;
     const L3 = parseFloat(this.L3) || 9.0;
-    const L4 = parseFloat(this.L4) || 14.0;
 
     const b = (theta1 - 90.0) * (Math.PI / 180.0);
     const s = (180.0 - theta2) * (Math.PI / 180.0);
     const e_rel = (theta3 - 45.0) * (Math.PI / 180.0);
     const e = s - e_rel;
-    const p_rel = (theta4 - 90.0) * (Math.PI / 180.0);
-    const p = e + p_rel;
 
-    const r_w = L2 * Math.cos(s) + L3 * Math.cos(e);
-    const z_w = L2 * Math.sin(s) + L3 * Math.sin(e);
-
-    const r = r_w + L4 * Math.cos(p);
-    const z = L1 + z_w + L4 * Math.sin(p);
+    const r = L2 * Math.cos(s) + L3 * Math.cos(e);
+    const z = L1 + L2 * Math.sin(s) + L3 * Math.sin(e);
 
     const x = r * Math.sin(b);
     const y = r * Math.cos(b);
 
     return {
       x: parseFloat((isNaN(x) ? 0 : x).toFixed(1)),
-      y: parseFloat((isNaN(y) ? 16.3 : y).toFixed(1)),
-      z: parseFloat((isNaN(z) ? 37.8 : z).toFixed(1)),
-      pitch_deg: parseFloat(((isNaN(p) ? 0.785 : p) * (180.0 / Math.PI)).toFixed(1)),
+      y: parseFloat((isNaN(y) ? 15.0 : y).toFixed(1)),
+      z: parseFloat((isNaN(z) ? 15.0 : z).toFixed(1)),
+      pitch_deg: (angles && angles[3]) || 90.0,
       roll_deg: (angles && angles[4]) || 90.0
     };
   },
@@ -560,17 +523,9 @@ const TeleopPanel = {
 
     // Wrist Pitch Control (Cross X / Circle O)
     if (xPressed) {
-      if (this.activeMode === 'ik' && this.cartesianPos) {
-        this.cartesianPos.pitch_deg = Math.min(90, (this.cartesianPos.pitch_deg || 45) + 1.0);
-      } else {
-        this.integratedAngles[3] = Math.min(180, this.integratedAngles[3] + stepSpeed);
-      }
+      this.integratedAngles[3] = Math.min(180, this.integratedAngles[3] + stepSpeed);
     } else if (circlePressed) {
-      if (this.activeMode === 'ik' && this.cartesianPos) {
-        this.cartesianPos.pitch_deg = Math.max(-90, (this.cartesianPos.pitch_deg || 45) - 1.0);
-      } else {
-        this.integratedAngles[3] = Math.max(0, this.integratedAngles[3] - stepSpeed);
-      }
+      this.integratedAngles[3] = Math.max(0, this.integratedAngles[3] - stepSpeed);
     }
 
     // Wrist Roll Control (R1 / L1)
@@ -594,41 +549,41 @@ const TeleopPanel = {
         this.integratedAngles[2] = Math.max(0, Math.min(180, this.integratedAngles[2] - (ry * stepSpeed * 1.5)));
       }
     } else if (this.activeMode === 'ik') {
-      // Cartesian 3D Space IK Mode (X / Y / Z Space Velocity Control)
+      // Cartesian 3D Space IK Mode (Primary 3-DOF Joint Velocity Control)
       if (!this.cartesianPos) {
         this.cartesianPos = this.forwardKinematics(this.integratedAngles);
       }
       
-      const posSpeed = 0.08; // cm per frame (~4.8 cm/sec for silky smooth precision)
+      const posSpeed = 0.12; // cm per frame (~7.2 cm/sec for silky smooth precision)
       if (Math.abs(lx) > 0.05) {
-        // Left stick LX (negative is left): moves X (Left/Right)
+        // Left stick LX: moves X (Left/Right)
         this.cartesianPos.x -= (lx * posSpeed);
       }
       if (Math.abs(ly) > 0.05) {
-        // Left stick LY (negative is forward): moves Y (Forward/Backward)
+        // Left stick LY: moves Y (Forward/Backward)
         this.cartesianPos.y -= (ly * posSpeed);
       }
       if (Math.abs(ry) > 0.05) {
-        // Right stick RY (negative is up): moves Z (Up/Down)
+        // Right stick RY: moves Z (Up/Down)
         this.cartesianPos.z -= (ry * posSpeed);
       }
 
-      // Clamp 3D Cartesian Position to safe physical workspace box
+      // Clamp 3D Cartesian Position to safe physical wrist workspace box
       this.cartesianPos.x = Math.max(-18.0, Math.min(18.0, this.cartesianPos.x));
-      this.cartesianPos.y = Math.max(5.0, Math.min(21.0, this.cartesianPos.y));
-      this.cartesianPos.z = Math.max(1.0, Math.min(35.0, this.cartesianPos.z));
+      this.cartesianPos.y = Math.max(4.0, Math.min(20.0, this.cartesianPos.y));
+      this.cartesianPos.z = Math.max(2.0, Math.min(30.0, this.cartesianPos.z));
 
-      // Solve IK for current Cartesian 3D target with adaptive straight-line pitch solver
+      // Solve 3-DOF IK for primary 3 joints (Base θ1, Shoulder θ2, Elbow θ3)
       const ikAngles = this.solveIK(
         this.cartesianPos.x,
         this.cartesianPos.y,
         this.cartesianPos.z,
-        null, // Adaptive pitch optimization guarantees 100% straight-line vertical (Z) & horizontal (X/Y) motion
-        this.cartesianPos.roll_deg || 90.0,
+        this.integratedAngles[3],
+        this.integratedAngles[4],
         this.integratedAngles[5]
       );
       
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 3; i++) {
         this.integratedAngles[i] = ikAngles[i];
       }
     }
