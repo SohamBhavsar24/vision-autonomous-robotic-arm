@@ -136,34 +136,68 @@ const ServoPanel = {
     return angles;
   },
 
-  /* Open Gripper to calibrated open angle */
+  /* Open Gripper to calibrated open angle via smooth gliding S-Curve */
   openGripper() {
-    const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || 140, 10);
-    this.currentAngles[5] = openAngle;
-    if (this.sliders[5]) this.sliders[5].value = openAngle;
-    if (this.valueDisplays[5]) this.valueDisplays[5].textContent = `${openAngle}°`;
-    if (window.TeleopPanel) {
-      window.TeleopPanel.integratedAngles[5] = openAngle;
-      window.TeleopPanel.smoothedAngles[5] = openAngle;
-      window.TeleopPanel.gripperState = 0; // 0 = OPEN
-    }
-    this.throttledSendAngles();
-    if (window.App && App.log) App.log(`Action: Gripper Opened → State 0 (${openAngle}°)`);
+    const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || document.getElementById('inputGripperOpenCard')?.value || 140, 10);
+    const startAngle = this.currentAngles[5];
+    const durationMs = 400; // 400ms smooth gliding transition
+    const steps = 15;
+    let stepCount = 0;
+
+    if (window.TeleopPanel) window.TeleopPanel.gripperState = 0; // 0 = OPEN
+
+    const timer = setInterval(() => {
+      stepCount++;
+      const progress = stepCount / steps;
+      const ease = 0.5 * (1.0 - Math.cos(Math.PI * progress));
+      const currentVal = Math.round(startAngle + (openAngle - startAngle) * ease);
+
+      this.currentAngles[5] = currentVal;
+      if (this.sliders[5]) this.sliders[5].value = currentVal;
+      if (this.valueDisplays[5]) this.valueDisplays[5].textContent = `${currentVal}°`;
+      if (window.TeleopPanel) {
+        window.TeleopPanel.integratedAngles[5] = currentVal;
+        window.TeleopPanel.smoothedAngles[5] = currentVal;
+      }
+      this.throttledSendAngles();
+
+      if (stepCount >= steps) {
+        clearInterval(timer);
+        if (window.App && App.log) App.log(`Action: Gripper Glided Open → State 0 (${openAngle}°)`);
+      }
+    }, 25);
   },
 
-  /* Close Gripper to calibrated close angle */
+  /* Close Gripper to calibrated close angle via smooth gliding S-Curve */
   closeGripper() {
-    const closeAngle = parseInt(document.getElementById('angleGripperClosed')?.value || 85, 10);
-    this.currentAngles[5] = closeAngle;
-    if (this.sliders[5]) this.sliders[5].value = closeAngle;
-    if (this.valueDisplays[5]) this.valueDisplays[5].textContent = `${closeAngle}°`;
-    if (window.TeleopPanel) {
-      window.TeleopPanel.integratedAngles[5] = closeAngle;
-      window.TeleopPanel.smoothedAngles[5] = closeAngle;
-      window.TeleopPanel.gripperState = 1; // 1 = CLOSED
-    }
-    this.throttledSendAngles();
-    if (window.App && App.log) App.log(`Action: Gripper Closed → State 1 (${closeAngle}°)`);
+    const closeAngle = parseInt(document.getElementById('angleGripperClosed')?.value || document.getElementById('inputGripperClosedCard')?.value || 85, 10);
+    const startAngle = this.currentAngles[5];
+    const durationMs = 400; // 400ms smooth gliding transition
+    const steps = 15;
+    let stepCount = 0;
+
+    if (window.TeleopPanel) window.TeleopPanel.gripperState = 1; // 1 = CLOSED
+
+    const timer = setInterval(() => {
+      stepCount++;
+      const progress = stepCount / steps;
+      const ease = 0.5 * (1.0 - Math.cos(Math.PI * progress));
+      const currentVal = Math.round(startAngle + (closeAngle - startAngle) * ease);
+
+      this.currentAngles[5] = currentVal;
+      if (this.sliders[5]) this.sliders[5].value = currentVal;
+      if (this.valueDisplays[5]) this.valueDisplays[5].textContent = `${currentVal}°`;
+      if (window.TeleopPanel) {
+        window.TeleopPanel.integratedAngles[5] = currentVal;
+        window.TeleopPanel.smoothedAngles[5] = currentVal;
+      }
+      this.throttledSendAngles();
+
+      if (stepCount >= steps) {
+        clearInterval(timer);
+        if (window.App && App.log) App.log(`Action: Gripper Glided Closed → State 1 (${closeAngle}°)`);
+      }
+    }, 25);
   },
 
   /* Set sliders from an array of angles */

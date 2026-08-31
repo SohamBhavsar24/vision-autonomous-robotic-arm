@@ -269,6 +269,8 @@ const TeleopPanel = {
       const l4 = document.getElementById('inputL4');
       const gc = document.getElementById('angleGripperClosed');
       const go = document.getElementById('angleGripperOpen');
+      const gcc = document.getElementById('inputGripperClosedCard');
+      const goc = document.getElementById('inputGripperOpenCard');
 
       if (l1 && cfg.L1) l1.value = cfg.L1;
       if (l2 && cfg.L2) l2.value = cfg.L2;
@@ -276,6 +278,8 @@ const TeleopPanel = {
       if (l4 && cfg.L4) l4.value = cfg.L4;
       if (gc && cfg.gripper_closed) gc.value = cfg.gripper_closed;
       if (go && cfg.gripper_open) go.value = cfg.gripper_open;
+      if (gcc && cfg.gripper_closed) gcc.value = cfg.gripper_closed;
+      if (goc && cfg.gripper_open) goc.value = cfg.gripper_open;
 
       if (cfg.offsets) {
         for (let i = 0; i < 5; i++) {
@@ -289,12 +293,12 @@ const TeleopPanel = {
   },
 
   async saveKinematicsConfig() {
-    const l1 = parseFloat(document.getElementById('inputL1')?.value || 10.0);
-    const l2 = parseFloat(document.getElementById('inputL2')?.value || 14.0);
-    const l3 = parseFloat(document.getElementById('inputL3')?.value || 12.0);
-    const l4 = parseFloat(document.getElementById('inputL4')?.value || 8.0);
-    const gc = parseInt(document.getElementById('angleGripperClosed')?.value || 10, 10);
-    const go = parseInt(document.getElementById('angleGripperOpen')?.value || 90, 10);
+    const l1 = parseFloat(document.getElementById('inputL1')?.value || 9.5);
+    const l2 = parseFloat(document.getElementById('inputL2')?.value || 12.0);
+    const l3 = parseFloat(document.getElementById('inputL3')?.value || 9.0);
+    const l4 = parseFloat(document.getElementById('inputL4')?.value || 14.0);
+    const gc = parseInt(document.getElementById('angleGripperClosed')?.value || document.getElementById('inputGripperClosedCard')?.value || 85, 10);
+    const go = parseInt(document.getElementById('angleGripperOpen')?.value || document.getElementById('inputGripperOpenCard')?.value || 140, 10);
 
     const offsets = [];
     for (let i = 0; i < 5; i++) {
@@ -308,7 +312,7 @@ const TeleopPanel = {
         body: JSON.stringify({ L1: l1, L2: l2, L3: l3, L4: l4, offsets, gripper_closed: gc, gripper_open: go })
       });
       if (res.ok && window.App && App.log) {
-        App.log(`Saved Kinematic Calibration: L1=${l1}cm, L2=${l2}cm, L3=${l3}cm, L4=${l4}cm`);
+        App.log(`Saved Kinematic Calibration: L1=${l1}cm, L2=${l2}cm, L3=${l3}cm, L4=${l4}cm | Gripper Open=${go}°, Close=${gc}°`);
       }
     } catch (e) {
       if (window.App && App.log) App.log(`Failed to save kinematic calibration: ${e.message}`);
@@ -496,17 +500,25 @@ const TeleopPanel = {
     }
     this.wasL2Pressed = l2Pressed;
 
-    // Gripper Binary State Control (R2 Closes, L2 Opens)
+    // Gripper Binary State Control (R2 Smoothly Glides Closed, L2 Smoothly Glides Open)
     const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || 140, 10);
     const closeAngle = parseInt(document.getElementById('angleGripperClosed')?.value || 85, 10);
 
     if (r2Val > 0.05) {
-      // R2 Pressed -> Close Gripper
-      this.integratedAngles[5] = closeAngle;
+      // R2 Pressed -> Smoothly glide gripper closed towards closeAngle
+      if (this.integratedAngles[5] > closeAngle) {
+        this.integratedAngles[5] = Math.max(closeAngle, this.integratedAngles[5] - (stepSpeed * 2.5));
+      } else if (this.integratedAngles[5] < closeAngle) {
+        this.integratedAngles[5] = Math.min(closeAngle, this.integratedAngles[5] + (stepSpeed * 2.5));
+      }
       this.gripperState = 1; // 1 = CLOSED
     } else if (l2Pressed) {
-      // L2 Pressed -> Open Gripper
-      this.integratedAngles[5] = openAngle;
+      // L2 Pressed -> Smoothly glide gripper open towards openAngle
+      if (this.integratedAngles[5] < openAngle) {
+        this.integratedAngles[5] = Math.min(openAngle, this.integratedAngles[5] + (stepSpeed * 2.5));
+      } else if (this.integratedAngles[5] > openAngle) {
+        this.integratedAngles[5] = Math.max(openAngle, this.integratedAngles[5] - (stepSpeed * 2.5));
+      }
       this.gripperState = 0; // 0 = OPEN
     }
 
@@ -594,8 +606,8 @@ const TeleopPanel = {
     for (let i = 0; i < 6; i++) {
       const targetVal = Math.round(this.integratedAngles[i]);
       const diff = Math.abs(targetVal - this.smoothedAngles[i]);
-      if (diff <= 5 || targetVal === 0 || targetVal === 180 || targetVal === 145 || targetVal === 85) {
-        // Snap immediately to exact target integer when target is at hard limit (0°, 10°, 180°) or within 5° threshold across ALL 6 SERVOS
+      if (diff <= 3 || targetVal === 0 || targetVal === 180) {
+        // Snap smoothly when within 3° threshold or at hard limits (0°, 180°)
         this.smoothedAngles[i] = targetVal;
       } else {
         this.smoothedAngles[i] = Math.round((targetVal * alpha) + (this.smoothedAngles[i] * (1 - alpha)));
