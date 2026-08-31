@@ -388,9 +388,8 @@ class SerialManager:
         if len(angles) != NUM_SERVOS:
             return False, f"Expected exactly {NUM_SERVOS} angles, got {len(angles)}"
 
-        # Clamp all angles to safe 0–180 range, and HARD CLAMP Gripper (Servo 5) between 85° and 140°
+        # Clamp all angles to safe 0–180 range across all 6 servos
         clamped_angles = [max(0, min(180, int(a))) for a in angles]
-        clamped_angles[5] = max(85, min(140, int(clamped_angles[5])))
 
         with self._lock:
             self.current_angles = clamped_angles

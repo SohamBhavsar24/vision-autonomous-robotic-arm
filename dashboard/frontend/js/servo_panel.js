@@ -227,8 +227,11 @@ const ServoPanel = {
 
   /* Update sliders when backend sends status update */
   updateSlidersFromBackend(angles) {
-    // Only update if user isn't actively dragging sliders
-    if (document.activeElement && document.activeElement.type === 'range') {
+    // Only update if user is NOT actively dragging sliders, typing in input boxes, or teleoperating
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
+      return;
+    }
+    if (window.TeleopPanel && window.TeleopPanel.gamepadIndex !== null) {
       return;
     }
     this.setSlidersFromAngles(angles);

@@ -48,7 +48,7 @@ class RoboticArmIK:
             "theta3": (15, 165), # Elbow
             "theta4": (0, 180),  # Wrist Pitch
             "theta5": (0, 180),  # Wrist Roll
-            "theta6": (85, 140)  # Gripper (Clamped)
+            "theta6": (0, 180)   # Gripper (Full 0-180 Range)
         }
 
     def load_config(self, config_path: str):
