@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-08-31 (Session 10 Complete — 3D Analytical Inverse Kinematics & Forward Kinematics Engine Operational, Calibrated to Physical Link Lengths L1=9.5cm, L2=12.0cm, L3=9.0cm, L4=14.0cm, REST & WebSocket IK/FK Endpoints Deployed)
+> **Last Updated:** 2026-08-31 (Session 11 Complete — Gripper Binary State Paradigm Deployed, 25cm × 25cm Workspace & 75-Episode Dataset Strategy Defined, Supabase Cloud Journal Synced)
 
 ---
 
@@ -19,18 +19,12 @@
 
 ## 2. Current Project Status
 
-### Overall Phase: READY FOR HARDWARE WIRING & PHYSICAL ASSEMBLY (SESSION 7)
-- **PCA9685 & Arduino Uno Wiring Protocol:** 
-  - Arduino VCC $\to$ PCA9685 VCC (5V logic power)
-  - Arduino GND $\to$ PCA9685 GND
-  - Arduino A4 $\to$ PCA9685 SDA (I2C data)
-  - Arduino A5 $\to$ PCA9685 SCL (I2C clock)
-  - PCA9685 Screw Terminals $\to$ External 5V/6V High-Current Servo Power Supply (DO NOT power servos from Arduino 5V pin!)
-  - Channels 0–5 $\to$ Servos 1–6 (0: Base, 1: Shoulder, 2: Elbow, 3: Wrist Pitch, 4: Wrist Roll, 5: Gripper)
-- **Web Dashboard:** Fully operational (`http://localhost:8050`). Features 6-servo sliders, Lock All at 90°, Solo Test buttons, Emergency Stop, Serial auto-connect, 3D Digital Twin URDF viewport, Supabase-backed Project Journal (Entry #10 live), Dual Teleoperation Modes (IK vs Velocity Rate Integrator), and Phase C Demonstration Dataset Recording & Trajectory Replay.
-- **Demonstration Dataset Engine (Phase C):** Live on `#panel-dataset`. Supports 30Hz trajectory sampling (`[timestamp, [θ1..θ6]]`), live 6-joint angle telemetry readout, auto-homing on stop (excluded from dataset), latest-episode-first list ordering, 1-click smooth trajectory playback (`Play Trajectory`), and episode deletion (`Delete`).
-- **Prime Directive (100% Smooth Motion):** EMA Low-Pass Filter ($\alpha = 0.25$) with 5°/hard endpoint snapping across ALL 6 SERVOS.
-- **Journal Backend:** Powered by **Supabase PostgreSQL** (`journal_entries` table) + **Supabase Cloud Storage** (`journal-media` public bucket) with instant 3s auto-sync across mobile PWA and laptop dashboard.
+### Overall Phase: DEMONSTRATION DATASET COLLECTION & HARDWARE TELEOPERATION (SESSION 11)
+- **Direct Joint Velocity Rate Control (Default Teleop Mode):** Smooth, gliding PS5 DualSense controller teleoperation with zero-jerk EMA low-pass filtering. Base motor lag and state conflict resets eliminated.
+- **Gripper Binary State Paradigm:** Full 0°–180° testing range on dashboard sliders. Dynamic user-defined `Open Angle (°)` and `Close Angle (°)` calibration input fields persisted via browser `localStorage` and backend `kinematics_config.json`. R2 closes gripper smoothly (`gripper_state = 1`); L2 opens gripper smoothly (`gripper_state = 0`).
+- **Demonstration Dataset Engine (Phase C):** Stores 5 primary joint angles `[θ1..θ5]` + binary `gripper_state` (`0 = OPEN`, `1 = CLOSED`) at 30Hz, decoupled from raw mechanical servo drift. Target volume defined at **75 demonstration episodes** across a $25\text{ cm} \times 25\text{ cm}$ workspace table ($5 \times 5$ grid, 3 demos per cell).
+- **Journal Backend:** Powered by **Supabase PostgreSQL** (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`) + **Supabase Cloud Storage** (`journal-media` public bucket) with instant auto-sync across mobile PWA and laptop dashboard.
+- **Live OpenCV Vision Stream:** ArUco Marker ID 0 tracking active on 30 FPS MJPEG camera feed (`/api/video_feed/1`).
 
 ### What Exists in the Codebase
 | File | Status |
