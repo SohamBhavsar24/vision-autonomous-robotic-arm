@@ -230,7 +230,7 @@ async def get_kinematics_config():
 
 @app.post("/api/kinematics")
 async def save_kinematics_config(req: KinematicsConfigRequest):
-    """Saves updated Kinematic Calibration parameters (L1-L4, offsets, gripper angles) and syncs to ik_solver."""
+    """Saves updated Kinematic Calibration parameters (L1-L4, offsets, gripper angles) and syncs to ik_solver and serial_manager."""
     data = req.model_dump()
     with open(CONFIG_PATH, "w") as f:
         json.dump(data, f, indent=2)
@@ -238,6 +238,8 @@ async def save_kinematics_config(req: KinematicsConfigRequest):
     ik_solver.L2 = req.L2
     ik_solver.L3 = req.L3
     ik_solver.L4 = req.L4
+    serial_manager.gripper_open = req.gripper_open
+    serial_manager.gripper_closed = req.gripper_closed
     return {"status": "saved", "config": data}
 
 

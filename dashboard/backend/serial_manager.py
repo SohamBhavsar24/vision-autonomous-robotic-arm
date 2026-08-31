@@ -69,6 +69,8 @@ IGNORED_PORT_KEYWORDS = [
 ]
 
 
+CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "kinematics_config.json"))
+
 class SerialManager:
     def __init__(self):
         self._serial: Optional[serial.Serial] = None
@@ -77,8 +79,12 @@ class SerialManager:
         self.is_connected: bool = False
         self.is_estop: bool = False
         
+        self.gripper_open: int = 140
+        self.gripper_closed: int = 85
+        self.load_kinematics_config()
+
         # Track current commanded angles [Base, Shoulder, Elbow, WristPitch, WristRoll, Gripper]
-        self.current_angles: List[int] = list(DEFAULT_HOME_ANGLES)
+        self.current_angles: List[int] = [90, 90, 90, 90, 90, self.gripper_open]
         
         # Thread lock for serial writing
         self._lock = threading.Lock()
@@ -87,6 +93,17 @@ class SerialManager:
         # Cached CLI check to avoid subprocess slowdowns during 30Hz WebSocket streaming
         self._has_cli_cache: Optional[bool] = None
         self._cli_msg_cache: str = ""
+
+    def load_kinematics_config(self):
+        """Loads persisted gripper open/close angles from kinematics_config.json on startup."""
+        if os.path.exists(CONFIG_PATH):
+            try:
+                with open(CONFIG_PATH, "r") as f:
+                    cfg = json.load(f)
+                    self.gripper_open = cfg.get("gripper_open", 140)
+                    self.gripper_closed = cfg.get("gripper_closed", 85)
+            except Exception as e:
+                logger.warning(f"Could not load kinematics_config.json in SerialManager: {e}")
 
     def check_arduino_cli(self, force_refresh: bool = False) -> Tuple[bool, str]:
         """Checks if `arduino-cli` is installed and available in PATH (cached)."""
@@ -419,9 +436,10 @@ class SerialManager:
         return await self.smooth_transition_to_angles(angles, duration_sec=1.0, broadcast_callback=broadcast_callback)
 
     async def move_to_home(self, broadcast_callback=None) -> Tuple[bool, str]:
-        """Moves all servos smoothly to predefined Home Position angles (Decision #20)."""
+        """Moves all servos smoothly to predefined Home Position angles."""
         self.is_estop = False
-        return await self.smooth_transition_to_angles(DEFAULT_HOME_ANGLES, duration_sec=1.2, broadcast_callback=broadcast_callback)
+        home_angles = [90, 90, 90, 90, 90, self.gripper_open]
+        return await self.smooth_transition_to_angles(home_angles, duration_sec=1.2, broadcast_callback=broadcast_callback)
 
     def emergency_stop(self) -> Tuple[bool, str]:
         """
