@@ -50,9 +50,10 @@ const DatasetPanel = {
     }
   },
 
-  formatAnglesText(angles) {
-    if (!Array.isArray(angles) || angles.length < 6) return '';
-    return `Base: ${angles[0]}° | Shoulder: ${angles[1]}° | Elbow: ${angles[2]}° | Wrist Pitch: ${angles[3]}° | Wrist Roll: ${angles[4]}° | Gripper: ${angles[5]}°`;
+  formatAnglesText(angles, gripperState) {
+    if (!Array.isArray(angles) || angles.length < 5) return '';
+    const stateStr = (gripperState === 1 || angles[5] <= 110) ? 'CLOSED (1)' : 'OPEN (0)';
+    return `Base: ${angles[0]}° | Shoulder: ${angles[1]}° | Elbow: ${angles[2]}° | Wrist Pitch: ${angles[3]}° | Wrist Roll: ${angles[4]}° | Gripper: ${stateStr}`;
   },
 
   getCurrentJointAngles() {
@@ -107,14 +108,19 @@ const DatasetPanel = {
                             ? window.TeleopPanel.gripperState
                             : (angles[5] <= 110 ? 1 : 0);
       const elapsedMs = Date.now() - startTime;
-      this.currentTrajectory.push({ t: elapsedMs, angles, gripper_state: gripperState });
+      // Store 5 primary joint angles + binary gripper_state (0 = OPEN, 1 = CLOSED)
+      this.currentTrajectory.push({
+        t: elapsedMs,
+        joints: angles.slice(0, 5),
+        gripper_state: gripperState
+      });
 
       if (this.frameCountSpan) {
         this.frameCountSpan.textContent = this.currentTrajectory.length;
       }
 
       if (this.anglesValSpan) {
-        this.anglesValSpan.textContent = `${this.formatAnglesText(angles)} | State: ${gripperState === 1 ? 'CLOSED' : 'OPEN'}`;
+        this.anglesValSpan.textContent = this.formatAnglesText(angles.slice(0, 5), gripperState);
       }
     }, this.sampleIntervalMs);
   },
@@ -273,7 +279,11 @@ const DatasetPanel = {
     }
 
     const currentLiveAngles = this.getCurrentJointAngles();
-    const startPose = ep.trajectory[0].angles;
+    const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || document.getElementById('inputGripperOpenCard')?.value || 140, 10);
+    const closeAngle = parseInt(document.getElementById('angleGripperClosed')?.value || document.getElementById('inputGripperClosedCard')?.value || 85, 10);
+    const firstFrame = ep.trajectory[0];
+    const firstState = (firstFrame.gripper_state !== undefined) ? firstFrame.gripper_state : ((firstFrame.angles && firstFrame.angles[5] <= 110) ? 1 : 0);
+    const startPose = firstFrame.joints ? [...firstFrame.joints, (firstState === 1 ? closeAngle : openAngle)] : firstFrame.angles;
 
     // Phase 1: Smooth 1-second S-Curve transition from current pose to start pose
     this.smoothTransitionToAngles(
@@ -342,12 +352,19 @@ const DatasetPanel = {
           }
 
           const frame = ep.trajectory[frameIndex];
+          const primaryJoints = frame.joints || (frame.angles ? frame.angles.slice(0, 5) : [90, 90, 90, 90, 90]);
+          const state = (frame.gripper_state !== undefined) ? frame.gripper_state : ((frame.angles && frame.angles[5] <= 110) ? 1 : 0);
+          const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || document.getElementById('inputGripperOpenCard')?.value || 140, 10);
+          const closeAngle = parseInt(document.getElementById('angleGripperClosed')?.value || document.getElementById('inputGripperClosedCard')?.value || 85, 10);
+          const gripperAngle = (state === 1) ? closeAngle : openAngle;
+          const fullAngles = [...primaryJoints, gripperAngle];
+
           if (window.ServoPanel && ServoPanel.setAngles) {
-            ServoPanel.setAngles(frame.angles);
+            ServoPanel.setAngles(fullAngles);
           }
 
           if (this.anglesValSpan) {
-            this.anglesValSpan.textContent = this.formatAnglesText(frame.angles);
+            this.anglesValSpan.textContent = this.formatAnglesText(primaryJoints, state);
           }
 
           if (statusSpan) {
