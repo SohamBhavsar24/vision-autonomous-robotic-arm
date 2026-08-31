@@ -21,10 +21,14 @@
 const TeleopPanel = {
   gamepadIndex: null,
   animFrameId: null,
-  activeMode: 'ik', // 'ik' or 'joint'
+  activeMode: 'joint', // 'ik' or 'joint'
   isGripperLocked: false,
-  integratedAngles: [90, 90, 90, 90, 90, 145], // Continuous Velocity-Based Integrator
-  smoothedAngles: [90, 90, 90, 90, 90, 145],   // EMA Low-Pass Filter State
+  L1: 9.5,
+  L2: 12.0,
+  L3: 9.0,
+  L4: 14.0,
+  integratedAngles: [90, 90, 90, 90, 90, 140], // Continuous Velocity-Based Integrator
+  smoothedAngles: [90, 90, 90, 90, 90, 140],   // EMA Low-Pass Filter State
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -176,12 +180,73 @@ const TeleopPanel = {
     }
   },
 
+  solveIK(x, y, z, pitch_deg = 45.0, roll_deg = 90.0, gripper = 140) {
+    const L1 = parseFloat(this.L1) || 9.5;
+    const L2 = parseFloat(this.L2) || 12.0;
+    const L3 = parseFloat(this.L3) || 9.0;
+    const L4 = parseFloat(this.L4) || 14.0;
+
+    if (isNaN(x) || isNaN(y) || isNaN(z)) {
+      return [90, 90, 90, 90, 90, 140];
+    }
+
+    if (y < 1.0) y = 1.0;
+
+    // 1. Base Angle
+    const theta1 = 90.0 + (Math.atan2(x, y) * (180.0 / Math.PI));
+
+    // 2. Planar decomposition
+    const r = Math.hypot(x, y);
+    const phi = (pitch_deg || 45.0) * (Math.PI / 180.0);
+
+    // 3. Wrist center
+    const r_w = r - L4 * Math.cos(phi);
+    const z_w = z - L1 - L4 * Math.sin(phi);
+
+    // 4. Planar distance D
+    const D = Math.hypot(r_w, z_w);
+    const max_reach = L2 + L3;
+    const min_reach = Math.abs(L2 - L3);
+    const D_clamped = Math.max(min_reach + 0.001, Math.min(max_reach - 0.001, D));
+
+    // 5. Law of Cosines for Elbow
+    const cos_gamma = (L2 * L2 + L3 * L3 - D_clamped * D_clamped) / (2.0 * L2 * L3);
+    const gamma = Math.acos(Math.max(-1.0, Math.min(1.0, cos_gamma)));
+    const theta3 = 45.0 + ((Math.PI - gamma) * (180.0 / Math.PI));
+
+    // 6. Law of Cosines for Shoulder
+    const alpha1 = Math.atan2(z_w, r_w);
+    const cos_alpha2 = (L2 * L2 + D_clamped * D_clamped - L3 * L3) / (2.0 * L2 * D_clamped);
+    const alpha2 = Math.acos(Math.max(-1.0, Math.min(1.0, cos_alpha2)));
+    const psi = alpha1 + alpha2;
+    const theta2 = 180.0 - (psi * (180.0 / Math.PI));
+
+    // 7. Wrist Pitch
+    const e = psi - (Math.PI - gamma);
+    const p_rel = phi - e;
+    const theta4 = 90.0 + (p_rel * (180.0 / Math.PI));
+
+    const safeNum = (v, def = 90) => isNaN(v) ? def : v;
+
+    return [
+      Math.max(0, Math.min(180, Math.round(safeNum(theta1, 90)))),
+      Math.max(15, Math.min(165, Math.round(safeNum(theta2, 90)))),
+      Math.max(15, Math.min(165, Math.round(safeNum(theta3, 90)))),
+      Math.max(0, Math.min(180, Math.round(safeNum(theta4, 90)))),
+      Math.max(0, Math.min(180, Math.round(safeNum(roll_deg, 90)))),
+      Math.max(85, Math.min(140, Math.round(safeNum(gripper, 140))))
+    ];
+  },
+
   forwardKinematics(angles) {
-    const [theta1, theta2, theta3, theta4] = angles || [90, 90, 90, 90];
-    const L1 = this.L1 || 9.5;
-    const L2 = this.L2 || 12.0;
-    const L3 = this.L3 || 9.0;
-    const L4 = this.L4 || 14.0;
+    if (!angles || !Array.isArray(angles) || angles.some(a => isNaN(a))) {
+      return { x: 0.0, y: 16.3, z: 37.8, pitch_deg: 45.0, roll_deg: 90.0 };
+    }
+    const [theta1, theta2, theta3, theta4] = angles;
+    const L1 = parseFloat(this.L1) || 9.5;
+    const L2 = parseFloat(this.L2) || 12.0;
+    const L3 = parseFloat(this.L3) || 9.0;
+    const L4 = parseFloat(this.L4) || 14.0;
 
     const b = (theta1 - 90.0) * (Math.PI / 180.0);
     const s = (180.0 - theta2) * (Math.PI / 180.0);
@@ -200,10 +265,10 @@ const TeleopPanel = {
     const y = r * Math.cos(b);
 
     return {
-      x: parseFloat(x.toFixed(1)),
-      y: parseFloat(y.toFixed(1)),
-      z: parseFloat(z.toFixed(1)),
-      pitch_deg: parseFloat((p * (180.0 / Math.PI)).toFixed(1)),
+      x: parseFloat((isNaN(x) ? 0 : x).toFixed(1)),
+      y: parseFloat((isNaN(y) ? 16.3 : y).toFixed(1)),
+      z: parseFloat((isNaN(z) ? 37.8 : z).toFixed(1)),
+      pitch_deg: parseFloat(((isNaN(p) ? 0.785 : p) * (180.0 / Math.PI)).toFixed(1)),
       roll_deg: (angles && angles[4]) || 90.0
     };
   },
