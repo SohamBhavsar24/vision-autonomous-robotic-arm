@@ -507,7 +507,8 @@ const TeleopPanel = {
         this.isHomingSmoothly = false;
       }
       const ease = 0.5 * (1.0 - Math.cos(Math.PI * this.homingProgress));
-      const targetHome = [90, 90, 90, 90, 90, 140];
+      const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || document.getElementById('inputGripperOpenCard')?.value || 140, 10);
+      const targetHome = [90, 90, 90, 90, 90, openAngle];
       for (let i = 0; i < 6; i++) {
         this.integratedAngles[i] = this.homingStartAngles[i] + (targetHome[i] - this.homingStartAngles[i]) * ease;
         this.smoothedAngles[i] = Math.round(this.integratedAngles[i]);
