@@ -539,9 +539,17 @@ const TeleopPanel = {
 
     // Wrist Pitch Control (Cross X / Circle O)
     if (xPressed) {
-      this.integratedAngles[3] = Math.min(180, this.integratedAngles[3] + stepSpeed);
+      if (this.activeMode === 'ik' && this.cartesianPos) {
+        this.cartesianPos.pitch_deg = Math.min(90, (this.cartesianPos.pitch_deg || 45) + 1.0);
+      } else {
+        this.integratedAngles[3] = Math.min(180, this.integratedAngles[3] + stepSpeed);
+      }
     } else if (circlePressed) {
-      this.integratedAngles[3] = Math.max(0, this.integratedAngles[3] - stepSpeed);
+      if (this.activeMode === 'ik' && this.cartesianPos) {
+        this.cartesianPos.pitch_deg = Math.max(-90, (this.cartesianPos.pitch_deg || 45) - 1.0);
+      } else {
+        this.integratedAngles[3] = Math.max(0, this.integratedAngles[3] - stepSpeed);
+      }
     }
 
     // Wrist Roll Control (R1 / L1)
@@ -570,19 +578,24 @@ const TeleopPanel = {
         this.cartesianPos = this.forwardKinematics(this.integratedAngles);
       }
       
-      const posSpeed = 0.4; // cm per frame (~24 cm/sec)
+      const posSpeed = 0.08; // cm per frame (~4.8 cm/sec for silky smooth precision)
       if (Math.abs(lx) > 0.05) {
-        // Left stick LX: moves X (Left/Right)
+        // Left stick LX (negative is left): moves X (Left/Right)
         this.cartesianPos.x -= (lx * posSpeed);
       }
       if (Math.abs(ly) > 0.05) {
-        // Left stick LY: moves Y (Forward/Backward)
+        // Left stick LY (negative is forward): moves Y (Forward/Backward)
         this.cartesianPos.y -= (ly * posSpeed);
       }
       if (Math.abs(ry) > 0.05) {
-        // Right stick RY: moves Z (Up/Down)
+        // Right stick RY (negative is up): moves Z (Up/Down)
         this.cartesianPos.z -= (ry * posSpeed);
       }
+
+      // Clamp 3D Cartesian Position to safe physical workspace box
+      this.cartesianPos.x = Math.max(-18.0, Math.min(18.0, this.cartesianPos.x));
+      this.cartesianPos.y = Math.max(5.0, Math.min(21.0, this.cartesianPos.y));
+      this.cartesianPos.z = Math.max(1.0, Math.min(35.0, this.cartesianPos.z));
 
       // Solve IK for current Cartesian 3D target
       const ikAngles = this.solveIK(
