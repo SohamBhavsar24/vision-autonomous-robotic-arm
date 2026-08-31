@@ -60,9 +60,10 @@ class VisionManager:
             2: "Target Box (ArUco ID: 2)"
         }
 
-        # Latest detection state
+        # Latest detection state & pose data
         self.last_detected_ids: List[int] = []
         self.is_camera_connected = False
+        self.latest_block_pose: Dict[str, float] = {"x_cm": 0.0, "y_cm": 0.0, "theta_deg": 0.0, "valid": False}
 
     def init_camera(self) -> bool:
         """Attempts to open USB camera (Logitech C270 or FaceTime camera)."""
@@ -109,6 +110,9 @@ class VisionManager:
         corners, ids, rejected = self.detector_4x4.detectMarkers(gray)
 
         self.last_detected_ids = []
+        tag_centers: Dict[int, Tuple[float, float]] = {}
+        tag_widths_px: Dict[int, float] = {}
+        tag_corners_map: Dict[int, np.ndarray] = {}
 
         if ids is not None and len(ids) > 0:
             ids_flat = ids.flatten()
@@ -123,6 +127,7 @@ class VisionManager:
                 self.last_detected_ids.append(marker_id)
                 marker_corners = corners[i][0] # 4 corner points
                 pts = marker_corners.astype(np.int32)
+                tag_corners_map[marker_id] = marker_corners
 
                 # Draw thick neon green bounding box around ArUco tag
                 cv2.polylines(frame, [pts], isClosed=True, color=(0, 255, 102), thickness=3)
@@ -133,9 +138,15 @@ class VisionManager:
                     cv2.circle(frame, tuple(pt), 4, (0, 255, 255), -1)
 
                 # Center crosshair point
-                center_x = int(np.mean(pts[:, 0]))
-                center_y = int(np.mean(pts[:, 1]))
-                cv2.circle(frame, (center_x, center_y), 5, (255, 153, 0), -1)
+                center_x = float(np.mean(pts[:, 0]))
+                center_y = float(np.mean(pts[:, 1]))
+                tag_centers[marker_id] = (center_x, center_y)
+                cv2.circle(frame, (int(center_x), int(center_y)), 5, (255, 153, 0), -1)
+
+                # Calculate tag width in pixels for scale calibration
+                width_top = np.linalg.norm(marker_corners[0] - marker_corners[1])
+                width_bottom = np.linalg.norm(marker_corners[3] - marker_corners[2])
+                tag_widths_px[marker_id] = float((width_top + width_bottom) / 2.0)
 
                 # Label string
                 label_text = self.marker_labels.get(marker_id, f"ArUco ID: {marker_id}")
@@ -158,11 +169,43 @@ class VisionManager:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 102), 2, cv2.LINE_AA
                 )
 
+        # Real-World Coordinate Transformation (Tag ID 2 = World Origin, Tag ID 0 = Block 1)
+        if 2 in tag_centers and 0 in tag_centers:
+            origin_x, origin_y = tag_centers[2]
+            block_x_px, block_y_px = tag_centers[0]
+            tag_w_px = tag_widths_px.get(2, 60.0)
+
+            # Physical tag width is 4.0 cm
+            cm_per_pixel = 4.0 / max(1.0, tag_w_px)
+
+            # Relative coordinates in centimeters relative to World Origin Tag 2
+            dx_cm = (block_x_px - origin_x) * cm_per_pixel
+            dy_cm = (origin_y - block_y_px) * cm_per_pixel # Inverted Y for image frame
+
+            # Orientation angle relative to horizontal
+            c0, c1 = tag_corners_map[0][0], tag_corners_map[0][1]
+            theta_rad = np.arctan2(c1[1] - c0[1], c1[0] - c0[0])
+            theta_deg = float(np.degrees(theta_rad))
+
+            self.latest_block_pose = {
+                "x_cm": round(dx_cm, 1),
+                "y_cm": round(dy_cm, 1),
+                "theta_deg": round(theta_deg, 1),
+                "valid": True
+            }
+        else:
+            self.latest_block_pose["valid"] = False
+
         # On-Screen HUD Status Overlay at Top-Left
         if len(self.last_detected_ids) > 0:
             status_str = f"ArUco Status: DETECTED (IDs: {self.last_detected_ids})"
-            cv2.rectangle(frame, (10, 10), (380, 42), (20, 18, 17), -1)
+            cv2.rectangle(frame, (10, 10), (420, 42), (20, 18, 17), -1)
             cv2.putText(frame, status_str, (20, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 102), 2, cv2.LINE_AA)
+
+            if self.latest_block_pose["valid"]:
+                pose_str = f"Block Pose: X={self.latest_block_pose['x_cm']}cm Y={self.latest_block_pose['y_cm']}cm θ={self.latest_block_pose['theta_deg']}°"
+                cv2.rectangle(frame, (10, 46), (420, 78), (20, 18, 17), -1)
+                cv2.putText(frame, pose_str, (20, 68), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 153, 0), 2, cv2.LINE_AA)
         else:
             cv2.rectangle(frame, (10, 10), (360, 42), (20, 18, 17), -1)
             cv2.putText(frame, "ArUco Status: Searching for Tag...", (20, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 165, 255), 1, cv2.LINE_AA)

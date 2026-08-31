@@ -166,10 +166,11 @@ async def video_feed_cam1():
 
 @app.get("/api/vision/status")
 async def get_vision_status():
-    """Returns camera connection status and latest detected ArUco marker IDs."""
+    """Returns camera connection status, detected ArUco IDs, and real-world block pose relative to Origin Tag ID 2."""
     return {
         "camera1_connected": vision_manager_cam1.is_camera_connected,
-        "detected_marker_ids": vision_manager_cam1.last_detected_ids
+        "detected_marker_ids": vision_manager_cam1.last_detected_ids,
+        "latest_block_pose": vision_manager_cam1.latest_block_pose
     }
 
 
