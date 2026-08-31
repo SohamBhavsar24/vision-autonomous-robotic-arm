@@ -103,10 +103,18 @@
 - **REST & WebSocket API Endpoints:** Added `/api/ik/solve`, `/api/ik/move`, and `/api/fk` in `main.py` along with `move_ik` WebSocket handler for instant 3D coordinate teleoperation & autonomous vision picking.
 - **Persistent Kinematics Config:** Updated `kinematics_config.json` and linked dynamic parameters to `ik_solver.py`.
 
+### Session 11 (2026-08-31) — GRIPPER BINARY STATE PARADIGM, 25cm × 25cm WORKSPACE, 75-EPISODE DATASET BLUEPRINT & BASE LAG RESOLUTION
+- **Gripper Binary State Paradigm:** Unlocked dashboard Gripper slider to full $0^\circ \text{ to } 180^\circ$ testing range. Added dynamic user-defined `Open Angle (°)` and `Close Angle (°)` calibration input fields persisted via browser `localStorage` and backend `kinematics_config.json`. PS5 R2 trigger glides gripper closed (`gripper_state = 1`); L2 trigger glides gripper open (`gripper_state = 0`).
+- **Demonstration Dataset Schema Update:** Refactored `dataset_panel.js` to log 5 primary joint angles `[θ1..θ5]` + binary `gripper_state` (`0 = OPEN`, `1 = CLOSED`) at 30Hz, completely decoupling dataset trajectory logs from physical servo gear slip. Trajectory replay dynamically resolves open/close angles from user calibration settings.
+- **25cm × 25cm Workspace Bounding Box & 75-Episode Blueprint:** Established a strict $25\text{ cm} \times 25\text{ cm}$ physical workspace grid ($5 \times 5$ grid, 25 sub-squares of $5\text{ cm} \times 5\text{ cm}$ each) with a target dataset volume of **75 demonstration episodes** (3 clean human teleoperation demonstrations per cell across varying block approach angles and rotations).
+- **Base Motor Lag & Snapping Resolution:** Eliminated state conflict reset loop in `teleop_panel.js` animation loop. Base motor movement is 100% continuous and responsive to Left Joystick (X) inputs without dropping frames or snapping to limits.
+- **Supabase Cloud Sync:** Published Log Entry 12 directly to live **Supabase PostgreSQL** database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`).
+- **ArUco Perception Validation:** ArUco ID 0 (Block 1) detected live on 30 FPS MJPEG camera feed (`/api/video_feed/1`). ArUco ID 2 designated as World Origin Calibration Tag on the platform board.
+
 ---
 
-## 5. Next Steps (Vision Workspace Calibration & Demonstration Data Collection)
+## 5. Next Steps (Demonstration Data Collection & Perception Calibration)
 
-1. **Mount Logitech C270 Camera:** Position Logitech C270 camera looking down at the workspace table plank.
-2. **Cardboard Mounting for Physical Blocks:** Cut out printed ArUco ID 0, ID 1, and ID 2 tags, glue onto thin cardboard backing, and attach to sponge cubes & destination box.
-3. **Record Demonstration Episodes (Phase C):** Use PS5 controller to record 150–250 pick-and-place demonstration episodes for Behavioral Cloning training.
+1. **Place ArUco ID 2 World Origin Tag:** Stick ArUco Tag ID 2 flat on the corner of the $25\text{ cm} \times 25\text{ cm}$ workspace platform to establish the real-world $(0,0)$ origin.
+2. **Collect 75 Demonstration Episodes:** Execute the $5 \times 5$ grid teleoperation routine (3 episodes per cell) to build the Stage 1 training dataset for imitation learning.
+3. **Format PyTorch Dataset (`export_dataset.py`):** Run 1-click dataset exporter to package recorded JSON demonstration episodes into PyTorch tensors (`.h5` / `.npz`) for policy model training.
