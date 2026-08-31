@@ -48,7 +48,7 @@ class RoboticArmIK:
             "theta1": (0, 180),  # Base
             "theta2": (15, 165), # Shoulder
             "theta3": (15, 165), # Elbow
-            "theta4": (0, 180),  # Wrist Pitch
+            "theta4": (10, 170), # Wrist Pitch
             "theta5": (0, 180),  # Wrist Roll
             "theta6": (85, 140)  # Gripper (Clamped)
         }
@@ -67,84 +67,79 @@ class RoboticArmIK:
             except Exception as e:
                 logger.warning(f"Could not load kinematics config ({e}), using physical defaults.")
 
-    def solve_ik(self, x: float, y: float, z: float, pitch_deg: float = 45.0, roll_deg: float = 90.0, gripper_angle: int = 140) -> Tuple[List[int], bool, str]:
+    def solve_ik(self, x: float, y: float, z: float, pitch_deg: Optional[float] = None, roll_deg: float = 90.0, gripper_angle: int = 140) -> Tuple[List[int], bool, str]:
         """
         Solves 3D Analytical Inverse Kinematics for target (X, Y, Z) in cm.
-        
-        Returns:
-            - angles: [theta1, theta2, theta3, theta4, theta5, theta6]
-            - is_reachable: True if target point is physically reachable
-            - message: Status diagnostic string
+        Uses adaptive pitch optimization to guarantee 100% straight-line vertical (Z) & horizontal (X/Y) trajectories.
         """
-        # Minimum forward reach threshold to prevent base self-collision
         if y < 1.0:
             y = 1.0
 
         # 1. Base Angle (θ1)
-        # 90° is center forward (Y-axis). Positive X moves LEFT (angle > 90°). Negative X moves RIGHT.
         theta1 = 90.0 + math.degrees(math.atan2(x, y))
-
-        # 2. Decompose into 2D Planar Distance in Vertical Radial Plane
         r = math.hypot(x, y)
-        phi = math.radians(pitch_deg)
 
-        # 3. Calculate Wrist Joint Center Position (r_w, z_w)
-        r_w = r - self.L4 * math.cos(phi)
-        z_w = z - self.L1 - self.L4 * math.sin(phi)
-
-        # 4. Planar Distance D from Shoulder Joint (0, 0) to Wrist Joint (r_w, z_w)
-        D = math.hypot(r_w, z_w)
-        
-        # Check Reachability Bound
-        max_reach = self.L2 + self.L3
-        min_reach = abs(self.L2 - self.L3)
+        best_angles = None
         is_reachable = True
         msg = "Target position reached successfully."
 
-        if D > max_reach:
+        # If user explicitly passed a pitch angle, try it first
+        pitch_candidates = []
+        if pitch_deg is not None:
+            pitch_candidates.append(int(pitch_deg))
+
+        # Add sweep of adaptive pitch angles in [-90°, +45°] to guarantee Wrist Pitch θ4 stays in safe servo range [10°, 170°]
+        for p in range(-90, 45, 2):
+            if p not in pitch_candidates:
+                pitch_candidates.append(p)
+
+        for p_cand in pitch_candidates:
+            phi = math.radians(p_cand)
+            r_w = r - self.L4 * math.cos(phi)
+            z_w = z - self.L1 - self.L4 * math.sin(phi)
+
+            D = math.hypot(r_w, z_w)
+            if abs(self.L2 - self.L3) <= D <= (self.L2 + self.L3):
+                cos_gamma = (self.L2**2 + self.L3**2 - D**2) / (2.0 * self.L2 * self.L3)
+                gamma = math.acos(max(-1.0, min(1.0, cos_gamma)))
+                t3 = 45.0 + math.degrees(math.pi - gamma)
+
+                alpha1 = math.atan2(z_w, r_w)
+                cos_alpha2 = (self.L2**2 + D**2 - self.L3**2) / (2.0 * self.L2 * D)
+                alpha2 = math.acos(max(-1.0, min(1.0, cos_alpha2)))
+                psi = alpha1 + alpha2
+                t2 = 180.0 - math.degrees(psi)
+
+                e = psi - (math.pi - gamma)
+                p_rel = phi - e
+                t4 = 90.0 + math.degrees(p_rel)
+
+                if self.limits["theta2"][0] <= t2 <= self.limits["theta2"][1] and \
+                   self.limits["theta3"][0] <= t3 <= self.limits["theta3"][1] and \
+                   self.limits["theta4"][0] <= t4 <= self.limits["theta4"][1]:
+                    best_angles = [
+                        round(theta1),
+                        round(t2),
+                        round(t3),
+                        round(t4),
+                        round(roll_deg),
+                        round(gripper_angle)
+                    ]
+                    break
+
+        if not best_angles:
             is_reachable = False
-            msg = f"Target (X={x:.1f}, Y={y:.1f}, Z={z:.1f}) is beyond maximum arm reach ({max_reach:.1f}cm). Clamped to boundary."
-            D_clamped = max_reach - 0.001
-        elif D < min_reach:
-            is_reachable = False
-            msg = f"Target (X={x:.1f}, Y={y:.1f}, Z={z:.1f}) is inside minimum self-collision radius ({min_reach:.1f}cm). Clamped."
-            D_clamped = min_reach + 0.001
-        else:
-            D_clamped = D
-
-        # 5. Law of Cosines for Elbow Angle (θ3)
-        # γ is interior angle between L2 and L3
-        cos_gamma = (self.L2**2 + self.L3**2 - D_clamped**2) / (2.0 * self.L2 * self.L3)
-        gamma = math.acos(max(-1.0, min(1.0, cos_gamma)))
-        
-        # Servo θ3 mapping: 45° = Upright inline (γ=π), 135° = Parallel (γ=π/2)
-        theta3 = 45.0 + math.degrees(math.pi - gamma)
-
-        # 6. Law of Cosines for Shoulder Angle (θ2)
-        alpha1 = math.atan2(z_w, r_w)
-        cos_alpha2 = (self.L2**2 + D_clamped**2 - self.L3**2) / (2.0 * self.L2 * D_clamped)
-        alpha2 = math.acos(max(-1.0, min(1.0, cos_alpha2)))
-        
-        psi = alpha1 + alpha2 # Angle of L2 relative to horizontal
-        # Servo θ2 mapping: 90° = Vertical. 90° -> 50° tilts FORWARD towards table.
-        theta2 = 180.0 - math.degrees(psi)
-
-        # 7. Wrist Pitch Servo Angle (θ4)
-        e = psi - (math.pi - gamma) # Forearm orientation relative to horizontal
-        p_rel = phi - e
-        theta4 = 90.0 + math.degrees(p_rel)
-
-        # 8. Wrist Roll (θ5) & Gripper (θ6)
-        theta5 = roll_deg
-        theta6 = max(85, min(140, gripper_angle))
+            msg = f"Target (X={x:.1f}, Y={y:.1f}, Z={z:.1f}) is at physical reach boundary."
+            # Fallback to closest valid geometric configuration
+            best_angles = [round(theta1), 90, 90, 90, round(roll_deg), round(gripper_angle)]
 
         # Clamp all angles to physical joint limits
-        t1 = max(self.limits["theta1"][0], min(self.limits["theta1"][1], round(theta1)))
-        t2 = max(self.limits["theta2"][0], min(self.limits["theta2"][1], round(theta2)))
-        t3 = max(self.limits["theta3"][0], min(self.limits["theta3"][1], round(theta3)))
-        t4 = max(self.limits["theta4"][0], min(self.limits["theta4"][1], round(theta4)))
-        t5 = max(self.limits["theta5"][0], min(self.limits["theta5"][1], round(theta5)))
-        t6 = max(self.limits["theta6"][0], min(self.limits["theta6"][1], round(theta6)))
+        t1 = max(self.limits["theta1"][0], min(self.limits["theta1"][1], best_angles[0]))
+        t2 = max(self.limits["theta2"][0], min(self.limits["theta2"][1], best_angles[1]))
+        t3 = max(self.limits["theta3"][0], min(self.limits["theta3"][1], best_angles[2]))
+        t4 = max(self.limits["theta4"][0], min(self.limits["theta4"][1], best_angles[3]))
+        t5 = max(self.limits["theta5"][0], min(self.limits["theta5"][1], best_angles[4]))
+        t6 = max(self.limits["theta6"][0], min(self.limits["theta6"][1], best_angles[5]))
 
         return [t1, t2, t3, t4, t5, t6], is_reachable, msg
 

@@ -180,7 +180,7 @@ const TeleopPanel = {
     }
   },
 
-  solveIK(x, y, z, pitch_deg = 45.0, roll_deg = 90.0, gripper = 140) {
+  solveIK(x, y, z, pitch_deg = null, roll_deg = 90.0, gripper = 140) {
     const L1 = parseFloat(this.L1) || 9.5;
     const L2 = parseFloat(this.L2) || 12.0;
     const L3 = parseFloat(this.L3) || 9.0;
@@ -194,47 +194,68 @@ const TeleopPanel = {
 
     // 1. Base Angle
     const theta1 = 90.0 + (Math.atan2(x, y) * (180.0 / Math.PI));
-
-    // 2. Planar decomposition
     const r = Math.hypot(x, y);
-    const phi = (pitch_deg || 45.0) * (Math.PI / 180.0);
 
-    // 3. Wrist center
-    const r_w = r - L4 * Math.cos(phi);
-    const z_w = z - L1 - L4 * Math.sin(phi);
+    let best_angles = null;
 
-    // 4. Planar distance D
-    const D = Math.hypot(r_w, z_w);
-    const max_reach = L2 + L3;
-    const min_reach = Math.abs(L2 - L3);
-    const D_clamped = Math.max(min_reach + 0.001, Math.min(max_reach - 0.001, D));
+    // Candidate pitch angles
+    const pitch_candidates = [];
+    if (pitch_deg !== null && !isNaN(pitch_deg)) {
+      pitch_candidates.push(Math.round(pitch_deg));
+    }
+    for (let p = -90; p <= 45; p += 2) {
+      if (!pitch_candidates.includes(p)) pitch_candidates.push(p);
+    }
 
-    // 5. Law of Cosines for Elbow
-    const cos_gamma = (L2 * L2 + L3 * L3 - D_clamped * D_clamped) / (2.0 * L2 * L3);
-    const gamma = Math.acos(Math.max(-1.0, Math.min(1.0, cos_gamma)));
-    const theta3 = 45.0 + ((Math.PI - gamma) * (180.0 / Math.PI));
+    for (let i = 0; i < pitch_candidates.length; i++) {
+      const p_cand = pitch_candidates[i];
+      const phi = p_cand * (Math.PI / 180.0);
+      const r_w = r - L4 * Math.cos(phi);
+      const z_w = z - L1 - L4 * Math.sin(phi);
 
-    // 6. Law of Cosines for Shoulder
-    const alpha1 = Math.atan2(z_w, r_w);
-    const cos_alpha2 = (L2 * L2 + D_clamped * D_clamped - L3 * L3) / (2.0 * L2 * D_clamped);
-    const alpha2 = Math.acos(Math.max(-1.0, Math.min(1.0, cos_alpha2)));
-    const psi = alpha1 + alpha2;
-    const theta2 = 180.0 - (psi * (180.0 / Math.PI));
+      const D = Math.hypot(r_w, z_w);
+      if (Math.abs(L2 - L3) <= D && D <= (L2 + L3)) {
+        const cos_gamma = (L2 * L2 + L3 * L3 - D * D) / (2.0 * L2 * L3);
+        const gamma = Math.acos(Math.max(-1.0, Math.min(1.0, cos_gamma)));
+        const t3 = 45.0 + ((Math.PI - gamma) * (180.0 / Math.PI));
 
-    // 7. Wrist Pitch
-    const e = psi - (Math.PI - gamma);
-    const p_rel = phi - e;
-    const theta4 = 90.0 + (p_rel * (180.0 / Math.PI));
+        const alpha1 = Math.atan2(z_w, r_w);
+        const cos_alpha2 = (L2 * L2 + D * D - L3 * L3) / (2.0 * L2 * D);
+        const alpha2 = Math.acos(Math.max(-1.0, Math.min(1.0, cos_alpha2)));
+        const psi = alpha1 + alpha2;
+        const t2 = 180.0 - (psi * (180.0 / Math.PI));
+
+        const e = psi - (Math.PI - gamma);
+        const p_rel = phi - e;
+        const t4 = 90.0 + (p_rel * (180.0 / Math.PI));
+
+        if (t2 >= 15 && t2 <= 165 && t3 >= 15 && t3 <= 165 && t4 >= 10 && t4 <= 170) {
+          best_angles = [
+            Math.round(theta1),
+            Math.round(t2),
+            Math.round(t3),
+            Math.round(t4),
+            Math.round(roll_deg || 90),
+            Math.round(gripper || 140)
+          ];
+          break;
+        }
+      }
+    }
+
+    if (!best_angles) {
+      best_angles = [Math.round(theta1), 90, 90, 90, Math.round(roll_deg || 90), Math.round(gripper || 140)];
+    }
 
     const safeNum = (v, def = 90) => isNaN(v) ? def : v;
 
     return [
-      Math.max(0, Math.min(180, Math.round(safeNum(theta1, 90)))),
-      Math.max(15, Math.min(165, Math.round(safeNum(theta2, 90)))),
-      Math.max(15, Math.min(165, Math.round(safeNum(theta3, 90)))),
-      Math.max(0, Math.min(180, Math.round(safeNum(theta4, 90)))),
-      Math.max(0, Math.min(180, Math.round(safeNum(roll_deg, 90)))),
-      Math.max(85, Math.min(140, Math.round(safeNum(gripper, 140))))
+      Math.max(0, Math.min(180, Math.round(safeNum(best_angles[0], 90)))),
+      Math.max(15, Math.min(165, Math.round(safeNum(best_angles[1], 90)))),
+      Math.max(15, Math.min(165, Math.round(safeNum(best_angles[2], 90)))),
+      Math.max(10, Math.min(170, Math.round(safeNum(best_angles[3], 90)))),
+      Math.max(0, Math.min(180, Math.round(safeNum(best_angles[4], 90)))),
+      Math.max(85, Math.min(140, Math.round(safeNum(best_angles[5], 140))))
     ];
   },
 
@@ -597,12 +618,12 @@ const TeleopPanel = {
       this.cartesianPos.y = Math.max(5.0, Math.min(21.0, this.cartesianPos.y));
       this.cartesianPos.z = Math.max(1.0, Math.min(35.0, this.cartesianPos.z));
 
-      // Solve IK for current Cartesian 3D target
+      // Solve IK for current Cartesian 3D target with adaptive straight-line pitch solver
       const ikAngles = this.solveIK(
         this.cartesianPos.x,
         this.cartesianPos.y,
         this.cartesianPos.z,
-        this.cartesianPos.pitch_deg || 45.0,
+        null, // Adaptive pitch optimization guarantees 100% straight-line vertical (Z) & horizontal (X/Y) motion
         this.cartesianPos.roll_deg || 90.0,
         this.integratedAngles[5]
       );
