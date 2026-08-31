@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-08-14 (Session 9 Complete — Physical 6-DOF Arm Assembly Complete, Gripper Calibrated 85°–140°, Pick-and-Place Execution Verified, Live OpenCV ArUco Vision Pipeline Operational, Manus AI Presentation Deck Prompt Prepared)
+> **Last Updated:** 2026-08-31 (Session 10 Complete — 3D Analytical Inverse Kinematics & Forward Kinematics Engine Operational, Calibrated to Physical Link Lengths L1=9.5cm, L2=12.0cm, L3=9.0cm, L4=14.0cm, REST & WebSocket IK/FK Endpoints Deployed)
 
 ---
 
@@ -99,6 +99,15 @@
 - **Live OpenCV ArUco Vision Stream:** Created `vision_manager.py` using OpenCV 5.0 `ArucoDetector` (`DICT_4X4_50`, IDs 0, 1, 2) streaming live 30 FPS MJPEG video on `/api/video_feed/1` with real-time green bounding boxes, orientation dots, and HUD labels.
 - **Regenerated Official OpenCV Vector Markers:** Extracted exact binary matrices directly from OpenCV dictionary and re-rendered `aruco_id_0.svg`, `aruco_id_1.svg`, `aruco_id_2.svg`, `Block_1_Marker_0.png`, `Block_2_Marker_1.png`, and `print_aruco_sheet.html`. Verified live detection on webcam!
 - **Manus AI Presentation Prompt:** Prepared comprehensive 12-slide presentation prompt matching warm cream/terracotta dashboard theme, hardware wiring, digital twin simulation, perception pipeline, and zero-jerk control algorithms.
+
+### Session 10 (2026-08-31) — 3D ANALYTICAL INVERSE KINEMATICS & FORWARD KINEMATICS ENGINE IMPLEMENTATION
+- **3D Analytical IK Engine (`ik_solver.py`):** Implemented closed-form trigonometric & geometric 3D IK and FK algorithms calibrated to physical dimensions: $L_1 = 9.5\text{ cm}$, $L_2 = 12.0\text{ cm}$, $L_3 = 9.0\text{ cm}$, $L_4 = 14.0\text{ cm}$.
+- **Physical Direction & Reference Frame Mapping:** 
+  - Base ($\theta_1$): $90^\circ \to 130^\circ$ moves Left (+X).
+  - Shoulder ($\theta_2$): $90^\circ \to 50^\circ$ tilts Forward (+Y/down towards table).
+  - Elbow ($\theta_3$): $45^\circ$ = Upright inline with $L_2$, $90^\circ$ = $45^\circ$ forward tilt, $135^\circ$ = Parallel to table.
+- **REST & WebSocket API Endpoints:** Added `/api/ik/solve`, `/api/ik/move`, and `/api/fk` in `main.py` along with `move_ik` WebSocket handler for instant 3D coordinate teleoperation & autonomous vision picking.
+- **Persistent Kinematics Config:** Updated `kinematics_config.json` and linked dynamic parameters to `ik_solver.py`.
 
 ---
 

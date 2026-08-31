@@ -45,6 +45,7 @@ from pydantic import BaseModel
 
 from serial_manager import serial_manager
 from vision_manager import vision_manager_cam1
+from ik_solver import ik_solver
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("DashboardBackend")
@@ -123,13 +124,21 @@ JOURNAL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "journal_
 DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "dataset_episodes.json"))
 
 class KinematicsConfigRequest(BaseModel):
-    L1: float = 10.0
-    L2: float = 14.0
-    L3: float = 12.0
-    L4: float = 8.0
+    L1: float = 9.5
+    L2: float = 12.0
+    L3: float = 9.0
+    L4: float = 14.0
     offsets: List[int] = [0, 0, 0, 0, 0, 0]
     gripper_closed: int = 85
     gripper_open: int = 140
+
+class IKSolveRequest(BaseModel):
+    x: float
+    y: float
+    z: float
+    pitch_deg: float = 45.0
+    roll_deg: float = 90.0
+    gripper_angle: int = 140
 
 class JournalEntriesRequest(BaseModel):
     entries: List[Dict[str, Any]]
@@ -213,7 +222,7 @@ async def get_kinematics_config():
         except Exception:
             pass
     return {
-        "L1": 10.0, "L2": 14.0, "L3": 12.0, "L4": 8.0,
+        "L1": 9.5, "L2": 12.0, "L3": 9.0, "L4": 14.0,
         "offsets": [0, 0, 0, 0, 0, 0],
         "gripper_closed": 85, "gripper_open": 140
     }
@@ -221,11 +230,63 @@ async def get_kinematics_config():
 
 @app.post("/api/kinematics")
 async def save_kinematics_config(req: KinematicsConfigRequest):
-    """Saves updated Kinematic Calibration parameters (L1-L4, offsets, gripper angles)."""
+    """Saves updated Kinematic Calibration parameters (L1-L4, offsets, gripper angles) and syncs to ik_solver."""
     data = req.model_dump()
     with open(CONFIG_PATH, "w") as f:
         json.dump(data, f, indent=2)
+    ik_solver.L1 = req.L1
+    ik_solver.L2 = req.L2
+    ik_solver.L3 = req.L3
+    ik_solver.L4 = req.L4
     return {"status": "saved", "config": data}
+
+
+@app.post("/api/ik/solve")
+async def solve_ik_endpoint(req: IKSolveRequest):
+    """Solves 3D Analytical Inverse Kinematics for target (X, Y, Z) in cm."""
+    angles, reachable, msg = ik_solver.solve_ik(
+        x=req.x, y=req.y, z=req.z,
+        pitch_deg=req.pitch_deg, roll_deg=req.roll_deg,
+        gripper_angle=req.gripper_angle
+    )
+    return {
+        "status": "success" if reachable else "warning",
+        "reachable": reachable,
+        "angles": angles,
+        "message": msg,
+        "target": {"x": req.x, "y": req.y, "z": req.z, "pitch_deg": req.pitch_deg, "roll_deg": req.roll_deg}
+    }
+
+
+@app.post("/api/ik/move")
+async def move_ik_endpoint(req: IKSolveRequest):
+    """Solves 3D IK and smoothly dispatches calculated joint angles to physical servos."""
+    angles, reachable, msg = ik_solver.solve_ik(
+        x=req.x, y=req.y, z=req.z,
+        pitch_deg=req.pitch_deg, roll_deg=req.roll_deg,
+        gripper_angle=req.gripper_angle
+    )
+    success, send_msg = serial_manager.send_angles(angles)
+    await broadcast_status()
+    return {
+        "status": "success" if (reachable and success) else "warning",
+        "reachable": reachable,
+        "angles": angles,
+        "message": f"{msg} | Serial: {send_msg}",
+        "target": {"x": req.x, "y": req.y, "z": req.z, "pitch_deg": req.pitch_deg, "roll_deg": req.roll_deg}
+    }
+
+
+@app.get("/api/fk")
+async def get_forward_kinematics():
+    """Computes and returns current 3D Cartesian coordinates (X, Y, Z in cm) of the physical arm."""
+    current_angles = serial_manager.current_angles
+    fk_res = ik_solver.forward_kinematics(*current_angles)
+    return {
+        "status": "success",
+        "current_angles": current_angles,
+        "cartesian": fk_res
+    }
 
 
 @app.get("/api/ports")
@@ -329,6 +390,17 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 if action_type == "set_angles":
                     angles = data.get("angles", [])
+                    serial_manager.send_angles(angles)
+                    await broadcast_status()
+
+                elif action_type == "move_ik":
+                    x = float(data.get("x", 0.0))
+                    y = float(data.get("y", 20.0))
+                    z = float(data.get("z", 5.0))
+                    pitch_deg = float(data.get("pitch_deg", -30.0))
+                    roll_deg = float(data.get("roll_deg", 90.0))
+                    gripper_angle = int(data.get("gripper_angle", 140))
+                    angles, reachable, msg = ik_solver.solve_ik(x, y, z, pitch_deg, roll_deg, gripper_angle)
                     serial_manager.send_angles(angles)
                     await broadcast_status()
 
