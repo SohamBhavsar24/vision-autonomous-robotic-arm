@@ -236,6 +236,7 @@
                       const val = parseInt(this.value, 10);
                       const el = document.getElementById('angleGripperOpen');
                       if (el) el.value = val;
+                      localStorage.setItem('gripper_open', val);
                       if (window.TeleopPanel && TeleopPanel.saveKinematicsConfig) TeleopPanel.saveKinematicsConfig();
                     ">
                   </div>
@@ -245,6 +246,7 @@
                       const val = parseInt(this.value, 10);
                       const el = document.getElementById('angleGripperClosed');
                       if (el) el.value = val;
+                      localStorage.setItem('gripper_closed', val);
                       if (window.TeleopPanel && TeleopPanel.saveKinematicsConfig) TeleopPanel.saveKinematicsConfig();
                     ">
                   </div>
@@ -715,9 +717,9 @@
   </div>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.36"></script>
-  <script src="js/servo_panel.js?v=1.0.36"></script>
-  <script src="js/teleop_panel.js?v=1.0.36"></script>
-  <script src="js/dataset_panel.js?v=1.0.36"></script>
+  <script src="js/app.js?v=1.0.37"></script>
+  <script src="js/servo_panel.js?v=1.0.37"></script>
+  <script src="js/teleop_panel.js?v=1.0.37"></script>
+  <script src="js/dataset_panel.js?v=1.0.37"></script>
 </body>
 </html>

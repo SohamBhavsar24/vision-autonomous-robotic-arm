@@ -258,6 +258,24 @@ const TeleopPanel = {
   },
 
   async loadKinematicsConfig() {
+    // 1. Instantly restore from localStorage if available
+    const localOpen = localStorage.getItem('gripper_open');
+    const localClosed = localStorage.getItem('gripper_closed');
+    const goc = document.getElementById('inputGripperOpenCard');
+    const gcc = document.getElementById('inputGripperClosedCard');
+    const go = document.getElementById('angleGripperOpen');
+    const gc = document.getElementById('angleGripperClosed');
+
+    if (localOpen) {
+      if (goc) goc.value = localOpen;
+      if (go) go.value = localOpen;
+    }
+    if (localClosed) {
+      if (gcc) gcc.value = localClosed;
+      if (gc) gc.value = localClosed;
+    }
+
+    // 2. Load from backend configuration file
     try {
       const res = await fetch('/api/kinematics');
       if (!res.ok) return;
@@ -267,19 +285,21 @@ const TeleopPanel = {
       const l2 = document.getElementById('inputL2');
       const l3 = document.getElementById('inputL3');
       const l4 = document.getElementById('inputL4');
-      const gc = document.getElementById('angleGripperClosed');
-      const go = document.getElementById('angleGripperOpen');
-      const gcc = document.getElementById('inputGripperClosedCard');
-      const goc = document.getElementById('inputGripperOpenCard');
 
       if (l1 && cfg.L1) l1.value = cfg.L1;
       if (l2 && cfg.L2) l2.value = cfg.L2;
       if (l3 && cfg.L3) l3.value = cfg.L3;
       if (l4 && cfg.L4) l4.value = cfg.L4;
-      if (gc && cfg.gripper_closed) gc.value = cfg.gripper_closed;
-      if (go && cfg.gripper_open) go.value = cfg.gripper_open;
-      if (gcc && cfg.gripper_closed) gcc.value = cfg.gripper_closed;
-      if (goc && cfg.gripper_open) goc.value = cfg.gripper_open;
+      if (cfg.gripper_closed && !localClosed) {
+        if (gc) gc.value = cfg.gripper_closed;
+        if (gcc) gcc.value = cfg.gripper_closed;
+        localStorage.setItem('gripper_closed', cfg.gripper_closed);
+      }
+      if (cfg.gripper_open && !localOpen) {
+        if (go) go.value = cfg.gripper_open;
+        if (goc) goc.value = cfg.gripper_open;
+        localStorage.setItem('gripper_open', cfg.gripper_open);
+      }
 
       if (cfg.offsets) {
         for (let i = 0; i < 5; i++) {
@@ -299,6 +319,9 @@ const TeleopPanel = {
     const l4 = parseFloat(document.getElementById('inputL4')?.value || 14.0);
     const gc = parseInt(document.getElementById('angleGripperClosed')?.value || document.getElementById('inputGripperClosedCard')?.value || 85, 10);
     const go = parseInt(document.getElementById('angleGripperOpen')?.value || document.getElementById('inputGripperOpenCard')?.value || 140, 10);
+
+    localStorage.setItem('gripper_open', go);
+    localStorage.setItem('gripper_closed', gc);
 
     const offsets = [];
     for (let i = 0; i < 5; i++) {
