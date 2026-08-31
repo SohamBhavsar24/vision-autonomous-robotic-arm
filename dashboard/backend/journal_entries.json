@@ -1,5 +1,15 @@
 [
   {
+    "id": "entry-12",
+    "date": "Monday, 31st August 2026",
+    "title": "25cm × 25cm Workspace Definition & 75-Episode Demonstration Collection Strategy",
+    "paragraphs": [
+      "In today's session, we formally defined the Stage 1 workspace dimensions and demonstration collection protocol for our capstone imitation learning dataset. We established a strict 25cm x 25cm physical workspace grid (total area 625 cm²) on the platform board. To ensure dense spatial coverage and complete rotation invariance across the entire placement region, we adopted a 5x5 grid strategy (25 sub-squares of 5cm x 5cm each) with a target dataset volume of 75 demonstration episodes (3 clean human teleoperation demonstrations per cell across varying block approach angles and rotations).",
+      "Furthermore, we updated the Phase C Demonstration Dataset Recording Engine to record 5 primary joint angles [θ1, θ2, θ3, θ4, θ5] alongside binary gripper state (0 = OPEN, 1 = CLOSED), completely decoupling dataset trajectory logs from physical servo gear slip. We enhanced the dashboard Gripper state paradigm with dual-layer browser localStorage and backend kinematics configuration persistence, ensuring custom open and closed calibration angles stay preserved across reloads. The PS5 controller teleoperation loop was also upgraded with continuous velocity integration, eliminating Base motor lag and state conflict resets."
+    ],
+    "attachment": null
+  },
+  {
     "id": "entry-11",
     "date": "Friday, 07th August 2026",
     "title": "Physical Servo Hardware Assembly, Power Rail Debugging & Spaced Channel Protocol",
@@ -14,7 +24,7 @@
     "date": "Friday, 07th August 2026",
     "title": "Phase C Demonstration Dataset Recording Engine, 30Hz Trajectory Sampler & Smooth Replay Architecture",
     "paragraphs": [
-      "In today's session, we designed and deployed the Phase C Demonstration Dataset Recording and Trajectory Replay System on the Web Control Dashboard (http://localhost:8050) Dataset Management panel. The engine implements a real-time 30Hz trajectory sampler that records human teleoperation demonstration episodes into persistent time-series JSON arrays containing 6-joint angle vectors [θ1, θ2, θ3, θ4, θ5, θ6]. We implemented automatic smooth zero-jerk auto-homing upon stopping a recording session, ensuring the physical arm safely resets to Home Position while excluding post-task homing motions from the training dataset to maintain pure goal-directed demonstration data.",
+      "In today's session, we designed and deployed the Phase C Demonstration Dataset Recording and Trajectory Replay System on the Web Control Dashboard (http://localhost:8050) Dataset Management panel. The engine implements a real-time 30Hz trajectory sampler that records human teleoperation demonstration episodes into persistent time-series JSON arrays containing 6-joint angle vectors [\u03b81, \u03b82, \u03b83, \u03b84, \u03b85, \u03b86]. We implemented automatic smooth zero-jerk auto-homing upon stopping a recording session, ensuring the physical arm safely resets to Home Position while excluding post-task homing motions from the training dataset to maintain pure goal-directed demonstration data.",
       "Furthermore, we built a comprehensive trajectory playback system allowing 1-click smooth demonstration replay across all 6 servos with live frame progress status and 6-joint telemetry overlays. We upgraded the PS5 teleoperation engine with state-machine gripper locking (L2 toggle / R2 continuous speed control) and applied a 5-degree/hard-limit endpoint threshold snap across all 6 servos to eliminate asymptotic low-pass filter rounding shortfalls. All demonstration datasets persist across backend server files (dataset_episodes.json) and client-side storage, fully locking our software and control architecture in preparation for physical 6-DOF arm wiring and assembly."
     ],
     "attachment": null
@@ -64,7 +74,8 @@
     "paragraphs": [
       "During this session, we encountered significant technical friction and engineering overhead attempting to support heavy video clips and multi-device Base64 PDF attachment uploads. Initial integration attempts with third-party file uploaders resulted in unexpected browser ad redirects, broken mobile download links, and device availability failures. Furthermore, attempting to sync 1.5MB+ Base64 PDF DataURLs across cloud database APIs (jsonblob.com) triggered strict HTTP 413 Payload Too Large rejections, HTTP 429 Rate Limiting, and mobile Safari background fetch terminations that blocked form submission and caused cross-device sync inconsistencies between iPhone PWAs and laptop dashboards.",
       "Recognizing that heavy binary media attachments introduced unnecessary complexity, cross-origin security risks, and severe cloud database performance bottlenecks, we made a definitive architectural pivot. We completely stripped all video and file upload inputs from the mobile PWA app and Web Dashboard, streamlining the system into a 100% clean, ultra-fast, zero-friction text logging engine. Essential project documents (such as the college synopsis PDF) will remain managed directly via code integration, while all future session notes will be logged as lightweight, instantly synchronized text entries. This decision restored 0.1-second cloud database sync speeds and eliminated all cross-device storage friction."
-    ]
+    ],
+    "attachment": null
   },
   {
     "id": "entry-5",
@@ -73,7 +84,8 @@
     "paragraphs": [
       "In today's session, we completed the interactive Web Journal PWA and local control dashboard integration. We implemented a real-time header search bar for filtering log entries, instant log entry deletion with cloud database sync, and serverless API integration deployed on Vercel (https://vision-autonomous-robotic-arm.vercel.app). We established a persistent 2-way cloud database sync (jsonblob.com API) so all text journal logs sync seamlessly in real-time across iPhone PWA devices, Laptop Safari, and the local Web Dashboard (http://localhost:8050).",
       "To eliminate cross-device media storage overhead, we streamlined the mobile journal into a clean, ultra-fast text logging engine, reserving document attachments (such as the college synopsis PDF) to be managed directly via session code integration. With full web documentation, cloud sync, and dashboard software locked in place, we finalized Session 5 to transition our full technical focus to physical 6-DOF robotic arm hardware assembly."
-    ]
+    ],
+    "attachment": null
   },
   {
     "id": "entry-4",
@@ -82,7 +94,8 @@
     "paragraphs": [
       "In this session, we finalized the physical workspace geometry and perception pipeline in preparation for hardware assembly. We established persistent REST endpoints for saving physical link measurements and servo zero offsets to a persistent configuration file. The Web Dashboard layout was further refined by placing the 3D Digital Twin tab in the final sidebar position, updating its sync status to \"Standing By (Awaiting URDF)\", and anonymizing all interface text to ensure a clean, presentation-ready capstone interface. Additionally, we added individual \"Test Solo\" diagnostic buttons to each servo card for single-joint assembly testing and configured Uvicorn live auto-reload on port 8050.",
       "A major focus of this session was establishing the planned workspace coordinate blueprint for the 50cm x 50cm wooden platform (note that currently only the bare wooden board exists; no ArUco markers have been printed or attached yet). We finalized a dual-frame transformation architecture: ArUco Marker ID 2 will be placed at the corner of the platform near the overhead camera pole, establishing a rock-solid World Frame Origin (0,0). This design ensures that every point on the platform map has strictly positive coordinates (X, Y from 0 to 50cm) and prevents the robot arm from casting shadows over the calibration marker. The exact physical mounting position of the Robot Base on the board will be measured and registered in software once physical assembly and mounting is complete, allowing Python to convert vision coordinates into robot-centric vectors before executing Inverse Kinematics calculations. We also generated vector SVG ArUco markers, created a printable 4cm x 4cm HTML sheet, and compiled a step-by-step physical assembly guide."
-    ]
+    ],
+    "attachment": null
   },
   {
     "id": "entry-3",
@@ -91,7 +104,8 @@
     "paragraphs": [
       "This session focused on transforming the control software into a full-featured, web-based robotic dashboard to support the entire project lifecycle, starting with physical hardware assembly. Built with FastAPI, WebSockets, and a custom warm linen design system, the dashboard provides live joint sliders, zero-jerk S-curve automated routines, and automated serial port detection via the Arduino CLI tool. We integrated live PS5 DualSense controller teleoperation directly into the web browser via the Gamepad API and added a dedicated Kinematic Calibration panel to tune physical link lengths and servo zero offsets in real-time.",
       "To support team integration, a dedicated top-level 3D Digital Twin tab was created to host the 3D URDF simulation model. We implemented individual \"Test Solo\" diagnostic buttons for single-joint physical assembly testing and generated vector SVG ArUco markers alongside a printable HTML sheet. Finally, we confirmed the Stage 1 environment design\u2014keeping the destination box fixed while randomly placing the sponge block\u2014to establish a clean, high-accuracy baseline before introducing multi-object complexity in Stage 2."
-    ]
+    ],
+    "attachment": null
   },
   {
     "id": "entry-2",
@@ -113,6 +127,7 @@
     "paragraphs": [
       "The project began with a thorough architectural review of the 6-DOF robotic arm capstone project. We established the core hybrid perception and control strategy, deciding to isolate vision feature extraction using OpenCV before passing compact coordinate data into a neural network trained via Behavior Cloning. To ensure human teleoperation produces clean, natural motion, we agreed to implement Cartesian Inverse Kinematics driven by a PS5 DualSense controller rather than relying on direct joint manipulation. On the hardware front, we selected lightweight sponge cubes with cardboard-backed ArUco markers to prevent servo stall and eliminate surface warping under variable room lighting.",
       "For safety and embedded control, we designed a dual-layer safety mechanism featuring a physical emergency stop switch alongside a 500ms serial watchdog on the Arduino Uno. Firmware scripts were developed for initial servo zeroing and production binary packet driver execution. Additionally, we resolved a key mechanical assembly strategy: rather than mounting joints strictly straight up at 90 degrees, we decided to mount hardware at physical midpoints to maximize workspace reach, allowing software joint offsets to handle the mathematical mapping seamlessly."
-    ]
+    ],
+    "attachment": null
   }
 ]
