@@ -47,9 +47,7 @@ const ServoPanel = {
       if (this.sliders[i]) {
         this.sliders[i].addEventListener('input', () => {
           let val = parseInt(this.sliders[i].value, 10);
-          if (i === 5) {
-            val = Math.min(140, Math.max(85, val)); // Hard clamp: Gripper never exceeds 140° or drops below 85°
-          }
+          val = Math.min(180, Math.max(0, val)); // Full range 0° to 180° testing limit
           this.currentAngles[i] = val;
           if (this.valueDisplays[i]) {
             this.valueDisplays[i].textContent = `${val}°`;
@@ -132,12 +130,40 @@ const ServoPanel = {
     const angles = [];
     for (let i = 0; i < this.NUM_SERVOS; i++) {
       let val = parseInt(this.sliders[i] ? this.sliders[i].value : this.currentAngles[i], 10);
-      if (i === 5) {
-        val = Math.min(140, Math.max(85, val)); // Hard clamp: Gripper package NEVER exceeds 140° or drops below 85°
-      }
+      val = Math.min(180, Math.max(0, val));
       angles.push(val);
     }
     return angles;
+  },
+
+  /* Open Gripper to calibrated open angle */
+  openGripper() {
+    const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || 140, 10);
+    this.currentAngles[5] = openAngle;
+    if (this.sliders[5]) this.sliders[5].value = openAngle;
+    if (this.valueDisplays[5]) this.valueDisplays[5].textContent = `${openAngle}°`;
+    if (window.TeleopPanel) {
+      window.TeleopPanel.integratedAngles[5] = openAngle;
+      window.TeleopPanel.smoothedAngles[5] = openAngle;
+      window.TeleopPanel.gripperState = 0; // 0 = OPEN
+    }
+    this.throttledSendAngles();
+    if (window.App && App.log) App.log(`Action: Gripper Opened → State 0 (${openAngle}°)`);
+  },
+
+  /* Close Gripper to calibrated close angle */
+  closeGripper() {
+    const closeAngle = parseInt(document.getElementById('angleGripperClosed')?.value || 85, 10);
+    this.currentAngles[5] = closeAngle;
+    if (this.sliders[5]) this.sliders[5].value = closeAngle;
+    if (this.valueDisplays[5]) this.valueDisplays[5].textContent = `${closeAngle}°`;
+    if (window.TeleopPanel) {
+      window.TeleopPanel.integratedAngles[5] = closeAngle;
+      window.TeleopPanel.smoothedAngles[5] = closeAngle;
+      window.TeleopPanel.gripperState = 1; // 1 = CLOSED
+    }
+    this.throttledSendAngles();
+    if (window.App && App.log) App.log(`Action: Gripper Closed → State 1 (${closeAngle}°)`);
   },
 
   /* Set sliders from an array of angles */

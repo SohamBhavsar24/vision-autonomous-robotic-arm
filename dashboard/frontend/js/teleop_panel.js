@@ -496,17 +496,18 @@ const TeleopPanel = {
     }
     this.wasL2Pressed = l2Pressed;
 
-    // Gripper Angle Motion Logic
-    if (this.isGripperLocked) {
-      // While locked, R2 is ignored; gripper stays locked at current angle
-    } else {
-      if (r2Val > 0.05) {
-        // While R2 is pressed, gripper motor closes from 145° down to strict 85° limit (prevents motor stall)
-        this.integratedAngles[5] = Math.max(85, this.integratedAngles[5] - (r2Val * stepSpeed * 2.0));
-      } else {
-        // When R2 is released (or after L2 unlock), gripper opens back to 145°
-        this.integratedAngles[5] = Math.min(145, this.integratedAngles[5] + (stepSpeed * 1.5));
-      }
+    // Gripper Binary State Control (R2 Closes, L2 Opens)
+    const openAngle = parseInt(document.getElementById('angleGripperOpen')?.value || 140, 10);
+    const closeAngle = parseInt(document.getElementById('angleGripperClosed')?.value || 85, 10);
+
+    if (r2Val > 0.05) {
+      // R2 Pressed -> Close Gripper
+      this.integratedAngles[5] = closeAngle;
+      this.gripperState = 1; // 1 = CLOSED
+    } else if (l2Pressed) {
+      // L2 Pressed -> Open Gripper
+      this.integratedAngles[5] = openAngle;
+      this.gripperState = 0; // 0 = OPEN
     }
 
     // Check if the user is actively manipulating any stick, button, or trigger

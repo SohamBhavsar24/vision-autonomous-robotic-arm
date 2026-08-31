@@ -103,15 +103,18 @@ const DatasetPanel = {
     const startTime = Date.now();
     this.recordTimer = setInterval(() => {
       const angles = this.getCurrentJointAngles();
+      const gripperState = (window.TeleopPanel && window.TeleopPanel.gripperState !== undefined)
+                            ? window.TeleopPanel.gripperState
+                            : (angles[5] <= 110 ? 1 : 0);
       const elapsedMs = Date.now() - startTime;
-      this.currentTrajectory.push({ t: elapsedMs, angles });
+      this.currentTrajectory.push({ t: elapsedMs, angles, gripper_state: gripperState });
 
       if (this.frameCountSpan) {
         this.frameCountSpan.textContent = this.currentTrajectory.length;
       }
 
       if (this.anglesValSpan) {
-        this.anglesValSpan.textContent = this.formatAnglesText(angles);
+        this.anglesValSpan.textContent = `${this.formatAnglesText(angles)} | State: ${gripperState === 1 ? 'CLOSED' : 'OPEN'}`;
       }
     }, this.sampleIntervalMs);
   },

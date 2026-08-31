@@ -213,19 +213,23 @@
               </div>
 
               <!-- Servo 5: Gripper -->
-              <div class="servo-card">
+              <div class="servo-card" style="grid-column: span 2;">
                 <div class="servo-header">
                   <div>
                     <div style="display: flex; align-items: center;">
                       <div class="servo-label">Gripper Claw (Ch 10)</div>
                       <button class="btn btn-secondary" style="font-size: 0.7rem; padding: 2px 8px; margin-left: 8px;" onclick="ServoPanel.testServo(5)">Test Solo</button>
                     </div>
-                    <div class="servo-meta">MG90S • PCA9685 #10</div>
+                    <div class="servo-meta">MG90S • PCA9685 #10 (Home: 140° • State Control)</div>
                   </div>
-                  <div class="servo-value-display" id="valServo5">10°</div>
+                  <div class="servo-value-display" id="valServo5">140°</div>
                 </div>
                 <div class="servo-slider-wrapper">
-                  <input type="range" id="sliderServo5" min="0" max="180" value="10">
+                  <input type="range" id="sliderServo5" min="0" max="180" value="140">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center; justify-content: space-between;">
+                  <button class="btn btn-secondary" id="btnOpenGripperUI" style="flex: 1; font-size: 0.8rem; padding: 6px 12px; font-weight: 600;" onclick="ServoPanel.openGripper()">👐 Open Gripper</button>
+                  <button class="btn btn-primary" id="btnCloseGripperUI" style="flex: 1; font-size: 0.8rem; padding: 6px 12px; font-weight: 600;" onclick="ServoPanel.closeGripper()">✊ Close Gripper</button>
                 </div>
               </div>
 
@@ -691,9 +695,9 @@
   </div>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.32"></script>
-  <script src="js/servo_panel.js?v=1.0.32"></script>
-  <script src="js/teleop_panel.js?v=1.0.32"></script>
-  <script src="js/dataset_panel.js?v=1.0.32"></script>
+  <script src="js/app.js?v=1.0.33"></script>
+  <script src="js/servo_panel.js?v=1.0.33"></script>
+  <script src="js/teleop_panel.js?v=1.0.33"></script>
+  <script src="js/dataset_panel.js?v=1.0.33"></script>
 </body>
 </html>
