@@ -547,17 +547,6 @@ const TeleopPanel = {
     }
 
     // Check if the user is actively manipulating any stick, button, or trigger
-    const isJoystickInput = (Math.abs(lx) > 0.05) || (Math.abs(ly) > 0.05) || (Math.abs(ry) > 0.05) ||
-                            xPressed || circlePressed || r1Pressed || l1Pressed || l2Pressed || optionsPressed || (r2Val > 0.05);
-
-    // CONTINUOUS IDLE STATE SYNC: When user is NOT touching controller controls,
-    // sync PS5 integrated state with current ServoPanel sliders/angles.
-    if (!isJoystickInput && typeof ServoPanel !== 'undefined' && ServoPanel.currentAngles) {
-      this.integratedAngles = [...ServoPanel.currentAngles];
-      this.smoothedAngles = [...ServoPanel.currentAngles];
-      this.cartesianPos = this.forwardKinematics(this.integratedAngles);
-    }
-
     // Wrist Pitch Control (Cross X / Circle O)
     if (xPressed) {
       this.integratedAngles[3] = Math.min(180, this.integratedAngles[3] + stepSpeed);
@@ -638,7 +627,11 @@ const TeleopPanel = {
       }
     }
 
-    // ONLY dispatch teleoperation angles when user is actively giving control inputs via joystick or buttons
+    // Check if controller is actively giving control inputs or smoothing towards target
+    const isJoystickInput = (Math.abs(lx) > 0.05) || (Math.abs(ly) > 0.05) || (Math.abs(ry) > 0.05) ||
+                            xPressed || circlePressed || r1Pressed || l1Pressed || l2Pressed || optionsPressed || (r2Val > 0.05) ||
+                            this.isHomingSmoothly;
+
     if (isJoystickInput) {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
         ServoPanel.setAngles(this.smoothedAngles);
