@@ -1,5 +1,15 @@
 [
   {
+    "id": "entry-13",
+    "date": "Tuesday, 08th September 2026",
+    "title": "25cm × 30cm Workspace Grid Definition & Progressive 30/60/90 Demonstration Strategy",
+    "paragraphs": [
+      "In today's session, we verified live computer vision tracking of ArUco Tag ID 2 (World Origin) alongside ArUco Tag ID 0 (Block 1) on the live Camera 1 stream. The system successfully renders real-time coordinate axes (+X red, +Y green), a connecting vector line with distance in centimeters, and exact block rotation theta.",
+      "We established a 25cm x 30cm workspace grid (total area 750 cm²) positioned directly in front of the robotic arm on the 50cm x 50cm wooden platform. The workspace is divided into 30 sub-squares of 5cm x 5cm each (5 columns x 6 rows). We adopted an iterative evaluation protocol: collecting 30 demonstrations (1 per cell) for initial baseline training, expanding to 60 demonstrations to evaluate orientation invariance, and reaching 90 demonstrations (3 per cell) to achieve high convergence and accuracy before moving on to multi-block color/tag sorting."
+    ],
+    "attachment": null
+  },
+  {
     "id": "entry-12",
     "date": "Monday, 31st August 2026",
     "title": "25cm × 25cm Workspace Definition & 75-Episode Demonstration Collection Strategy",

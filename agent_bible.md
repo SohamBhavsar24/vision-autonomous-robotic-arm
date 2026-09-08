@@ -103,18 +103,24 @@
 - **REST & WebSocket API Endpoints:** Added `/api/ik/solve`, `/api/ik/move`, and `/api/fk` in `main.py` along with `move_ik` WebSocket handler for instant 3D coordinate teleoperation & autonomous vision picking.
 - **Persistent Kinematics Config:** Updated `kinematics_config.json` and linked dynamic parameters to `ik_solver.py`.
 
-### Session 11 (2026-08-31) — GRIPPER BINARY STATE PARADIGM, 25cm × 25cm WORKSPACE, 75-EPISODE DATASET BLUEPRINT & BASE LAG RESOLUTION
+### Session 11 (2026-08-31 to 2026-09-08) — GRIPPER BINARY STATE PARADIGM, 25cm × 30cm WORKSPACE, PROGRESSIVE 30/60/90 DATASET STRATEGY & WORLD ORIGIN ARUCO TRACKING
 - **Gripper Binary State Paradigm:** Unlocked dashboard Gripper slider to full $0^\circ \text{ to } 180^\circ$ testing range. Added dynamic user-defined `Open Angle (°)` and `Close Angle (°)` calibration input fields persisted via browser `localStorage` and backend `kinematics_config.json`. PS5 R2 trigger glides gripper closed (`gripper_state = 1`); L2 trigger glides gripper open (`gripper_state = 0`).
 - **Demonstration Dataset Schema Update:** Refactored `dataset_panel.js` to log 5 primary joint angles `[θ1..θ5]` + binary `gripper_state` (`0 = OPEN`, `1 = CLOSED`) at 30Hz, completely decoupling dataset trajectory logs from physical servo gear slip. Trajectory replay dynamically resolves open/close angles from user calibration settings.
-- **25cm × 25cm Workspace Bounding Box & 75-Episode Blueprint:** Established a strict $25\text{ cm} \times 25\text{ cm}$ physical workspace grid ($5 \times 5$ grid, 25 sub-squares of $5\text{ cm} \times 5\text{ cm}$ each) with a target dataset volume of **75 demonstration episodes** (3 clean human teleoperation demonstrations per cell across varying block approach angles and rotations).
+- **25cm × 30cm Workspace Definition & 30-Cell Grid Strategy:** Established a physical $25\text{ cm} \times 30\text{ cm}$ workspace grid (total area $750\text{ cm}^2$) partitioned into 30 sub-squares of $5\text{ cm} \times 5\text{ cm}$ each ($5\text{ columns} \times 6\text{ rows}$).
+- **Progressive Dataset Collection & Evaluation Pipeline:**
+  - **Pass 1 (30 Demonstrations):** 1 demonstration per cell $\to$ Train initial Behavioral Cloning policy & test physical success rate.
+  - **Pass 2 (60 Demonstrations):** 2 demonstrations per cell (varied block rotations $0^\circ, 30^\circ, 45^\circ$) $\to$ Retrain & evaluate accuracy improvement.
+  - **Pass 3 (90 Demonstrations):** 3 demonstrations per cell (diverse approach angles & boundary offsets) $\to$ Retrain & verify convergence.
+  - **Pass 4 (120 Demonstrations - optional buffer):** Final refinement before transitioning to Stage 2 multi-block color/tag sorting.
 - **Base Motor Lag & Snapping Resolution:** Eliminated state conflict reset loop in `teleop_panel.js` animation loop. Base motor movement is 100% continuous and responsive to Left Joystick (X) inputs without dropping frames or snapping to limits.
-- **Supabase Cloud Sync:** Published Log Entry 12 directly to live **Supabase PostgreSQL** database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`).
-- **ArUco Perception Validation:** ArUco ID 0 (Block 1) detected live on 30 FPS MJPEG camera feed (`/api/video_feed/1`). ArUco ID 2 designated as World Origin Calibration Tag on the platform board.
+- **Live World Origin Coordinate Transformation:** Verified live detection of ArUco ID 2 (World Origin) and ArUco ID 0 (Block 1). Drawn coordinate axes (+X red, +Y green) and real-world vector line with live centimeter distance and orientation $\theta$ overlay on Camera 1 feed.
+- **Supabase Cloud Sync:** Log Entries 12 and 13 published to live **Supabase PostgreSQL** database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`).
 
 ---
 
 ## 5. Next Steps (Demonstration Data Collection & Perception Calibration)
 
-1. **Place ArUco ID 2 World Origin Tag:** Stick ArUco Tag ID 2 flat on the corner of the $25\text{ cm} \times 25\text{ cm}$ workspace platform to establish the real-world $(0,0)$ origin.
-2. **Collect 75 Demonstration Episodes:** Execute the $5 \times 5$ grid teleoperation routine (3 episodes per cell) to build the Stage 1 training dataset for imitation learning.
-3. **Format PyTorch Dataset (`export_dataset.py`):** Run 1-click dataset exporter to package recorded JSON demonstration episodes into PyTorch tensors (`.h5` / `.npz`) for policy model training.
+1. **Mark 25cm × 30cm Grid on Platform:** Draw the 30 grid sub-squares ($5\text{ cm} \times 5\text{ cm}$ each) in front of the arm on the $50\text{ cm} \times 50\text{ cm}$ wooden plank.
+2. **Affix ArUco ID 2 at Corner:** Place ArUco Tag ID 2 flat on the designated corner to establish the $(0,0)$ World Origin.
+3. **Collect Initial 30 Demonstrations:** Record 1 clean demonstration per grid cell to generate the first training batch.
+4. **Train & Evaluate Baseline Policy:** Train the initial imitation model and test autonomous pick-and-place accuracy on physical hardware.
