@@ -122,6 +122,8 @@ class ServoAnglesRequest(BaseModel):
 CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "kinematics_config.json"))
 JOURNAL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "journal_entries.json"))
 DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "dataset_episodes.json"))
+DATASETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "datasets"))
+os.makedirs(DATASETS_DIR, exist_ok=True)
 
 class KinematicsConfigRequest(BaseModel):
     L1: float = 9.5
@@ -147,7 +149,7 @@ class DatasetEpisodesRequest(BaseModel):
     episodes: List[Dict[str, Any]]
 
 
-from dataset_formatter import save_compact_dataset_file
+from dataset_formatter import save_compact_dataset_file, save_individual_episodes, load_individual_episodes
 
 @app.on_event("shutdown")
 def shutdown_event():
@@ -176,20 +178,14 @@ async def get_vision_status():
 
 @app.get("/api/dataset")
 async def get_dataset_episodes():
-    """Returns persistent list of recorded demonstration episodes."""
-    if os.path.exists(DATASET_PATH):
-        try:
-            with open(DATASET_PATH, "r") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return []
+    """Returns persistent list of recorded demonstration episodes from individual JSON files."""
+    return load_individual_episodes(DATASETS_DIR, DATASET_PATH)
 
 
 @app.post("/api/dataset")
 async def save_dataset_episodes(req: DatasetEpisodesRequest):
-    """Saves persistent list of demonstration episodes with compact single-line trajectory formatting."""
-    save_compact_dataset_file(req.episodes, DATASET_PATH)
+    """Saves persistent list of demonstration episodes into individual episode_XXX.json files in datasets/."""
+    save_individual_episodes(req.episodes, DATASETS_DIR, DATASET_PATH)
     return {"status": "saved", "count": len(req.episodes)}
 
 

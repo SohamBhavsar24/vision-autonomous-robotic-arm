@@ -69,7 +69,7 @@ const DatasetPanel = {
     return [90, 90, 90, 90, 90, 145];
   },
 
-  startRecording() {
+  async startRecording() {
     if (this.isPlaying) {
       alert('Cannot start recording while a trajectory replay is active.');
       return;
@@ -77,6 +77,18 @@ const DatasetPanel = {
 
     this.isRecording = true;
     this.currentTrajectory = [];
+    this.currentBlockPose = null;
+
+    // Fetch initial block pose from vision status
+    try {
+      const vres = await fetch('/api/vision/status');
+      if (vres.ok) {
+        const vdata = await vres.json();
+        if (vdata.latest_block_pose && vdata.latest_block_pose.valid) {
+          this.currentBlockPose = { ...vdata.latest_block_pose };
+        }
+      }
+    } catch (e) {}
 
     if (this.btnRecord) {
       this.btnRecord.textContent = 'Stop Recording Demonstration';
@@ -97,7 +109,10 @@ const DatasetPanel = {
     }
 
     if (window.App && App.log) {
-      App.log('STARTED DEMONSTRATION RECORDING (30Hz Trajectory Sampler Active)...');
+      const poseInfo = this.currentBlockPose 
+        ? `[Block Pose: X=${this.currentBlockPose.x_cm}cm, Y=${this.currentBlockPose.y_cm}cm, θ=${this.currentBlockPose.theta_deg}°]` 
+        : '[No block pose detected yet]';
+      App.log(`STARTED DEMONSTRATION RECORDING (30Hz Trajectory Sampler Active) ${poseInfo}...`);
     }
 
     // 30Hz sampling loop
@@ -173,6 +188,7 @@ const DatasetPanel = {
       date: dateStr,
       frameCount,
       durationSec,
+      initial_block_pose: this.currentBlockPose || null,
       trajectory: this.currentTrajectory
     };
 
