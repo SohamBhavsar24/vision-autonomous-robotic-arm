@@ -148,15 +148,29 @@ class VisionManager:
                 width_bottom = np.linalg.norm(marker_corners[3] - marker_corners[2])
                 tag_widths_px[marker_id] = float((width_top + width_bottom) / 2.0)
 
-                # Label string
-                label_text = self.marker_labels.get(marker_id, f"ArUco ID: {marker_id}")
+                # Calculate orientation angle theta for this tag
+                c0, c1 = marker_corners[0], marker_corners[1]
+                dx_edge = c1[0] - c0[0]
+                dy_edge = c1[1] - c0[1]
+                tag_theta_deg = round(float(np.degrees(np.arctan2(dy_edge, dx_edge))), 1)
+
+                # Draw orientation heading line from center toward Corner 0 (Red Dot)
+                heading_len = 25
+                angle_rad = np.arctan2(c0[1] - center_y, c0[0] - center_x)
+                head_x = int(center_x + heading_len * np.cos(angle_rad))
+                head_y = int(center_y + heading_len * np.sin(angle_rad))
+                cv2.line(frame, (int(center_x), int(center_y)), (head_x, head_y), (0, 0, 255), 2, cv2.LINE_AA)
+
+                # Label string with live coordinates & orientation angle theta
+                base_label = self.marker_labels.get(marker_id, f"ArUco ID: {marker_id}")
+                label_text = f"{base_label} | (u:{int(center_x)}, v:{int(center_y)}) | θ:{tag_theta_deg}°"
 
                 # Banner positioning
                 top_y = min(pts[:, 1]) - 12
                 top_x = min(pts[:, 0])
 
                 # Dark container box for label
-                (w, h), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+                (w, h), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
                 bg_x1 = max(0, top_x - 4)
                 bg_y1 = max(0, top_y - h - 10)
                 bg_x2 = min(frame.shape[1], top_x + w + 8)
@@ -166,7 +180,7 @@ class VisionManager:
                 # Neon green text
                 cv2.putText(
                     frame, label_text, (max(0, top_x), max(18, top_y)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 102), 2, cv2.LINE_AA
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 102), 2, cv2.LINE_AA
                 )
 
         # Real-World Coordinate Transformation (Tag ID 2 = World Origin, Tag ID 0 = Block 1)
@@ -199,13 +213,20 @@ class VisionManager:
         # On-Screen HUD Status Overlay at Top-Left
         if len(self.last_detected_ids) > 0:
             status_str = f"ArUco Status: DETECTED (IDs: {self.last_detected_ids})"
-            cv2.rectangle(frame, (10, 10), (420, 42), (20, 18, 17), -1)
+            cv2.rectangle(frame, (10, 10), (450, 42), (20, 18, 17), -1)
             cv2.putText(frame, status_str, (20, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 102), 2, cv2.LINE_AA)
 
             if self.latest_block_pose["valid"]:
                 pose_str = f"Block Pose: X={self.latest_block_pose['x_cm']}cm Y={self.latest_block_pose['y_cm']}cm θ={self.latest_block_pose['theta_deg']}°"
-                cv2.rectangle(frame, (10, 46), (420, 78), (20, 18, 17), -1)
+                cv2.rectangle(frame, (10, 46), (450, 78), (20, 18, 17), -1)
                 cv2.putText(frame, pose_str, (20, 68), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 153, 0), 2, cv2.LINE_AA)
+            elif 0 in tag_centers:
+                # Show orientation theta even before Tag 2 (World Origin) is placed
+                c0, c1 = tag_corners_map[0][0], tag_corners_map[0][1]
+                t_deg = round(float(np.degrees(np.arctan2(c1[1] - c0[1], c1[0] - c0[0]))), 1)
+                pose_str = f"Block 1 (ID 0): px=({int(tag_centers[0][0])},{int(tag_centers[0][1])}) | θ={t_deg}°"
+                cv2.rectangle(frame, (10, 46), (450, 78), (20, 18, 17), -1)
+                cv2.putText(frame, pose_str, (20, 68), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (255, 153, 0), 2, cv2.LINE_AA)
         else:
             cv2.rectangle(frame, (10, 10), (360, 42), (20, 18, 17), -1)
             cv2.putText(frame, "ArUco Status: Searching for Tag...", (20, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 165, 255), 1, cv2.LINE_AA)
