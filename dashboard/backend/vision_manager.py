@@ -184,29 +184,46 @@ class VisionManager:
                 )
 
         # Real-World Coordinate Transformation (Tag ID 2 = World Origin, Tag ID 0 = Block 1)
-        if 2 in tag_centers and 0 in tag_centers:
+        if 2 in tag_centers:
             origin_x, origin_y = tag_centers[2]
-            block_x_px, block_y_px = tag_centers[0]
-            tag_w_px = tag_widths_px.get(2, 60.0)
+            tag2_w_px = tag_widths_px.get(2, 60.0)
+            cm_per_pixel = 4.0 / max(1.0, tag2_w_px)
 
-            # Physical tag width is 4.0 cm
-            cm_per_pixel = 4.0 / max(1.0, tag_w_px)
+            # Draw World Origin Coordinate Axes (Red = +X right, Green = +Y forward/up)
+            axis_len = 45
+            cv2.arrowedLine(frame, (int(origin_x), int(origin_y)), (int(origin_x + axis_len), int(origin_y)), (0, 0, 255), 2, tipLength=0.2)
+            cv2.putText(frame, "+X (cm)", (int(origin_x + axis_len + 4), int(origin_y + 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
 
-            # Relative coordinates in centimeters relative to World Origin Tag 2
-            dx_cm = (block_x_px - origin_x) * cm_per_pixel
-            dy_cm = (origin_y - block_y_px) * cm_per_pixel # Inverted Y for image frame
+            cv2.arrowedLine(frame, (int(origin_x), int(origin_y)), (int(origin_x), int(origin_y - axis_len)), (0, 255, 0), 2, tipLength=0.2)
+            cv2.putText(frame, "+Y (cm)", (int(origin_x - 18), int(origin_y - axis_len - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
 
-            # Orientation angle relative to horizontal
-            c0, c1 = tag_corners_map[0][0], tag_corners_map[0][1]
-            theta_rad = np.arctan2(c1[1] - c0[1], c1[0] - c0[0])
-            theta_deg = float(np.degrees(theta_rad))
+            if 0 in tag_centers:
+                block_x_px, block_y_px = tag_centers[0]
 
-            self.latest_block_pose = {
-                "x_cm": round(dx_cm, 1),
-                "y_cm": round(dy_cm, 1),
-                "theta_deg": round(theta_deg, 1),
-                "valid": True
-            }
+                # Relative coordinates in centimeters relative to World Origin Tag 2
+                dx_cm = (block_x_px - origin_x) * cm_per_pixel
+                dy_cm = (origin_y - block_y_px) * cm_per_pixel # Inverted Y for image frame
+
+                # Orientation angle relative to horizontal
+                c0, c1 = tag_corners_map[0][0], tag_corners_map[0][1]
+                theta_rad = np.arctan2(c1[1] - c0[1], c1[0] - c0[0])
+                theta_deg = float(np.degrees(theta_rad))
+
+                # Draw connecting vector line between World Origin Tag 2 and Block Tag 0
+                cv2.line(frame, (int(origin_x), int(origin_y)), (int(block_x_px), int(block_y_px)), (255, 153, 0), 2, cv2.LINE_AA)
+                mid_x = int((origin_x + block_x_px) / 2)
+                mid_y = int((origin_y + block_y_px) / 2)
+                dist_cm = round(float(np.sqrt(dx_cm**2 + dy_cm**2)), 1)
+                cv2.putText(frame, f"d={dist_cm}cm", (mid_x + 5, mid_y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (255, 153, 0), 2, cv2.LINE_AA)
+
+                self.latest_block_pose = {
+                    "x_cm": round(dx_cm, 1),
+                    "y_cm": round(dy_cm, 1),
+                    "theta_deg": round(theta_deg, 1),
+                    "valid": True
+                }
+            else:
+                self.latest_block_pose["valid"] = False
         else:
             self.latest_block_pose["valid"] = False
 
