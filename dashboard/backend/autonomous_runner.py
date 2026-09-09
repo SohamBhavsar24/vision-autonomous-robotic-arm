@@ -219,28 +219,15 @@ class AutonomousRunner:
         # Gripper state: follow closest demonstration sequence
         primary_gripper = [int(f.get("gripper_state", 0)) for f in best_ep["trajectory"]]
         
-        # Block orientation compensation (wrist roll - Joint 5, index 4)
-        avg_demo_bth = sum(w * th for w, th in zip(weights, demo_orientations))
-        dth = target_bth - avg_demo_bth
-        roll_correction = float(np.clip(dth, -45.0, 45.0))
-        
         synthesized_trajectory = []
         for idx in range(target_len):
             progress = idx / max(1, target_len - 1)
-            
-            # Pick-phase weighting for orientation alignment (progress 0.15 to 0.60)
-            if progress < 0.15:
-                w_pick = progress / 0.15
-            elif progress <= 0.60:
-                w_pick = 1.0
-            else:
-                w_pick = max(0.0, 1.0 - (progress - 0.60) / 0.20)
                 
             corr_j0 = int(np.clip(np.round(blended_joints[idx, 0]), 15, 165))
             corr_j1 = int(np.clip(np.round(blended_joints[idx, 1]), 15, 165))
             corr_j2 = int(np.clip(np.round(blended_joints[idx, 2]), 15, 165))
             corr_j3 = int(np.clip(np.round(blended_joints[idx, 3]), 15, 165))
-            corr_j4 = int(np.clip(np.round(blended_joints[idx, 4] + roll_correction * w_pick), 0, 180))
+            corr_j4 = int(np.clip(np.round(blended_joints[idx, 4]), 15, 165))
             
             grip_st = primary_gripper[idx]
             
