@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-08-31 (Session 11 Complete — Gripper Binary State Paradigm Deployed, 25cm × 25cm Workspace & 75-Episode Dataset Strategy Defined, Supabase Cloud Journal Synced)
+> **Last Updated:** 2026-09-09 (Session 12 Complete — Behavior Cloning Policy v1 Deployed, Autonomous Mode Panel, Zero-IK Tri-Anchor Blending, Supabase Log Entry #14 Synced)
 
 ---
 
@@ -116,11 +116,18 @@
 - **Live World Origin Coordinate Transformation:** Verified live detection of ArUco ID 2 (World Origin) and ArUco ID 0 (Block 1). Drawn coordinate axes (+X red, +Y green) and real-world vector line with live centimeter distance and orientation $\theta$ overlay on Camera 1 feed.
 - **Supabase Cloud Sync:** Log Entries 12 and 13 published to live **Supabase PostgreSQL** database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`).
 
+### Session 12 (2026-09-09) — BEHAVIOR CLONING POLICY v1 DEPLOYMENT, AUTONOMOUS MODE PANEL, ZERO-IK TRI-ANCHOR BLENDING & SUPABASE LOG ENTRY 14
+- **Behavior Cloning (BC) Policy Model Training (`v1 (30 Demos)`):** Ingested all 30 human teleoperation demonstration episodes (17,824 state-action pairs sampled at 30Hz). Observation vector $[θ_1, θ_2, θ_3, θ_4, θ_5, \text{gripper}, X, Y, \theta]$, Action vector $[θ_1', θ_2', θ_3', θ_4', θ_5', \text{gripper}']$. Trained in 5.9 seconds with loss converging to `0.5026` and Joint MSE to `0.4038` degrees. Saved to `dashboard/backend/models/v1_policy.npz`.
+- **Autonomous Mode Execution Subsystem (Phase D):** Built backend runner (`autonomous_runner.py`) and Web Dashboard panel (`http://localhost:8050/#panel-autonomous`) with Camera 1 live perception check, 6-phase dynamic state progression, 30Hz joint telemetry stream, and emergency software abort.
+- **Workspace Axis Dimension Correction:** Corrected physical workspace bounds in training and inference pipelines: $X_{\text{max}} = 30.0\text{ cm}$ (horizontal width), $Y_{\text{max}} = 25.0\text{ cm}$ (forward reach/depth), fixing observation feature normalization.
+- **Tri-Anchor Joint-Space Trajectory Blending (Zero Inverse Kinematics):** Replaced linear offset heuristics with continuous non-linear manifold interpolation across the $k=3$ nearest human demonstrations using normalized Inverse Distance Weighting ($w_i \propto 1/(d_i + \epsilon)^2$). Blends trajectories purely in joint space ($\theta_1 \dots \theta_5$), preserving natural demonstration curvature without IK. Widened gripper approach angle to $148^\circ$ for expanded physical capture envelope.
+- **Model Lifecycle Management & Emoji Purge:** Implemented backend deletion (`DELETE /api/models/{model_id}`) and frontend **Delete** buttons to remove and unregister experimental model versions (e.g. `v2`). Purged all emojis across the entire dashboard interface, scripts, and codebase.
+- **Supabase Cloud Journal Sync:** Successfully published Log Entry #14 directly to Supabase PostgreSQL cloud database (`journal_entries` table).
+
 ---
 
-## 5. Next Steps (Demonstration Data Collection & Perception Calibration)
+## 5. Next Steps
 
-1. **Mark 25cm × 30cm Grid on Platform:** Draw the 30 grid sub-squares ($5\text{ cm} \times 5\text{ cm}$ each) in front of the arm on the $50\text{ cm} \times 50\text{ cm}$ wooden plank.
-2. **Affix ArUco ID 2 at Corner:** Place ArUco Tag ID 2 flat on the designated corner to establish the $(0,0)$ World Origin.
-3. **Collect Initial 30 Demonstrations:** Record 1 clean demonstration per grid cell to generate the first training batch.
-4. **Train & Evaluate Baseline Policy:** Train the initial imitation model and test autonomous pick-and-place accuracy on physical hardware.
+1. **Evaluate Physical Pick-and-Place Success Rate:** Run autonomous trials across various coordinates in the $30\text{ cm} \times 25\text{ cm}$ workspace with model `v1` and Tri-Anchor Blending.
+2. **Collect Second Batch (Pass 2 - 60 Demonstrations):** Add 30 more demonstration episodes covering diverse block rotation orientations ($0^\circ, 30^\circ, 45^\circ$).
+3. **Retrain Policy Version `v2`:** Evaluate accuracy improvements across the expanded 60-episode dataset.

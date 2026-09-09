@@ -453,6 +453,34 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-14",
+        date: "Wednesday, 09th September 2026",
+        title: "Behavior Cloning Policy v1 Deployment, Zero-IK Tri-Anchor Joint-Space Blending & Autonomous Execution Subsystem",
+        paragraphs: [
+          "In today's session, we achieved a major project milestone by completing Phase D: training and deploying our first end-to-end Behavior Cloning (BC) imitation learning policy (v1) across all 30 recorded human demonstration episodes (17,824 state-action frames sampled at 30Hz). The policy network ingests a 9-dimensional observation vector [θ1, θ2, θ3, θ4, θ5, gripper, X_block, Y_block, theta_block] and predicts smooth 6-dimensional motor actions [θ1', θ2', θ3', θ4', θ5', gripper']. Training completed in 5.9 seconds with loss converging to 0.5026 and joint angle Mean Squared Error reaching sub-degree precision (0.4038 degrees). We established a persistent model registry and integrated the Autonomous Mode panel on the web dashboard (http://localhost:8050/#panel-autonomous) featuring live Camera 1 ArUco perception lock, dynamic 6-phase state tracking, 30Hz joint telemetry stream, and 1-click execution.",
+          "During initial autonomous physical trials, we observed a 20% to 30% baseline success rate and diagnosed the core root causes: an inverted coordinate aspect ratio during feature normalization and non-linear spatial inaccuracy from single-demonstration linear offset heuristics. In accordance with our strict non-Inverse Kinematics architectural mandate, we corrected the physical workspace dimensions to X = 30.0 cm (horizontal width) and Y = 25.0 cm (forward reach/depth) and retrained the policy network. To eliminate spatial error without using Inverse Kinematics, we implemented Tri-Anchor Joint-Space Trajectory Blending using normalized Inverse Distance Weighting (IDW) across the 3 nearest human demonstrations on the joint manifold (θ1..θ5), synthesizing continuous, collision-safe joint trajectories for any coordinate in the grid while widening the gripper approach angle to 148 degrees for physical capture tolerance.",
+          "Finally, we completed model lifecycle management and UI polish on the Autonomous Mode dashboard panel. We introduced a full deletion pipeline with backend endpoints (DELETE /api/models/{model_id}) and frontend confirmation controls, allowing users to permanently delete and unregister experimental model versions (such as v2). Additionally, we purged all emoji characters across the entire dashboard interface, scripts, and codebase to ensure a clean, professional, and publication-ready system."
+        ]
+      },
+      {
+        id: "entry-13",
+        date: "Tuesday, 08th September 2026",
+        title: "25cm × 30cm Workspace Grid Definition & Progressive 30/60/90 Demonstration Strategy",
+        paragraphs: [
+          "In today's session, we verified live computer vision tracking of ArUco Tag ID 2 (World Origin) alongside ArUco Tag ID 0 (Block 1) on the live Camera 1 stream. The system successfully renders real-time coordinate axes (+X red, +Y green), a connecting vector line with distance in centimeters, and exact block rotation theta.",
+          "We established a 25cm x 30cm workspace grid (total area 750 cm²) positioned directly in front of the robotic arm on the 50cm x 50cm wooden platform. The workspace is divided into 30 sub-squares of 5cm x 5cm each (5 columns x 6 rows). We adopted an iterative evaluation protocol: collecting 30 demonstrations (1 per cell) for initial baseline training, expanding to 60 demonstrations to evaluate orientation invariance, and reaching 90 demonstrations (3 per cell) to achieve high convergence and accuracy before moving on to multi-block color/tag sorting."
+        ]
+      },
+      {
+        id: "entry-12",
+        date: "Monday, 31st August 2026",
+        title: "25cm × 25cm Workspace Definition & 75-Episode Demonstration Collection Strategy",
+        paragraphs: [
+          "In today's session, we formally defined the Stage 1 workspace dimensions and demonstration collection protocol for our capstone imitation learning dataset. We established a strict 25cm x 25cm physical workspace grid (total area 625 cm²) on the platform board. To ensure dense spatial coverage and complete rotation invariance across the entire placement region, we adopted a 5x5 grid strategy (25 sub-squares of 5cm x 5cm each) with a target dataset volume of 75 demonstration episodes (3 clean human teleoperation demonstrations per cell across varying block approach angles and rotations).",
+          "Furthermore, we updated the Phase C Demonstration Dataset Recording Engine to record 5 primary joint angles [θ1, θ2, θ3, θ4, θ5] alongside binary gripper state (0 = OPEN, 1 = CLOSED), completely decoupling dataset trajectory logs from physical servo gear slip. We enhanced the dashboard Gripper state paradigm with dual-layer browser localStorage and backend kinematics configuration persistence, ensuring custom open and closed calibration angles stay preserved across reloads. The PS5 controller teleoperation loop was also upgraded with continuous velocity integration, eliminating Base motor lag and state conflict resets."
+        ]
+      },
+      {
         id: "entry-11",
         date: "Friday, 07th August 2026",
         title: "Physical Servo Hardware Assembly, Power Rail Debugging & Spaced Channel Protocol",
