@@ -184,13 +184,21 @@ class VisionManager:
                 )
 
         # Real-World Coordinate Transformation (Tag ID 2 = World Origin, Tag ID 0 = Block 1)
-        if 2 in tag_centers:
-            origin_x, origin_y = tag_centers[2]
+        if 2 in tag_centers and 2 in tag_corners_map:
+            # Shift World Origin to bottom-left corner of ArUco Tag ID 2
+            # Select corner with maximum (y - x), which corresponds to bottom-left in image frame
+            c_bl = max(tag_corners_map[2], key=lambda pt: float(pt[1]) - float(pt[0]))
+            origin_x, origin_y = float(c_bl[0]), float(c_bl[1])
             tag2_w_px = tag_widths_px.get(2, 60.0)
             cm_per_pixel = 4.0 / max(1.0, tag2_w_px)
 
+            # Draw prominent World Origin marker at bottom-left corner
+            cv2.circle(frame, (int(origin_x), int(origin_y)), 6, (0, 255, 255), -1)
+            cv2.circle(frame, (int(origin_x), int(origin_y)), 8, (20, 18, 17), 2)
+            cv2.putText(frame, "Origin (0,0)", (int(origin_x - 14), int(origin_y + 18)), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (0, 255, 255), 2)
+
             # Draw World Origin Coordinate Axes (Red = +X right, Green = +Y forward/up)
-            axis_len = 45
+            axis_len = 50
             cv2.arrowedLine(frame, (int(origin_x), int(origin_y)), (int(origin_x + axis_len), int(origin_y)), (0, 0, 255), 2, tipLength=0.2)
             cv2.putText(frame, "+X (cm)", (int(origin_x + axis_len + 4), int(origin_y + 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
 
