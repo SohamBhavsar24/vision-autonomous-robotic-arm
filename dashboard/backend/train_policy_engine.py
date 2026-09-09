@@ -188,7 +188,7 @@ def prepare_training_dataset(episodes):
             next_j = next_f.get("joints", next_f.get("angles", [90,90,90,90,90])[:5])
             next_g = float(next_f.get("gripper_state", 0))
             
-            # Normalize observation: joints in [0, 180] -> [0, 1], X in [0, 25], Y in [0, 30], θ in [-180, 180]
+            # Normalize observation: joints in [0, 180] -> [0, 1], X in [0, 30], Y in [0, 25], θ in [-180, 180]
             obs = [
                 curr_j[0] / 180.0,
                 curr_j[1] / 180.0,
@@ -196,8 +196,8 @@ def prepare_training_dataset(episodes):
                 curr_j[3] / 180.0,
                 curr_j[4] / 180.0,
                 curr_g,
-                bx / 25.0,
-                by / 30.0,
+                bx / 30.0,
+                by / 25.0,
                 bth / 180.0
             ]
             

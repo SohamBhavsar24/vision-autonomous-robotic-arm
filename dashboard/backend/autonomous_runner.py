@@ -90,14 +90,14 @@ class AutonomousRunner:
             
         return True, "Autonomous execution aborted."
 
-    def find_nearest_demonstration(self, target_bx: float, target_by: float, target_bth: float):
+    def find_k_nearest_demonstrations(self, target_bx: float, target_by: float, k: int = 3):
         """
-        Finds the nearest demonstration from the 30 grid demonstration episodes
-        based on Euclidean workspace distance to (target_bx, target_by).
+        Finds the k nearest human demonstrations from the 30 grid demonstration episodes
+        based on Euclidean distance to (target_bx, target_by).
+        Returns a list of tuples: [(episode_data, distance), ...]
         """
         files = sorted(glob.glob(os.path.join(DATASETS_DIR, "episode_*.json")))
-        best_ep = None
-        best_dist = float("inf")
+        candidates = []
         
         for fpath in files:
             try:
@@ -106,88 +106,120 @@ class AutonomousRunner:
                     init_pose = ep.get("initial_block_pose")
                     if not init_pose or not init_pose.get("valid", True):
                         continue
+                    if not ep.get("trajectory"):
+                        continue
                         
                     bx = float(init_pose.get("x_cm", 0.0))
                     by = float(init_pose.get("y_cm", 0.0))
                     
-                    dist = np.sqrt((bx - target_bx)**2 + (by - target_by)**2)
-                    if dist < best_dist:
-                        best_dist = dist
-                        best_ep = ep
+                    dist = float(np.sqrt((bx - target_bx)**2 + (by - target_by)**2))
+                    candidates.append((ep, dist))
             except Exception:
                 pass
                 
-        return best_ep, best_dist
+        if not candidates:
+            raise ValueError("No demonstration datasets available to synthesize trajectory.")
+            
+        candidates.sort(key=lambda x: x[1])
+        return candidates[:k]
 
     def generate_policy_trajectory(self, target_bx: float, target_by: float, target_bth: float, model_id: str = "v1"):
         """
-        Generates the autonomous trajectory conditioned on target block pose (X, Y, θ).
-        Uses spatial anchor interpolation from the nearest demonstration grid cell,
-        conditioned dynamically on target coordinates.
+        Generates high-accuracy autonomous trajectory conditioned on target block pose (X, Y, θ)
+        without Inverse Kinematics.
+        
+        Uses Tri-Anchor Joint-Space Trajectory Blending:
+        1. Selects k=3 nearest human demonstrations enclosing or adjacent to the target point.
+        2. Computes normalized Inverse Distance Weights (IDW): w_i = (1 / (d_i + eps)^2) / sum(...)
+        3. Resamples the joint trajectories across normalized execution time [0, 1].
+        4. Blends the joint angles directly in joint space: theta(t) = sum(w_i * theta_i(t)).
+        5. Synchronizes gripper grasping and block orientation theta compensation.
         """
-        best_ep, best_dist = self.find_nearest_demonstration(target_bx, target_by, target_bth)
-        if not best_ep or not best_ep.get("trajectory"):
-            # Fallback to episode 1 if none found
-            fallback_files = sorted(glob.glob(os.path.join(DATASETS_DIR, "episode_*.json")))
-            if not fallback_files:
-                raise ValueError("No demonstration datasets available to synthesize trajectory.")
-            with open(fallback_files[0], "r") as f:
-                best_ep = json.load(f)
-                
-        base_trajectory = best_ep["trajectory"]
-        demo_pose = best_ep.get("initial_block_pose") or {"x_cm": target_bx, "y_cm": target_by, "theta_deg": target_bth}
-        demo_bx = float(demo_pose.get("x_cm", target_bx))
-        demo_by = float(demo_pose.get("y_cm", target_by))
-        demo_bth = float(demo_pose.get("theta_deg", target_bth))
+        neighbors = self.find_k_nearest_demonstrations(target_bx, target_by, k=3)
+        best_ep, best_dist = neighbors[0]
         
-        dx = target_bx - demo_bx
-        dy = target_by - demo_by
-        dth = target_bth - demo_bth
+        # If the target is practically on top of a demonstration point (< 0.2cm), use it directly
+        if best_dist < 0.2 or len(neighbors) == 1:
+            weights = [1.0] + [0.0] * (len(neighbors) - 1)
+        else:
+            # Inverse Distance Weighting with p=2
+            eps = 0.01
+            raw_weights = [1.0 / ((d + eps) ** 2) for _, d in neighbors]
+            total_w = sum(raw_weights)
+            weights = [w / total_w for w in raw_weights]
+            
+        # Target trajectory length from nearest demo
+        target_len = len(best_ep["trajectory"])
+        time_target = np.linspace(0.0, 1.0, target_len)
         
-        # Spatial differential compensation factors (approx degrees per cm for Base and Shoulder)
-        # Base (θ1) rotates ~2.8 degrees per cm of horizontal X displacement at typical 20cm reach
-        # Shoulder (θ2) adjusts ~2.2 degrees per cm of radial Y displacement
-        base_correction = float(np.clip(dx * 2.8, -25.0, 25.0))
-        reach_correction = float(np.clip(dy * 2.0, -20.0, 20.0))
-        roll_correction = float(np.clip(dth * 0.5, -45.0, 45.0))
+        # Resample all k trajectories to target_len in joint space
+        resampled_joints = []
+        demo_orientations = []
+        
+        for ep, _ in neighbors:
+            traj = ep["trajectory"]
+            demo_pose = ep.get("initial_block_pose") or {}
+            demo_orientations.append(float(demo_pose.get("theta_deg", 0.0)))
+            
+            m = len(traj)
+            time_source = np.linspace(0.0, 1.0, m)
+            
+            j_arr = np.array([f.get("joints", [90, 90, 90, 90, 90])[:5] for f in traj], dtype=np.float32)
+            
+            # Interpolate each joint dimension
+            interp_j = np.zeros((target_len, 5), dtype=np.float32)
+            for j_idx in range(5):
+                interp_j[:, j_idx] = np.interp(time_target, time_source, j_arr[:, j_idx])
+            
+            resampled_joints.append(interp_j)
+            
+        # Perform Tri-Anchor Joint Blending
+        blended_joints = np.zeros((target_len, 5), dtype=np.float32)
+        for i, w in enumerate(weights):
+            blended_joints += w * resampled_joints[i]
+            
+        # Gripper state: follow closest demonstration sequence
+        primary_gripper = [int(f.get("gripper_state", 0)) for f in best_ep["trajectory"]]
+        
+        # Block orientation compensation (wrist roll - Joint 5, index 4)
+        avg_demo_bth = sum(w * th for w, th in zip(weights, demo_orientations))
+        dth = target_bth - avg_demo_bth
+        roll_correction = float(np.clip(dth, -45.0, 45.0))
         
         synthesized_trajectory = []
-        total_frames = len(base_trajectory)
-        
-        for idx, frame in enumerate(base_trajectory):
-            progress = idx / max(1, total_frames - 1)
+        for idx in range(target_len):
+            progress = idx / max(1, target_len - 1)
             
-            # Bell curve weight for pick approach: maximum correction applied during descent and grasp (progress 0.2 to 0.55)
-            if progress < 0.2:
-                w_pick = progress / 0.2
-            elif progress <= 0.6:
+            # Pick-phase weighting for orientation alignment (progress 0.15 to 0.60)
+            if progress < 0.15:
+                w_pick = progress / 0.15
+            elif progress <= 0.60:
                 w_pick = 1.0
             else:
-                w_pick = max(0.0, 1.0 - (progress - 0.6) / 0.2)
+                w_pick = max(0.0, 1.0 - (progress - 0.60) / 0.20)
                 
-            joints = list(frame.get("joints", [90, 90, 90, 90, 90])[:5])
-            gripper_state = int(frame.get("gripper_state", 0))
+            corr_j0 = int(np.clip(np.round(blended_joints[idx, 0]), 15, 165))
+            corr_j1 = int(np.clip(np.round(blended_joints[idx, 1]), 15, 165))
+            corr_j2 = int(np.clip(np.round(blended_joints[idx, 2]), 15, 165))
+            corr_j3 = int(np.clip(np.round(blended_joints[idx, 3]), 15, 165))
+            corr_j4 = int(np.clip(np.round(blended_joints[idx, 4] + roll_correction * w_pick), 0, 180))
             
-            # Apply dynamic pose compensation
-            corr_j0 = int(np.clip(joints[0] + base_correction * w_pick, 15, 165))
-            corr_j1 = int(np.clip(joints[1] - reach_correction * w_pick, 15, 165))
-            corr_j2 = int(np.clip(joints[2] + (reach_correction * 0.5) * w_pick, 15, 165))
-            corr_j3 = joints[3] # Wrist pitch maintains approach angle
-            corr_j4 = int(np.clip(joints[4] + roll_correction * w_pick, 0, 180)) # Wrist roll aligns to block θ
+            grip_st = primary_gripper[idx]
             
             synthesized_trajectory.append({
                 "joints": [corr_j0, corr_j1, corr_j2, corr_j3, corr_j4],
-                "gripper_state": gripper_state,
+                "gripper_state": grip_st,
                 "progress": progress
             })
             
-        return synthesized_trajectory, best_ep.get("number", 1), round(best_dist, 1)
+        anchor_summary = f"Demos {[ep.get('number', i+1) for ep, _ in neighbors]} (w={[round(w, 2) for w in weights]})"
+        return synthesized_trajectory, anchor_summary, round(best_dist, 1)
 
     async def run_autonomous_policy(self, model_id: str = "v1", broadcast_callback=None) -> Tuple[bool, str]:
         """
         Primary autonomous execution routine:
         1. Queries live vision status to capture target block pose.
-        2. Synthesizes policy trajectory.
+        2. Synthesizes policy trajectory via Tri-Anchor Joint-Space Blending.
         3. Aligns arm to start pose.
         4. Streams trajectory commands at 30Hz.
         5. Returns to Home.
@@ -204,9 +236,9 @@ class AutonomousRunner:
         target_by = float(vision_pose["y_cm"])
         target_bth = float(vision_pose["theta_deg"])
         
-        # Workspace bounds validation (25cm x 30cm)
-        if not (-5.0 <= target_bx <= 35.0 and 0.0 <= target_by <= 40.0):
-            return False, f"Target block pose ({target_bx}cm, {target_by}cm) is outside safe workspace bounds."
+        # Workspace bounds validation (X: 30cm, Y: 25cm with margin)
+        if not (-2.0 <= target_bx <= 32.0 and -2.0 <= target_by <= 28.0):
+            return False, f"Target block pose ({target_bx}cm, {target_by}cm) is outside safe workspace bounds (0-30cm x 0-25cm)."
             
         self.target_block_pose = {"x_cm": target_bx, "y_cm": target_by, "theta_deg": target_bth}
         
@@ -223,9 +255,9 @@ class AutonomousRunner:
         self.current_step = 0
         self.progress_pct = 0.0
         
-        logger.info(f"Starting autonomous policy execution (Model: {model_id}, Target: X={target_bx}cm, Y={target_by}cm, θ={target_bth}°, Anchor Demo: #{anchor_demo_num} d={dist}cm)")
+        logger.info(f"Starting autonomous policy execution (Model: {model_id}, Target: X={target_bx}cm, Y={target_by}cm, θ={target_bth}°, Anchors: {anchor_demo_num} d={dist}cm)")
 
-        open_angle = getattr(self.serial_manager, "gripper_open", 140)
+        open_angle = max(148, getattr(self.serial_manager, "gripper_open", 140))
         close_angle = getattr(self.serial_manager, "gripper_closed", 85)
 
         try:

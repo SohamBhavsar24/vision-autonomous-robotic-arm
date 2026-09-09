@@ -42,8 +42,8 @@ class RoboticDemonstrationDataset(Dataset):
         
         # Normalize observation features for faster convergence
         # Joints: 0-180 -> normalized to [0, 1]
-        # Coordinates: X in [0, 25], Y in [0, 30] -> normalized to [0, 1]
-        self.obs_scale = torch.tensor([180.0, 180.0, 180.0, 180.0, 180.0, 1.0, 25.0, 30.0, 180.0], dtype=torch.float32)
+        # Coordinates: X in [0, 30], Y in [0, 25] -> normalized to [0, 1]
+        self.obs_scale = torch.tensor([180.0, 180.0, 180.0, 180.0, 180.0, 1.0, 30.0, 25.0, 180.0], dtype=torch.float32)
         self.obs_norm = self.obs / self.obs_scale
 
     def __len__(self):
