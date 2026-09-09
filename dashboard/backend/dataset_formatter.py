@@ -32,6 +32,13 @@ def format_compact_episode(ep):
     out.append(f'  "date": {ep_date},\n')
     out.append(f'  "frameCount": {fc},\n')
     out.append(f'  "durationSec": {dur},\n')
+    
+    init_pose = ep.get("initial_block_pose")
+    if init_pose:
+        out.append(f'  "initial_block_pose": {json.dumps(init_pose)},\n')
+    else:
+        out.append('  "initial_block_pose": null,\n')
+        
     out.append('  "trajectory": [\n')
     
     frames = ep.get("trajectory", [])

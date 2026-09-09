@@ -20,20 +20,53 @@ const DatasetPanel = {
   currentTrajectory: [],
   episodes: [],
   sampleIntervalMs: 33, // 30Hz sampling rate
+  lastKnownBlockPose: null,
 
   init() {
     this.cacheDOM();
     this.bindEvents();
     this.loadEpisodes();
+    this.startVisionStatusPolling();
   },
 
   cacheDOM() {
     this.btnRecord = document.getElementById('btnRecordDataset');
     this.recordPill = document.getElementById('lblRecordStatusPill');
+    this.blockPoseStatus = document.getElementById('lblBlockPoseStatus');
     this.frameCountSpan = document.getElementById('lblFrameCount');
     this.episodesList = document.getElementById('datasetEpisodesList');
     this.liveAnglesBox = document.getElementById('lblLiveAnglesBox');
     this.anglesValSpan = document.getElementById('lblAnglesVal');
+  },
+
+  startVisionStatusPolling() {
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/vision/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.latest_block_pose && data.latest_block_pose.valid) {
+            this.lastKnownBlockPose = { ...data.latest_block_pose };
+            if (this.blockPoseStatus) {
+              this.blockPoseStatus.innerHTML = `Target Block: <strong>X=${data.latest_block_pose.x_cm}cm, Y=${data.latest_block_pose.y_cm}cm, θ=${data.latest_block_pose.theta_deg}°</strong>`;
+              this.blockPoseStatus.style.background = 'rgba(0, 255, 102, 0.1)';
+              this.blockPoseStatus.style.borderColor = 'rgba(0, 255, 102, 0.3)';
+              this.blockPoseStatus.style.color = '#00B048';
+            }
+          } else {
+            if (this.blockPoseStatus) {
+              const ids = (data.detected_marker_ids && data.detected_marker_ids.length > 0) ? `(IDs: ${data.detected_marker_ids.join(',')})` : '(Searching for Tags 0 & 2)';
+              this.blockPoseStatus.textContent = `Target Block: Searching... ${ids}`;
+              this.blockPoseStatus.style.background = 'rgba(0, 165, 255, 0.08)';
+              this.blockPoseStatus.style.borderColor = 'rgba(0, 165, 255, 0.25)';
+              this.blockPoseStatus.style.color = '#0088DD';
+            }
+          }
+        }
+      } catch (e) {}
+    };
+    poll();
+    setInterval(poll, 800);
   },
 
   bindEvents() {
@@ -77,7 +110,7 @@ const DatasetPanel = {
 
     this.isRecording = true;
     this.currentTrajectory = [];
-    this.currentBlockPose = null;
+    this.currentBlockPose = this.lastKnownBlockPose ? { ...this.lastKnownBlockPose } : null;
 
     // Fetch initial block pose from vision status
     try {
@@ -86,6 +119,7 @@ const DatasetPanel = {
         const vdata = await vres.json();
         if (vdata.latest_block_pose && vdata.latest_block_pose.valid) {
           this.currentBlockPose = { ...vdata.latest_block_pose };
+          this.lastKnownBlockPose = { ...vdata.latest_block_pose };
         }
       }
     } catch (e) {}
@@ -118,6 +152,11 @@ const DatasetPanel = {
     // 30Hz sampling loop
     const startTime = Date.now();
     this.recordTimer = setInterval(() => {
+      // Lazy-lock block pose if it was detected right after recording started
+      if (!this.currentBlockPose && this.lastKnownBlockPose) {
+        this.currentBlockPose = { ...this.lastKnownBlockPose };
+      }
+
       const angles = this.getCurrentJointAngles();
       const gripperState = (window.TeleopPanel && window.TeleopPanel.gripperState !== undefined)
                             ? window.TeleopPanel.gripperState
@@ -188,7 +227,7 @@ const DatasetPanel = {
       date: dateStr,
       frameCount,
       durationSec,
-      initial_block_pose: this.currentBlockPose || null,
+      initial_block_pose: this.currentBlockPose || (this.lastKnownBlockPose ? { ...this.lastKnownBlockPose } : null),
       trajectory: this.currentTrajectory
     };
 
@@ -418,13 +457,22 @@ const DatasetPanel = {
       return;
     }
 
-    this.episodesList.innerHTML = this.episodes.map(ep => `
+    this.episodesList.innerHTML = this.episodes.map(ep => {
+      const hasPose = ep.initial_block_pose && (ep.initial_block_pose.valid !== false) && (ep.initial_block_pose.x_cm !== undefined);
+      const poseBadge = hasPose
+        ? `<span style="font-family: var(--font-mono); font-size: 0.72rem; color: #00B048; background: rgba(0, 255, 102, 0.1); border: 1px solid rgba(0, 255, 102, 0.25); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Block: X=${ep.initial_block_pose.x_cm}cm, Y=${ep.initial_block_pose.y_cm}cm, θ=${ep.initial_block_pose.theta_deg}°</span>`
+        : `<span style="font-family: var(--font-mono); font-size: 0.72rem; color: #FFA500; background: rgba(255, 165, 0, 0.1); border: 1px solid rgba(255, 165, 0, 0.25); padding: 2px 8px; border-radius: 4px;">Block: No Pose</span>`;
+
+      return `
       <div class="card" style="margin-top: 16px; border-left: 4px solid var(--accent-primary);">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
           <div>
-            <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-main); margin-bottom: 4px;">
-              Episode #${ep.number}
-            </h4>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+              <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-main); margin: 0;">
+                Episode #${ep.number}
+              </h4>
+              ${poseBadge}
+            </div>
             <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);">
               ${ep.date} • ${ep.frameCount} frames (~${ep.durationSec}s)
               <span id="lblStatus-${ep.id}" style="margin-left: 8px; font-weight: 600;"></span>
@@ -440,7 +488,8 @@ const DatasetPanel = {
           </div>
         </div>
       </div>
-    `).join('');
+      `;
+    }).join('');
   }
 };
 
