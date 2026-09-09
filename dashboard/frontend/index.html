@@ -692,8 +692,57 @@
 
       <main class="content-panel" id="panel-autonomous">
         <div class="card">
-          <h3 class="card-title">Autonomous Execution (Phase D)</h3>
-          <p class="card-subtitle">Will control model loading, inference execution, and accuracy tracking on RPi5.</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div>
+              <h3 class="card-title">Autonomous Policy Execution (Phase D)</h3>
+              <p class="card-subtitle">End-to-end Behavior Cloning policy execution. The policy detects live block pose (X, Y, θ) from Camera 1 and autonomously completes the pick-and-place task.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div id="lblAutoBlockPoseStatus" class="status-pill" style="display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.78rem; padding: 6px 12px; border-radius: 6px; background: rgba(0, 165, 255, 0.1); border: 1px solid rgba(0, 165, 255, 0.3); color: #0099FF; font-weight: 600;">
+                Target Block: Searching...
+              </div>
+              <button class="btn btn-secondary" id="btnTrainNewModel" style="font-size: 0.82rem; font-weight: 600; cursor: pointer; padding: 8px 14px;">
+                ⚡ Retrain Policy
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Autonomous Execution Monitor (Appears when policy is actively running) -->
+          <div id="autonomousExecutionCard" style="display: none; background: var(--bg-page); border: 1px solid var(--border-subtle); border-left: 4px solid #00B048; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="status-indicator live" style="background: #00B048;"></span>
+                <span style="font-family: var(--font-mono); font-size: 0.88rem; font-weight: 600; color: #00B048;">AUTONOMOUS EXECUTION ACTIVE</span>
+                <span id="autoPhaseText" style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-main); background: rgba(0,0,0,0.05); padding: 2px 8px; border-radius: 4px;">Approaching Block</span>
+              </div>
+              <button class="btn btn-secondary" id="btnAbortAutonomous" style="color: #E53935; border-color: rgba(229, 57, 53, 0.4); padding: 6px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
+                🛑 Abort Execution
+              </button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.08); border-radius: 5px; overflow: hidden; margin-bottom: 8px;">
+              <div id="autoProgressFill" style="width: 0%; height: 100%; background: #00B048; transition: width 0.1s linear;"></div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted);">
+              <span id="autoStepText">Step 0 / 0</span>
+              <span id="autoProgressText" style="font-weight: 600; color: #00B048;">0.0%</span>
+            </div>
+
+            <!-- Live Telemetry Stream -->
+            <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+              <strong>Live Joint Telemetry:</strong> <span id="autoAnglesText" style="color: var(--text-main); font-weight: 600;">Base: 90° | Shoulder: 90° | Elbow: 90° | Wrist: 90° | Roll: 90° | Claw: OPEN</span>
+            </div>
+          </div>
+
+          <!-- Registered Policy Models List -->
+          <div>
+            <h4 style="font-family: var(--font-heading); font-size: 1.05rem; color: var(--text-main); margin-bottom: 12px;">
+              Trained Policy Versions
+            </h4>
+            <div id="autonomousModelsList"></div>
+          </div>
         </div>
       </main>
 
@@ -701,9 +750,10 @@
   </div>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.42"></script>
-  <script src="js/servo_panel.js?v=1.0.42"></script>
-  <script src="js/teleop_panel.js?v=1.0.42"></script>
-  <script src="js/dataset_panel.js?v=1.0.42"></script>
+  <script src="js/app.js?v=1.0.43"></script>
+  <script src="js/servo_panel.js?v=1.0.43"></script>
+  <script src="js/teleop_panel.js?v=1.0.43"></script>
+  <script src="js/dataset_panel.js?v=1.0.43"></script>
+  <script src="js/autonomous_panel.js?v=1.0.43"></script>
 </body>
 </html>

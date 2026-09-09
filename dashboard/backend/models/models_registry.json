@@ -1,0 +1,14 @@
+[
+  {
+    "id": "v1",
+    "name": "v1 (30 Demos)",
+    "filename": "v1_policy.npz",
+    "episodes_count": 30,
+    "transitions_count": 17824,
+    "loss": 0.5114,
+    "duration_sec": 5.97,
+    "created_at": "2026-09-09 11:02:35",
+    "status": "Ready",
+    "description": "Behavior Cloning policy trained on 30 human teleoperation demonstrations."
+  }
+]

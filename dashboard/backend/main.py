@@ -46,6 +46,9 @@ from pydantic import BaseModel
 from serial_manager import serial_manager
 from vision_manager import vision_manager_cam1
 from ik_solver import ik_solver
+from autonomous_runner import AutonomousRunner
+
+autonomous_runner = AutonomousRunner(serial_manager=serial_manager, vision_manager=vision_manager_cam1)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("DashboardBackend")
@@ -147,6 +150,14 @@ class JournalEntriesRequest(BaseModel):
 
 class DatasetEpisodesRequest(BaseModel):
     episodes: List[Dict[str, Any]]
+
+class AutonomousStartRequest(BaseModel):
+    model_id: str = "v1"
+
+class TrainModelRequest(BaseModel):
+    version_id: str = "v1"
+    model_name: str = "v1 (30 Demos)"
+    epochs: int = 80
 
 
 from dataset_formatter import save_compact_dataset_file, save_individual_episodes, load_individual_episodes
@@ -369,6 +380,50 @@ async def reset_estop():
     return {"status": "estop_reset", "message": msg}
 
 
+# Autonomous Policy Execution Endpoints (Phase D)
+
+@app.get("/api/models")
+async def get_models():
+    """Returns list of registered trained model versions."""
+    return {"models": autonomous_runner.get_available_models()}
+
+
+@app.post("/api/models/train")
+async def train_new_model(req: TrainModelRequest):
+    """Triggers policy training on recorded dataset episodes."""
+    from train_policy_engine import train_model
+    meta = train_model(version_id=req.version_id, model_name=req.model_name, epochs=req.epochs)
+    await broadcast_status()
+    return {"status": "trained", "model": meta}
+
+
+@app.get("/api/autonomous/status")
+async def get_autonomous_status():
+    """Returns live execution status, phase, and progress of the autonomous runner."""
+    return autonomous_runner.get_status()
+
+
+@app.post("/api/autonomous/start")
+async def start_autonomous_execution(req: AutonomousStartRequest):
+    """Starts autonomous pick-and-place execution using the selected model."""
+    if autonomous_runner.is_running:
+        raise HTTPException(status_code=400, detail="Autonomous execution is already active.")
+    
+    asyncio.create_task(autonomous_runner.run_autonomous_policy(
+        model_id=req.model_id,
+        broadcast_callback=broadcast_status
+    ))
+    return {"status": "started", "model_id": req.model_id}
+
+
+@app.post("/api/autonomous/stop")
+async def stop_autonomous_execution():
+    """Aborts the active autonomous execution."""
+    success, msg = autonomous_runner.abort()
+    await broadcast_status()
+    return {"status": "aborted" if success else "failed", "message": msg}
+
+
 # WebSocket Handler for Real-Time Telemetry & Slider Control
 
 @app.websocket("/ws")
@@ -424,6 +479,18 @@ async def websocket_endpoint(websocket: WebSocket):
                     serial_manager.reset_estop()
                     await broadcast_status()
 
+                elif action_type == "run_autonomous":
+                    m_id = data.get("model_id", "v1")
+                    if not autonomous_runner.is_running:
+                        asyncio.create_task(autonomous_runner.run_autonomous_policy(
+                            model_id=m_id,
+                            broadcast_callback=broadcast_status
+                        ))
+
+                elif action_type == "stop_autonomous":
+                    autonomous_runner.abort()
+                    await broadcast_status()
+
             except json.JSONDecodeError:
                 logger.warning("Received non-JSON WebSocket message.")
 
@@ -436,7 +503,11 @@ async def broadcast_status():
     """Broadcasts current status to all connected WebSocket clients."""
     if not active_connections:
         return
-    status_data = {"type": "status", "data": serial_manager.get_status()}
+    status_data = {
+        "type": "status",
+        "data": serial_manager.get_status(),
+        "autonomous": autonomous_runner.get_status()
+    }
     for conn in list(active_connections):
         try:
             await conn.send_json(status_data)
