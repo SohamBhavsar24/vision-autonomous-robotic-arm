@@ -161,10 +161,11 @@ class AutonomousRunner:
         candidates.sort(key=lambda x: x[1])
         return candidates[:k]
 
-    def generate_policy_trajectory(self, target_bx: float, target_by: float, target_bth: float, model_id: str = "v1"):
+    def generate_policy_trajectory(self, target_bx: float, target_by: float, target_bth: float = 0.0, model_id: str = "v1"):
         """
-        Generates high-accuracy autonomous trajectory conditioned on target block pose (X, Y, θ)
-        without Inverse Kinematics.
+        Generates high-accuracy autonomous trajectory strictly from human demonstration
+        blending in joint space without Inverse Kinematics or synthetic angle overrides.
+        All 5 joints [θ1, θ2, θ3, θ4, θ5] are taken 100% directly from demonstrated data.
         
         Uses Tri-Anchor Joint-Space Trajectory Blending:
         1. Selects k=3 nearest human demonstrations enclosing or adjacent to the target point.
@@ -192,26 +193,22 @@ class AutonomousRunner:
         
         # Resample all k trajectories to target_len in joint space
         resampled_joints = []
-        demo_orientations = []
         
         for ep, _ in neighbors:
             traj = ep["trajectory"]
-            demo_pose = ep.get("initial_block_pose") or {}
-            demo_orientations.append(float(demo_pose.get("theta_deg", 0.0)))
-            
             m = len(traj)
             time_source = np.linspace(0.0, 1.0, m)
             
             j_arr = np.array([f.get("joints", [90, 90, 90, 90, 90])[:5] for f in traj], dtype=np.float32)
             
-            # Interpolate each joint dimension
+            # Interpolate each joint dimension directly from demonstrated angles
             interp_j = np.zeros((target_len, 5), dtype=np.float32)
             for j_idx in range(5):
                 interp_j[:, j_idx] = np.interp(time_target, time_source, j_arr[:, j_idx])
             
             resampled_joints.append(interp_j)
             
-        # Perform Tri-Anchor Joint Blending
+        # Perform Tri-Anchor Joint Blending across all 5 demonstrated joints
         blended_joints = np.zeros((target_len, 5), dtype=np.float32)
         for i, w in enumerate(weights):
             blended_joints += w * resampled_joints[i]
@@ -219,39 +216,16 @@ class AutonomousRunner:
         # Gripper state: follow closest demonstration sequence
         primary_gripper = [int(f.get("gripper_state", 0)) for f in best_ep["trajectory"]]
         
-        # 4-Fold Rotational Symmetry Canonical Angle for Square Sponge Block:
-        # A square rotated by 90°, -90°, or 180° is physically identical to 0°.
-        # Canonical range is strictly [-45°, +45°].
-        def canonical_square_angle(deg: float) -> float:
-            return float(((deg + 45.0) % 90.0) - 45.0)
-
-        demo_sq_orientations = [canonical_square_angle(float((ep.get("initial_block_pose") or {}).get("theta_deg", 0.0))) for ep, _ in neighbors]
-        avg_demo_sq_th = sum(w * th for w, th in zip(weights, demo_sq_orientations))
-        target_sq_th = canonical_square_angle(target_bth)
-        
-        dth = canonical_square_angle(target_sq_th - avg_demo_sq_th)
-        roll_correction = float(np.clip(dth, -25.0, 25.0))
-        
         synthesized_trajectory = []
         for idx in range(target_len):
             progress = idx / max(1, target_len - 1)
-            
-            # Smooth bell curve for pick phase: maximum orientation alignment during approach & grasp (0.15 to 0.60)
-            if progress < 0.15:
-                w_pick = progress / 0.15
-            elif progress <= 0.60:
-                w_pick = 1.0
-            else:
-                w_pick = max(0.0, 1.0 - (progress - 0.60) / 0.20)
                 
+            # 100% pure demonstrated joint angles - zero artificial roll or theta offsets
             corr_j0 = int(np.clip(np.round(blended_joints[idx, 0]), 15, 165))
             corr_j1 = int(np.clip(np.round(blended_joints[idx, 1]), 15, 165))
             corr_j2 = int(np.clip(np.round(blended_joints[idx, 2]), 15, 165))
             corr_j3 = int(np.clip(np.round(blended_joints[idx, 3]), 15, 165))
-            
-            # Roll (Joint 4): blend human demonstration roll angle with canonical block orientation tilt
-            # Clamped strictly between 50° and 120° (matching the human demonstration range 53°-119°)
-            corr_j4 = int(np.clip(np.round(blended_joints[idx, 4] + roll_correction * w_pick), 50, 120))
+            corr_j4 = int(np.clip(np.round(blended_joints[idx, 4]), 15, 165))
             
             grip_st = primary_gripper[idx]
             
