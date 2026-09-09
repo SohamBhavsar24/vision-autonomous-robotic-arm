@@ -143,7 +143,7 @@ const AutonomousPanel = {
         alert(`Autonomous launch failed: ${data.detail || data.message || 'Unknown error'}`);
         if (runBtn) {
           runBtn.disabled = false;
-          runBtn.textContent = '▶ Run Autonomous Pick & Place';
+          runBtn.textContent = 'Run Autonomous Pick & Place';
           runBtn.style.opacity = '1';
         }
       } else {
@@ -155,7 +155,7 @@ const AutonomousPanel = {
       alert(`Network error starting autonomous execution: ${e.message}`);
       if (runBtn) {
         runBtn.disabled = false;
-        runBtn.textContent = '▶ Run Autonomous Pick & Place';
+        runBtn.textContent = 'Run Autonomous Pick & Place';
         runBtn.style.opacity = '1';
       }
     }
@@ -170,6 +170,32 @@ const AutonomousPanel = {
       }
     } catch (e) {
       console.warn('Abort error:', e);
+    }
+  },
+
+  async deleteModel(modelId, modelName) {
+    if (this.isRunning) {
+      alert('Cannot delete model while autonomous execution is actively running.');
+      return;
+    }
+    const confirmed = confirm(`Delete trained model "${modelName}" (${modelId})?\n\nThis will permanently delete the model file from disk and remove it from the registry.`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/models/${modelId}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (window.App && App.log) {
+          App.log(`Model ${modelName} (${modelId}) deleted successfully.`);
+        }
+        await this.fetchModels();
+      } else {
+        alert(`Failed to delete model: ${data.detail || data.message || 'Unknown error'}`);
+      }
+    } catch (e) {
+      alert(`Network error deleting model: ${e.message}`);
     }
   },
 
@@ -234,7 +260,7 @@ const AutonomousPanel = {
         const btn = document.getElementById(`btnRunModel-${m.id}`);
         if (btn && btn.disabled) {
           btn.disabled = false;
-          btn.textContent = '▶ Run Autonomous Pick & Place';
+          btn.textContent = 'Run Autonomous Pick & Place';
           btn.style.opacity = '1';
         }
       });
@@ -247,7 +273,7 @@ const AutonomousPanel = {
     if (this.models.length === 0) {
       this.modelsList.innerHTML = `
         <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-family: var(--font-mono); font-size: 0.85rem; border: 2px dashed var(--border-subtle); border-radius: 12px; margin-top: 16px;">
-          No trained models registered yet. Click "Train New Policy Version" to train model v1.
+          No trained models registered yet. Click "Retrain Policy" to train model v1.
         </div>
       `;
       return;
@@ -255,6 +281,7 @@ const AutonomousPanel = {
 
     this.modelsList.innerHTML = this.models.map(m => {
       const isCurrentActive = (m.id === this.activeModelId);
+      const safeName = (m.name || m.id).replace(/'/g, "\\'");
       return `
         <div class="card" style="margin-top: 16px; border-left: 4px solid var(--accent-primary); background: var(--bg-card);">
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
@@ -276,9 +303,12 @@ const AutonomousPanel = {
               </div>
             </div>
             
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <button class="btn btn-primary" id="btnRunModel-${m.id}" onclick="AutonomousPanel.runModel('${m.id}')" style="padding: 10px 22px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(224, 90, 71, 0.25);">
-                ▶ Run Autonomous Pick & Place
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <button class="btn btn-primary" id="btnRunModel-${m.id}" onclick="AutonomousPanel.runModel('${m.id}')" style="padding: 10px 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(224, 90, 71, 0.25);">
+                Run Autonomous Pick & Place
+              </button>
+              <button class="btn btn-secondary" id="btnDeleteModel-${m.id}" onclick="AutonomousPanel.deleteModel('${m.id}', '${safeName}')" style="padding: 10px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #E53935; border-color: rgba(229, 57, 53, 0.4);">
+                Delete
               </button>
             </div>
           </div>

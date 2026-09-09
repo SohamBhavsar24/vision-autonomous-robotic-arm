@@ -58,6 +58,44 @@ class AutonomousRunner:
                 logger.warning(f"Failed to read models_registry.json: {e}")
         return []
 
+    def delete_model(self, model_id: str) -> Tuple[bool, str]:
+        """Deletes a trained model version from the registry and disk."""
+        if not os.path.exists(REGISTRY_FILE):
+            return False, "Model registry file not found."
+            
+        try:
+            with open(REGISTRY_FILE, "r") as f:
+                registry = json.load(f)
+        except Exception as e:
+            return False, f"Failed to read model registry: {e}"
+            
+        found = False
+        new_registry = []
+        for m in registry:
+            if m.get("id") == model_id or m.get("filename") == model_id:
+                found = True
+                fname = m.get("filename")
+                if fname:
+                    target_file = os.path.join(MODELS_DIR, fname)
+                    if os.path.exists(target_file):
+                        try:
+                            os.remove(target_file)
+                        except Exception as e:
+                            logger.warning(f"Could not remove model file {target_file}: {e}")
+            else:
+                new_registry.append(m)
+                
+        if not found:
+            return False, f"Model '{model_id}' not found in registry."
+            
+        try:
+            with open(REGISTRY_FILE, "w") as f:
+                json.dump(new_registry, f, indent=2)
+        except Exception as e:
+            return False, f"Failed to save updated model registry: {e}"
+            
+        return True, f"Model '{model_id}' deleted successfully."
+
     def get_status(self) -> Dict[str, Any]:
         """Returns live execution status and telemetry."""
         return {

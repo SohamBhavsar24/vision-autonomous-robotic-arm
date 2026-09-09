@@ -397,6 +397,21 @@ async def train_new_model(req: TrainModelRequest):
     return {"status": "trained", "model": meta}
 
 
+@app.delete("/api/models/{model_id}")
+@app.post("/api/models/{model_id}/delete")
+async def delete_model_endpoint(model_id: str):
+    """Deletes a registered trained policy model and removes its file from disk."""
+    if autonomous_runner.is_running and autonomous_runner.current_model_id == model_id:
+        raise HTTPException(status_code=400, detail="Cannot delete model while autonomous execution is active.")
+        
+    success, msg = autonomous_runner.delete_model(model_id)
+    if not success:
+        raise HTTPException(status_code=404, detail=msg)
+        
+    await broadcast_status()
+    return {"status": "deleted", "message": msg}
+
+
 @app.get("/api/autonomous/status")
 async def get_autonomous_status():
     """Returns live execution status, phase, and progress of the autonomous runner."""
