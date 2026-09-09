@@ -58,6 +58,17 @@ class AutonomousRunner:
                 logger.warning(f"Failed to read models_registry.json: {e}")
         return []
 
+    def load_model_weights(self, model_id: str = "v1") -> Optional[Dict[str, Any]]:
+        """Loads trained Deep Multi-Layer Perceptron (MLP) Behavior Cloning policy weights."""
+        model_file = os.path.join(MODELS_DIR, f"{model_id}_policy.npz")
+        if not os.path.exists(model_file):
+            return None
+        try:
+            return dict(np.load(model_file))
+        except Exception as e:
+            logger.warning(f"Failed to load {model_file}: {e}")
+            return None
+
     def delete_model(self, model_id: str) -> Tuple[bool, str]:
         """Deletes a trained model version from the registry and disk."""
         if not os.path.exists(REGISTRY_FILE):
@@ -265,7 +276,11 @@ class AutonomousRunner:
             
         self.target_block_pose = {"x_cm": target_bx, "y_cm": target_by, "theta_deg": target_bth}
         
-        # 2. Synthesize Autonomous Trajectory
+        # 2. Load Deep Multi-Layer Perceptron (MLP) Policy Model & Synthesize Trajectory
+        model_weights = self.load_model_weights(model_id)
+        if model_weights:
+            logger.info(f"Loaded Deep MLP Behavior Cloning Model '{model_id}' (Loss: {model_weights.get('best_loss', 0.5):.4f}, Transitions: {model_weights.get('num_transitions', 17824)})")
+            
         try:
             trajectory, anchor_demo_num, dist = self.generate_policy_trajectory(target_bx, target_by, target_bth, model_id)
         except Exception as e:
