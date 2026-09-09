@@ -564,15 +564,15 @@ const TeleopPanel = {
     if (this.activeMode === 'joint') {
       // Direct Joint Motor Control Mode (Velocity Rate Integrator)
       if (Math.abs(lx) > 0.05) {
-        // Reversed Base direction per user spec: Left Joystick LEFT moves Base LEFT
-        this.integratedAngles[0] = Math.max(0, Math.min(180, this.integratedAngles[0] - (lx * stepSpeed * 1.5)));
+        // Reversed Base direction per user spec: Left Joystick LEFT moves Base LEFT (15° to 165° safe limits)
+        this.integratedAngles[0] = Math.max(15, Math.min(165, this.integratedAngles[0] - (lx * stepSpeed * 1.5)));
       }
       if (Math.abs(ly) > 0.05) {
         this.integratedAngles[1] = Math.max(0, Math.min(180, this.integratedAngles[1] + (ly * stepSpeed * 1.5)));
       }
       if (Math.abs(ry) > 0.05) {
-        // Reversed Elbow direction per user spec: Right Joystick FORWARD moves Elbow FORWARD
-        this.integratedAngles[2] = Math.max(0, Math.min(180, this.integratedAngles[2] - (ry * stepSpeed * 1.5)));
+        // Inverted Elbow direction per user request (+ instead of -)
+        this.integratedAngles[2] = Math.max(0, Math.min(180, this.integratedAngles[2] + (ry * stepSpeed * 1.5)));
       }
     } else if (this.activeMode === 'ik') {
       // Cartesian 3D Space IK Mode (Primary 3-DOF Joint Velocity Control)
