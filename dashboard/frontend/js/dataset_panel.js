@@ -274,6 +274,12 @@ const DatasetPanel = {
   },
 
   smoothTransitionToAngles(startAngles, targetAngles, durationMs, onUpdate, onComplete) {
+    if (!Array.isArray(startAngles) || startAngles.length < 6) {
+      startAngles = this.getCurrentJointAngles();
+    }
+    if (!Array.isArray(targetAngles) || targetAngles.length < 6) {
+      targetAngles = [90, 90, 90, 90, 90, 140];
+    }
     const steps = Math.max(10, Math.round(durationMs / this.sampleIntervalMs));
     let stepCount = 0;
     const timer = setInterval(() => {
@@ -368,8 +374,11 @@ const DatasetPanel = {
 
             // Phase 3: Smooth 1-second transition back to Home Position
             if (window.App && App.log) App.log(`Episode #${ep.number} Trajectory Complete. Smoothly returning to Home Position...`);
-            const endPose = ep.trajectory[ep.trajectory.length - 1].angles;
-            const homePose = [90, 90, 90, 90, 90, 145];
+            const lastFrame = ep.trajectory[ep.trajectory.length - 1];
+            const lastState = (lastFrame.gripper_state !== undefined) ? lastFrame.gripper_state : ((lastFrame.angles && lastFrame.angles[5] <= 110) ? 1 : 0);
+            const lastGripAngle = (lastState === 1) ? closeAngle : openAngle;
+            const endPose = lastFrame.joints ? [...lastFrame.joints, lastGripAngle] : (lastFrame.angles || this.getCurrentJointAngles());
+            const homePose = [90, 90, 90, 90, 90, openAngle];
 
             this.smoothTransitionToAngles(
               endPose,
@@ -381,7 +390,7 @@ const DatasetPanel = {
                   statusSpan.style.color = '#2E7D32';
                 }
                 if (this.anglesValSpan) {
-                  this.anglesValSpan.textContent = this.formatAnglesText(angles);
+                  this.anglesValSpan.textContent = this.formatAnglesText(angles.slice(0, 5), angles[5] <= 110 ? 1 : 0);
                 }
               },
               () => {
@@ -395,6 +404,11 @@ const DatasetPanel = {
                 if (statusSpan) {
                   statusSpan.textContent = 'Replay Complete';
                   statusSpan.style.color = '#2E7D32';
+                  setTimeout(() => {
+                    if (statusSpan && statusSpan.textContent === 'Replay Complete') {
+                      statusSpan.textContent = '';
+                    }
+                  }, 3000);
                 }
 
                 if (this.liveAnglesBox) {
