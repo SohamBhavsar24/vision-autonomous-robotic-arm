@@ -8,7 +8,8 @@
    PURPOSE:
      Real-time 3D WebGL digital twin rendering the physical arm structure
      using the 3D CAD STL files (Base, Waist, Arm 01, Arm 02 v3, Arm 03,
-     Gripper base, Gripper 1) synchronized with live WebSocket joint telemetry.
+     Gripper base, gear1, gear2, Gripper 1, grip link 1) synchronized with
+     live WebSocket joint telemetry.
    ========================================================================== */
 
 const DigitalTwinPanel = {
@@ -31,21 +32,22 @@ const DigitalTwinPanel = {
   elbowGroup: null,
   wristPitchGroup: null,
   wristRollGroup: null,
-  clawLeftGroup: null,
-  clawRightGroup: null,
+  leftGearGroup: null,
+  rightGearGroup: null,
 
   // Current and Target Joint Angles (Degrees)
   // [Base θ1, Shoulder θ2, Elbow θ3, Wrist Pitch θ4, Wrist Roll θ5, Gripper θ6]
   currentAngles: [90, 90, 90, 90, 90, 140],
   targetAngles: [90, 90, 90, 90, 90, 140],
 
-  // Kinematic parameters (mm) matching physical CAD & ik_solver.py
-  BASE_HEIGHT: 56.0, // Base top resting surface (mm)
-  SHOULDER_OFFSET: 39.0, // Waist shoulder pivot height above base (L1 = 56 + 39 = 95mm)
-  L1: 95.0,  // Ground to Shoulder pivot (9.5 cm)
-  L2: 120.0, // Shoulder to Elbow pivot (12.0 cm)
-  L3: 90.0,  // Elbow to Wrist Pitch pivot (9.0 cm)
-  L4: 140.0, // Wrist to Gripper tip (14.0 cm)
+  // Exact Kinematic Parameters (mm) matching physical CAD assembly
+  BASE_HEIGHT: 56.0,       // Height of Base.STL turntable surface
+  SHOULDER_OFFSET: 39.0,   // Shoulder pivot height above waist (L1 = 56 + 39 = 95mm)
+  L1: 95.0,                // Base ground to shoulder pivot (9.5 cm)
+  L2: 120.0,               // Arm 01: Shoulder to Elbow pivot (12.0 cm)
+  L3: 100.0,               // Arm 02 v3: Elbow to Wrist Pitch pivot (10.0 cm)
+  WRIST_PITCH_LEN: 35.0,   // Arm 03: Wrist Pitch to Wrist Roll mount (3.5 cm)
+  GRIPPER_BASE_LEN: 75.0,  // Gripper base: Mount to Gear pivot surface (7.5 cm)
 
   // Meshes dictionary
   meshes: {},
@@ -117,7 +119,7 @@ const DigitalTwinPanel = {
         Loading 3D CAD Mesh Models...
       </div>
       <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196,120,74,0.15); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--accent-primary);">
-        Parsing STL Geometries (Base, Waist, Arms, Gripper)
+        Parsing STL Geometries (Base, Waist, Arms, Dual-Gear 4-Link Gripper)
       </div>
     `;
     this.container.appendChild(loadingOverlay);
@@ -176,7 +178,7 @@ const DigitalTwinPanel = {
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 3000);
-    this.camera.position.set(0, 260, 420);
+    this.camera.position.set(0, 260, 440);
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -190,7 +192,7 @@ const DigitalTwinPanel = {
     // OrbitControls
     if (typeof THREE.OrbitControls !== 'undefined') {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-      this.controls.target.set(0, 140, 0);
+      this.controls.target.set(0, 160, 0);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.05;
       this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
@@ -281,29 +283,33 @@ const DigitalTwinPanel = {
     this.elbowGroup.position.set(0, this.L2, 0);
     this.shoulderGroup.add(this.elbowGroup);
 
-    // 6. Wrist Pitch group (Pivot at Y = L3 = 90mm along forearm, Rotates around X axis, Joint 4 / Wrist Pitch θ4)
+    // 6. Wrist Pitch group (Pivot at Y = L3 = 100mm where Arm 02 ends! Rotates around X axis, Joint 4 / Wrist Pitch θ4)
     this.wristPitchGroup = new THREE.Group();
     this.wristPitchGroup.position.set(0, this.L3, 0);
     this.elbowGroup.add(this.wristPitchGroup);
 
-    // 7. Wrist Roll group (Rotates around Y/longitudinal axis, Joint 5 / Wrist Roll θ5)
+    // 7. Wrist Roll group (Connected on top of Arm 03 where Arm 03 ends at Y = 35mm! Rotates around Y/longitudinal axis, Joint 5 / Wrist Roll θ5)
     this.wristRollGroup = new THREE.Group();
-    this.wristRollGroup.position.set(0, 20, 0);
+    this.wristRollGroup.position.set(0, this.WRIST_PITCH_LEN, 0);
     this.wristPitchGroup.add(this.wristRollGroup);
 
-    // 8. Gripper Claws (Joint 6 / Gripper θ6)
-    this.clawLeftGroup = new THREE.Group();
-    this.clawLeftGroup.position.set(-10, 48, 0);
-    this.wristRollGroup.add(this.clawLeftGroup);
+    // 8. Gripper Mechanism Groups (Mounted at Y = 75mm on top of Gripper base)
+    // Left Gear Group (Gear 1, Left Claw, 2x Left Linkage Bars)
+    this.leftGearGroup = new THREE.Group();
+    this.leftGearGroup.position.set(-13.0, this.GRIPPER_BASE_LEN, 0);
+    this.wristRollGroup.add(this.leftGearGroup);
 
-    this.clawRightGroup = new THREE.Group();
-    this.clawRightGroup.position.set(10, 48, 0);
-    this.wristRollGroup.add(this.clawRightGroup);
+    // Right Gear Group (Gear 2, Right Claw, 2x Right Linkage Bars)
+    this.rightGearGroup = new THREE.Group();
+    this.rightGearGroup.position.set(13.0, this.GRIPPER_BASE_LEN, 0);
+    this.wristRollGroup.add(this.rightGearGroup);
 
-    // Add brass pivot accent cylinders at each joint axis
+    // Brass pivot accent cylinders at each joint axis
     this.addJointPin(this.shoulderGroup, 32, 10);
     this.addJointPin(this.elbowGroup, 28, 8);
     this.addJointPin(this.wristPitchGroup, 24, 7);
+    this.addJointPin(this.leftGearGroup, 18, 3.5);
+    this.addJointPin(this.rightGearGroup, 18, 3.5);
   },
 
   addJointPin(parent, length, radius) {
@@ -347,7 +353,20 @@ const DigitalTwinPanel = {
       metalness: 0.3
     });
 
+    const matBrass = new THREE.MeshStandardMaterial({
+      color: 0xD4A843,
+      roughness: 0.3,
+      metalness: 0.8
+    });
+
+    const matDarkLink = new THREE.MeshStandardMaterial({
+      color: 0x4A423A,
+      roughness: 0.4,
+      metalness: 0.5
+    });
+
     const modelsToLoad = [
+      // 1. Base Foundation
       {
         name: 'base',
         file: 'Base.STL',
@@ -355,10 +374,10 @@ const DigitalTwinPanel = {
         material: matCharcoal,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Center base at X=0, Z=0; sitting flat on floor Y=0 (height is 56mm)
           geo.translate(-60.64, 0, -60.63);
         }
       },
+      // 2. Rotating Waist (on top of Base)
       {
         name: 'waist',
         file: 'Waist.STL',
@@ -366,11 +385,10 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Center waist turntable circle at X=0, Z=0.
-          // Bottom of waist rests flush on top of base at Y = 56mm!
           geo.translate(-48.43, 0, -49.23);
         }
       },
+      // 3. Shoulder Arm 01
       {
         name: 'arm1',
         file: 'Arm 01.STL',
@@ -378,12 +396,11 @@ const DigitalTwinPanel = {
         material: matWarmLinen,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Arm 01: bottom hole is at [25.1, 23.7, 9.3]. Pivot along Z in STL.
-          // Rotate around Y by 90deg so cylinder axis aligns with X axis.
           geo.translate(-25.1, -23.7, -9.3);
           geo.rotateY(Math.PI / 2);
         }
       },
+      // 4. Forearm Arm 02 v3
       {
         name: 'arm2',
         file: 'Arm 02 v3.STL',
@@ -391,11 +408,11 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Arm 02: bottom hole is at [19.2, 11.5, 16.8].
           geo.translate(-19.2, -11.5, -16.8);
           geo.rotateY(Math.PI / 2);
         }
       },
+      // 5. Wrist Pitch Arm 03 (Starts after Arm 02 ends)
       {
         name: 'arm3',
         file: 'Arm 03.STL',
@@ -403,11 +420,11 @@ const DigitalTwinPanel = {
         material: matWarmLinen,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Arm 03: pivot hole at bottom
-          geo.translate(-16.5, -10.0, -14.0);
+          geo.translate(-16.5, -5.0, -14.0);
           geo.rotateY(Math.PI / 2);
         }
       },
+      // 6. Gripper Base (Connected on to Arm 03, extends forward from Y=0 to Y=77)
       {
         name: 'gripper_base',
         file: 'Gripper base.STL',
@@ -415,32 +432,109 @@ const DigitalTwinPanel = {
         material: matCharcoal,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Gripper base: center in X and Y, extend along +Y
-          geo.translate(-22.2, -14.0, -38.5);
+          geo.translate(-22.2, -14.0, 0.0);
           geo.rotateX(-Math.PI / 2);
         }
       },
+      // 7. Driving Gear 1 (Left gear)
+      {
+        name: 'gear1',
+        file: 'gear1.STL',
+        parent: this.leftGearGroup,
+        material: matBrass,
+        transform: (geo) => {
+          geo.computeVertexNormals();
+          geo.translate(-10.4, -2.0, -9.0);
+          geo.rotateX(Math.PI / 2);
+        }
+      },
+      // 8. Driven Gear 2 (Right gear, meshing with gear 1)
+      {
+        name: 'gear2',
+        file: 'gear2.STL',
+        parent: this.rightGearGroup,
+        material: matBrass,
+        transform: (geo) => {
+          geo.computeVertexNormals();
+          geo.translate(-38.3, -2.0, -9.0);
+          geo.rotateX(Math.PI / 2);
+        }
+      },
+      // 9. Left Claw Finger (Gripper 1.STL)
       {
         name: 'gripper_claw_left',
         file: 'Gripper 1.STL',
-        parent: this.clawLeftGroup,
+        parent: this.leftGearGroup,
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          geo.translate(-4.25, -10.2, -32.65);
+          geo.translate(-4.25, -10.2, -5.0);
           geo.rotateX(-Math.PI / 2);
         }
       },
+      // 10. Right Claw Finger (Gripper 1.STL, mirrored)
       {
         name: 'gripper_claw_right',
         file: 'Gripper 1.STL',
-        parent: this.clawRightGroup,
+        parent: this.rightGearGroup,
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          geo.translate(-4.25, -10.2, -32.65);
+          geo.translate(-4.25, -10.2, -5.0);
           geo.rotateX(-Math.PI / 2);
-          geo.rotateY(Math.PI); // Mirror right claw
+          geo.rotateY(Math.PI);
+        }
+      },
+      // 11. Left Outer Linkage Bar (grip link 1)
+      {
+        name: 'link_left_outer',
+        file: 'grip link 1.STL',
+        parent: this.leftGearGroup,
+        material: matDarkLink,
+        transform: (geo) => {
+          geo.computeVertexNormals();
+          geo.translate(-4.1, -2.0, -4.0);
+          geo.rotateZ(Math.PI / 2);
+          geo.translate(0, 0, -8.0);
+        }
+      },
+      // 12. Left Inner Linkage Bar (grip link 1)
+      {
+        name: 'link_left_inner',
+        file: 'grip link 1.STL',
+        parent: this.leftGearGroup,
+        material: matDarkLink,
+        transform: (geo) => {
+          geo.computeVertexNormals();
+          geo.translate(-4.1, -2.0, -4.0);
+          geo.rotateZ(Math.PI / 2);
+          geo.translate(0, 0, 8.0);
+        }
+      },
+      // 13. Right Outer Linkage Bar (grip link 1)
+      {
+        name: 'link_right_outer',
+        file: 'grip link 1.STL',
+        parent: this.rightGearGroup,
+        material: matDarkLink,
+        transform: (geo) => {
+          geo.computeVertexNormals();
+          geo.translate(-4.1, -2.0, -4.0);
+          geo.rotateZ(Math.PI / 2);
+          geo.translate(0, 0, -8.0);
+        }
+      },
+      // 14. Right Inner Linkage Bar (grip link 1)
+      {
+        name: 'link_right_inner',
+        file: 'grip link 1.STL',
+        parent: this.rightGearGroup,
+        material: matDarkLink,
+        transform: (geo) => {
+          geo.computeVertexNormals();
+          geo.translate(-4.1, -2.0, -4.0);
+          geo.rotateZ(Math.PI / 2);
+          geo.translate(0, 0, 8.0);
         }
       }
     ];
@@ -517,9 +611,9 @@ const DigitalTwinPanel = {
     }
 
     if (!this.meshes['gripper_base']) {
-      const gGeo = new THREE.BoxGeometry(36, 40, 26);
+      const gGeo = new THREE.BoxGeometry(36, this.GRIPPER_BASE_LEN, 26);
       const gMesh = new THREE.Mesh(gGeo, matDark);
-      gMesh.position.y = 20;
+      gMesh.position.y = this.GRIPPER_BASE_LEN / 2;
       gMesh.castShadow = true;
       this.wristRollGroup.add(gMesh);
     }
@@ -568,9 +662,9 @@ const DigitalTwinPanel = {
   /* Reset Viewport Camera */
   resetCamera() {
     if (!this.camera) return;
-    this.camera.position.set(0, 260, 420);
+    this.camera.position.set(0, 260, 440);
     if (this.controls) {
-      this.controls.target.set(0, 140, 0);
+      this.controls.target.set(0, 160, 0);
       this.controls.update();
     }
   },
@@ -656,13 +750,14 @@ const DigitalTwinPanel = {
       this.wristRollGroup.rotation.y = (a4 - 90) * deg2rad;
     }
 
-    // 6. Joint 6: Gripper Claw (Claw open/close spread)
-    // 140° is open (~30° finger spread), 10°-40° is closed (0° finger spread).
-    if (this.clawLeftGroup && this.clawRightGroup) {
+    // 6. Joint 6: Gripper Mechanism (Dual-Gear 4-Bar Parallel Claw Articulation)
+    // a5 is Gripper angle: 140° is open, 10°-40° is closed.
+    // Gear 1 turns one way, Gear 2 meshes and turns in the reverse direction!
+    if (this.leftGearGroup && this.rightGearGroup) {
       const openRatio = Math.max(0, Math.min(1, (a5 - 30) / 110));
-      const spreadAngle = openRatio * 0.45; // Radians (~26 degrees)
-      this.clawLeftGroup.rotation.z = -spreadAngle;
-      this.clawRightGroup.rotation.z = spreadAngle;
+      const spreadAngle = openRatio * 0.45; // ~26 degrees rotation
+      this.leftGearGroup.rotation.z = -spreadAngle;
+      this.rightGearGroup.rotation.z = spreadAngle;
     }
 
     // Update OrbitControls
