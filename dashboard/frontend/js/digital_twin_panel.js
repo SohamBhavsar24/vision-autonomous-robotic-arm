@@ -35,13 +35,30 @@ const DigitalTwinPanel = {
   clawLeftGroup: null,
   clawRightGroup: null,
 
-  // Gripper Claw Offsets (User-Adjustable in Digital Space)
+  // Comprehensive Gripper Claw Config (User-Adjustable in Digital Space)
   clawConfig: {
+    // Global Spacing & Placement
     spacingX: 14.0,   // mm from center
     mountY: 60.0,     // mm forward on gripper base
     offsetZ: 0.0,     // mm Z elevation
     restAngle: 0.22,  // radians inward tilt at closed rest
-    maxSpread: 0.45   // radians outward spread when open
+    maxSpread: 0.45,  // radians outward spread when open
+
+    // Left Claw Fine Transformations
+    leftRotX: 0,      // degrees
+    leftRotY: 0,      // degrees
+    leftRotZ: 0,      // degrees
+    leftMirrorX: false,
+    leftFlipY: false,  // upside down
+    leftFlipZ: false,
+
+    // Right Claw Fine Transformations
+    rightRotX: 0,     // degrees
+    rightRotY: 0,     // degrees
+    rightRotZ: 0,     // degrees
+    rightMirrorX: false,
+    rightFlipY: false, // upside down
+    rightFlipZ: false
   },
 
   // Current and Target Joint Angles (Degrees)
@@ -192,8 +209,10 @@ const DigitalTwinPanel = {
     tuner.style.position = 'absolute';
     tuner.style.top = '50px';
     tuner.style.right = '12px';
-    tuner.style.width = '260px';
-    tuner.style.background = 'rgba(26, 24, 23, 0.92)';
+    tuner.style.width = '330px';
+    tuner.style.maxHeight = 'calc(100vh - 280px)';
+    tuner.style.overflowY = 'auto';
+    tuner.style.background = 'rgba(26, 24, 23, 0.94)';
     tuner.style.border = '1px solid rgba(196, 120, 74, 0.4)';
     tuner.style.borderRadius = '8px';
     tuner.style.padding = '14px';
@@ -201,48 +220,149 @@ const DigitalTwinPanel = {
     tuner.style.display = 'none';
     tuner.style.backdropFilter = 'blur(8px)';
     tuner.style.fontFamily = 'var(--font-mono)';
-    tuner.style.fontSize = '0.75rem';
+    tuner.style.fontSize = '0.73rem';
     tuner.style.color = '#FAF7F2';
+    tuner.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.4)';
 
     tuner.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
-        <span style="font-weight: 600; color: var(--accent-primary);">Digital Space Claw Tuner</span>
-        <button id="btnDtTunerClose" style="background: none; border: none; color: #FAF7F2; cursor: pointer; font-size: 0.9rem;">X</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 6px;">
+        <span style="font-weight: 600; color: var(--accent-primary); font-size: 0.8rem;">Digital Space Claw Studio</span>
+        <button id="btnDtTunerClose" style="background: none; border: none; color: #FAF7F2; cursor: pointer; font-size: 0.95rem;">X</button>
       </div>
 
-      <div style="margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-          <span>Claw Spacing (X):</span>
-          <span id="dtTuneValX" style="color: var(--accent-primary);">${this.clawConfig.spacingX} mm</span>
+      <!-- Quick Orientation Presets -->
+      <div style="margin-bottom: 14px; background: rgba(255,255,255,0.04); padding: 8px; border-radius: 6px;">
+        <div style="font-weight: 600; color: #FAF7F2; margin-bottom: 6px;">Quick Presets</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button id="btnPresetFaceIn" class="btn btn-secondary" style="font-size: 0.68rem; padding: 4px;">Face Inward</button>
+          <button id="btnPresetFaceOut" class="btn btn-secondary" style="font-size: 0.68rem; padding: 4px;">Face Outward</button>
+          <button id="btnPresetFlipUpsideDown" class="btn btn-secondary" style="font-size: 0.68rem; padding: 4px;">Flip Upside Down</button>
+          <button id="btnPresetSwapSides" class="btn btn-secondary" style="font-size: 0.68rem; padding: 4px;">Swap Left/Right</button>
         </div>
-        <input type="range" id="dtSliderX" min="6" max="26" step="0.5" value="${this.clawConfig.spacingX}" style="width: 100%;">
       </div>
 
-      <div style="margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-          <span>Mount Position (Y):</span>
-          <span id="dtTuneValY" style="color: var(--accent-primary);">${this.clawConfig.mountY} mm</span>
+      <!-- Mount Position & Pinch Spread -->
+      <div style="margin-bottom: 14px; background: rgba(255,255,255,0.04); padding: 8px; border-radius: 6px;">
+        <div style="font-weight: 600; color: #FAF7F2; margin-bottom: 8px;">Mount Placement & Pinch</div>
+
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Claw Spacing (X):</span>
+            <span id="dtTuneValX" style="color: var(--accent-primary);">${this.clawConfig.spacingX} mm</span>
+          </div>
+          <input type="range" id="dtSliderX" min="4" max="32" step="0.5" value="${this.clawConfig.spacingX}" style="width: 100%;">
         </div>
-        <input type="range" id="dtSliderY" min="40" max="75" step="0.5" value="${this.clawConfig.mountY}" style="width: 100%;">
-      </div>
 
-      <div style="margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-          <span>Elevation (Z):</span>
-          <span id="dtTuneValZ" style="color: var(--accent-primary);">${this.clawConfig.offsetZ} mm</span>
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Mount Position (Y):</span>
+            <span id="dtTuneValY" style="color: var(--accent-primary);">${this.clawConfig.mountY} mm</span>
+          </div>
+          <input type="range" id="dtSliderY" min="30" max="85" step="0.5" value="${this.clawConfig.mountY}" style="width: 100%;">
         </div>
-        <input type="range" id="dtSliderZ" min="-15" max="15" step="0.5" value="${this.clawConfig.offsetZ}" style="width: 100%;">
-      </div>
 
-      <div style="margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-          <span>Rest Angle:</span>
-          <span id="dtTuneValAngle" style="color: var(--accent-primary);">${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}°</span>
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Elevation (Z):</span>
+            <span id="dtTuneValZ" style="color: var(--accent-primary);">${this.clawConfig.offsetZ} mm</span>
+          </div>
+          <input type="range" id="dtSliderZ" min="-25" max="25" step="0.5" value="${this.clawConfig.offsetZ}" style="width: 100%;">
         </div>
-        <input type="range" id="dtSliderAngle" min="0" max="45" step="1" value="${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}" style="width: 100%;">
+
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Rest Angle:</span>
+            <span id="dtTuneValAngle" style="color: var(--accent-primary);">${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}°</span>
+          </div>
+          <input type="range" id="dtSliderAngle" min="0" max="60" step="1" value="${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}" style="width: 100%;">
+        </div>
       </div>
 
-      <button id="btnDtResetTuner" class="btn btn-secondary" style="width: 100%; font-size: 0.72rem; padding: 4px;">Reset Default Placement</button>
+      <!-- Left Claw Finger Settings -->
+      <div style="margin-bottom: 14px; background: rgba(196, 120, 74, 0.08); border: 1px solid rgba(196, 120, 74, 0.25); padding: 10px; border-radius: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-weight: 600; color: var(--accent-primary);">Left Claw Finger</span>
+          <button id="btnLeftClawReset" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.68rem; text-decoration: underline;">Reset Left</button>
+        </div>
+
+        <!-- Rotate X Slider -->
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Rotate X:</span>
+            <span id="dtValLRotX" style="color: var(--accent-primary);">${this.clawConfig.leftRotX}°</span>
+          </div>
+          <input type="range" id="dtSliderLRotX" min="-180" max="180" step="5" value="${this.clawConfig.leftRotX}" style="width: 100%;">
+        </div>
+
+        <!-- Rotate Y Slider -->
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Rotate Y:</span>
+            <span id="dtValLRotY" style="color: var(--accent-primary);">${this.clawConfig.leftRotY}°</span>
+          </div>
+          <input type="range" id="dtSliderLRotY" min="-180" max="180" step="5" value="${this.clawConfig.leftRotY}" style="width: 100%;">
+        </div>
+
+        <!-- Rotate Z Slider -->
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Rotate Z:</span>
+            <span id="dtValLRotZ" style="color: var(--accent-primary);">${this.clawConfig.leftRotZ}°</span>
+          </div>
+          <input type="range" id="dtSliderLRotZ" min="-180" max="180" step="5" value="${this.clawConfig.leftRotZ}" style="width: 100%;">
+        </div>
+
+        <!-- Quick Toggles -->
+        <div style="display: flex; gap: 6px;">
+          <button id="btnToggleLMirror" class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 4px;">Mirror X</button>
+          <button id="btnToggleLFlipY" class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 4px;">Upside Down</button>
+          <button id="btnToggleLFlipZ" class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 4px;">Flip Z</button>
+        </div>
+      </div>
+
+      <!-- Right Claw Finger Settings -->
+      <div style="margin-bottom: 14px; background: rgba(196, 120, 74, 0.08); border: 1px solid rgba(196, 120, 74, 0.25); padding: 10px; border-radius: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-weight: 600; color: var(--accent-primary);">Right Claw Finger</span>
+          <button id="btnRightClawReset" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.68rem; text-decoration: underline;">Reset Right</button>
+        </div>
+
+        <!-- Rotate X Slider -->
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Rotate X:</span>
+            <span id="dtValRRotX" style="color: var(--accent-primary);">${this.clawConfig.rightRotX}°</span>
+          </div>
+          <input type="range" id="dtSliderRRotX" min="-180" max="180" step="5" value="${this.clawConfig.rightRotX}" style="width: 100%;">
+        </div>
+
+        <!-- Rotate Y Slider -->
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Rotate Y:</span>
+            <span id="dtValRRotY" style="color: var(--accent-primary);">${this.clawConfig.rightRotY}°</span>
+          </div>
+          <input type="range" id="dtSliderRRotY" min="-180" max="180" step="5" value="${this.clawConfig.rightRotY}" style="width: 100%;">
+        </div>
+
+        <!-- Rotate Z Slider -->
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Rotate Z:</span>
+            <span id="dtValRRotZ" style="color: var(--accent-primary);">${this.clawConfig.rightRotZ}°</span>
+          </div>
+          <input type="range" id="dtSliderRRotZ" min="-180" max="180" step="5" value="${this.clawConfig.rightRotZ}" style="width: 100%;">
+        </div>
+
+        <!-- Quick Toggles -->
+        <div style="display: flex; gap: 6px;">
+          <button id="btnToggleRMirror" class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 4px;">Mirror X</button>
+          <button id="btnToggleRFlipY" class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 4px;">Upside Down</button>
+          <button id="btnToggleRFlipZ" class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 4px;">Flip Z</button>
+        </div>
+      </div>
+
+      <button id="btnDtResetTuner" class="btn btn-secondary" style="width: 100%; font-size: 0.72rem; padding: 6px;">Reset All Defaults</button>
     `;
 
     this.container.appendChild(tuner);
@@ -278,25 +398,240 @@ const DigitalTwinPanel = {
       tuner.querySelector('#dtTuneValAngle').textContent = `${e.target.value}°`;
     };
 
+    // Left Claw Sliders
+    const sliderLRotX = tuner.querySelector('#dtSliderLRotX');
+    const sliderLRotY = tuner.querySelector('#dtSliderLRotY');
+    const sliderLRotZ = tuner.querySelector('#dtSliderLRotZ');
+
+    sliderLRotX.oninput = (e) => {
+      this.clawConfig.leftRotX = parseInt(e.target.value, 10);
+      tuner.querySelector('#dtValLRotX').textContent = `${this.clawConfig.leftRotX}°`;
+      this.updateClawPlacements();
+    };
+    sliderLRotY.oninput = (e) => {
+      this.clawConfig.leftRotY = parseInt(e.target.value, 10);
+      tuner.querySelector('#dtValLRotY').textContent = `${this.clawConfig.leftRotY}°`;
+      this.updateClawPlacements();
+    };
+    sliderLRotZ.oninput = (e) => {
+      this.clawConfig.leftRotZ = parseInt(e.target.value, 10);
+      tuner.querySelector('#dtValLRotZ').textContent = `${this.clawConfig.leftRotZ}°`;
+      this.updateClawPlacements();
+    };
+
+    // Right Claw Sliders
+    const sliderRRotX = tuner.querySelector('#dtSliderRRotX');
+    const sliderRRotY = tuner.querySelector('#dtSliderRRotY');
+    const sliderRRotZ = tuner.querySelector('#dtSliderRRotZ');
+
+    sliderRRotX.oninput = (e) => {
+      this.clawConfig.rightRotX = parseInt(e.target.value, 10);
+      tuner.querySelector('#dtValRRotX').textContent = `${this.clawConfig.rightRotX}°`;
+      this.updateClawPlacements();
+    };
+    sliderRRotY.oninput = (e) => {
+      this.clawConfig.rightRotY = parseInt(e.target.value, 10);
+      tuner.querySelector('#dtValRRotY').textContent = `${this.clawConfig.rightRotY}°`;
+      this.updateClawPlacements();
+    };
+    sliderRRotZ.oninput = (e) => {
+      this.clawConfig.rightRotZ = parseInt(e.target.value, 10);
+      tuner.querySelector('#dtValRRotZ').textContent = `${this.clawConfig.rightRotZ}°`;
+      this.updateClawPlacements();
+    };
+
+    // Left Claw Toggles
+    tuner.querySelector('#btnToggleLMirror').onclick = () => {
+      this.clawConfig.leftMirrorX = !this.clawConfig.leftMirrorX;
+      tuner.querySelector('#btnToggleLMirror').style.borderColor = this.clawConfig.leftMirrorX ? 'var(--accent-primary)' : '';
+      this.updateClawPlacements();
+    };
+    tuner.querySelector('#btnToggleLFlipY').onclick = () => {
+      this.clawConfig.leftFlipY = !this.clawConfig.leftFlipY;
+      tuner.querySelector('#btnToggleLFlipY').style.borderColor = this.clawConfig.leftFlipY ? 'var(--accent-primary)' : '';
+      this.updateClawPlacements();
+    };
+    tuner.querySelector('#btnToggleLFlipZ').onclick = () => {
+      this.clawConfig.leftFlipZ = !this.clawConfig.leftFlipZ;
+      tuner.querySelector('#btnToggleLFlipZ').style.borderColor = this.clawConfig.leftFlipZ ? 'var(--accent-primary)' : '';
+      this.updateClawPlacements();
+    };
+
+    // Right Claw Toggles
+    tuner.querySelector('#btnToggleRMirror').onclick = () => {
+      this.clawConfig.rightMirrorX = !this.clawConfig.rightMirrorX;
+      tuner.querySelector('#btnToggleRMirror').style.borderColor = this.clawConfig.rightMirrorX ? 'var(--accent-primary)' : '';
+      this.updateClawPlacements();
+    };
+    tuner.querySelector('#btnToggleRFlipY').onclick = () => {
+      this.clawConfig.rightFlipY = !this.clawConfig.rightFlipY;
+      tuner.querySelector('#btnToggleRFlipY').style.borderColor = this.clawConfig.rightFlipY ? 'var(--accent-primary)' : '';
+      this.updateClawPlacements();
+    };
+    tuner.querySelector('#btnToggleRFlipZ').onclick = () => {
+      this.clawConfig.rightFlipZ = !this.clawConfig.rightFlipZ;
+      tuner.querySelector('#btnToggleRFlipZ').style.borderColor = this.clawConfig.rightFlipZ ? 'var(--accent-primary)' : '';
+      this.updateClawPlacements();
+    };
+
+    // Reset Left / Right Individual Buttons
+    tuner.querySelector('#btnLeftClawReset').onclick = () => {
+      this.clawConfig.leftRotX = 0;
+      this.clawConfig.leftRotY = 0;
+      this.clawConfig.leftRotZ = 0;
+      this.clawConfig.leftMirrorX = false;
+      this.clawConfig.leftFlipY = false;
+      this.clawConfig.leftFlipZ = false;
+      sliderLRotX.value = 0;
+      sliderLRotY.value = 0;
+      sliderLRotZ.value = 0;
+      tuner.querySelector('#dtValLRotX').textContent = '0°';
+      tuner.querySelector('#dtValLRotY').textContent = '0°';
+      tuner.querySelector('#dtValLRotZ').textContent = '0°';
+      tuner.querySelector('#btnToggleLMirror').style.borderColor = '';
+      tuner.querySelector('#btnToggleLFlipY').style.borderColor = '';
+      tuner.querySelector('#btnToggleLFlipZ').style.borderColor = '';
+      this.updateClawPlacements();
+    };
+
+    tuner.querySelector('#btnRightClawReset').onclick = () => {
+      this.clawConfig.rightRotX = 0;
+      this.clawConfig.rightRotY = 0;
+      this.clawConfig.rightRotZ = 0;
+      this.clawConfig.rightMirrorX = false;
+      this.clawConfig.rightFlipY = false;
+      this.clawConfig.rightFlipZ = false;
+      sliderRRotX.value = 0;
+      sliderRRotY.value = 0;
+      sliderRRotZ.value = 0;
+      tuner.querySelector('#dtValRRotX').textContent = '0°';
+      tuner.querySelector('#dtValRRotY').textContent = '0°';
+      tuner.querySelector('#dtValRRotZ').textContent = '0°';
+      tuner.querySelector('#btnToggleRMirror').style.borderColor = '';
+      tuner.querySelector('#btnToggleRFlipY').style.borderColor = '';
+      tuner.querySelector('#btnToggleRFlipZ').style.borderColor = '';
+      this.updateClawPlacements();
+    };
+
+    // Quick Presets
+    tuner.querySelector('#btnPresetFaceIn').onclick = () => {
+      this.clawConfig.leftRotY = 0;
+      this.clawConfig.rightRotY = 0;
+      this.clawConfig.leftMirrorX = false;
+      this.clawConfig.rightMirrorX = false;
+      this.syncTunerInputs(tuner);
+      this.updateClawPlacements();
+    };
+
+    tuner.querySelector('#btnPresetFaceOut').onclick = () => {
+      this.clawConfig.leftRotY = 180;
+      this.clawConfig.rightRotY = 180;
+      this.syncTunerInputs(tuner);
+      this.updateClawPlacements();
+    };
+
+    tuner.querySelector('#btnPresetFlipUpsideDown').onclick = () => {
+      this.clawConfig.leftFlipY = !this.clawConfig.leftFlipY;
+      this.clawConfig.rightFlipY = !this.clawConfig.rightFlipY;
+      this.syncTunerInputs(tuner);
+      this.updateClawPlacements();
+    };
+
+    tuner.querySelector('#btnPresetSwapSides').onclick = () => {
+      const tempRotX = this.clawConfig.leftRotX;
+      const tempRotY = this.clawConfig.leftRotY;
+      const tempRotZ = this.clawConfig.leftRotZ;
+      const tempMirror = this.clawConfig.leftMirrorX;
+      const tempFlipY = this.clawConfig.leftFlipY;
+      const tempFlipZ = this.clawConfig.leftFlipZ;
+
+      this.clawConfig.leftRotX = this.clawConfig.rightRotX;
+      this.clawConfig.leftRotY = this.clawConfig.rightRotY;
+      this.clawConfig.leftRotZ = this.clawConfig.rightRotZ;
+      this.clawConfig.leftMirrorX = this.clawConfig.rightMirrorX;
+      this.clawConfig.leftFlipY = this.clawConfig.rightFlipY;
+      this.clawConfig.leftFlipZ = this.clawConfig.rightFlipZ;
+
+      this.clawConfig.rightRotX = tempRotX;
+      this.clawConfig.rightRotY = tempRotY;
+      this.clawConfig.rightRotZ = tempRotZ;
+      this.clawConfig.rightMirrorX = tempMirror;
+      this.clawConfig.rightFlipY = tempFlipY;
+      this.clawConfig.rightFlipZ = tempFlipZ;
+
+      this.syncTunerInputs(tuner);
+      this.updateClawPlacements();
+    };
+
     btnResetTuner.onclick = () => {
       this.clawConfig.spacingX = 14.0;
       this.clawConfig.mountY = 60.0;
       this.clawConfig.offsetZ = 0.0;
       this.clawConfig.restAngle = 0.22;
-      sliderX.value = 14.0;
-      sliderY.value = 60.0;
-      sliderZ.value = 0.0;
-      sliderAngle.value = 13;
-      tuner.querySelector('#dtTuneValX').textContent = '14 mm';
-      tuner.querySelector('#dtTuneValY').textContent = '60 mm';
-      tuner.querySelector('#dtTuneValZ').textContent = '0 mm';
-      tuner.querySelector('#dtTuneValAngle').textContent = '13°';
+      this.clawConfig.leftRotX = 0;
+      this.clawConfig.leftRotY = 0;
+      this.clawConfig.leftRotZ = 0;
+      this.clawConfig.leftMirrorX = false;
+      this.clawConfig.leftFlipY = false;
+      this.clawConfig.leftFlipZ = false;
+      this.clawConfig.rightRotX = 0;
+      this.clawConfig.rightRotY = 0;
+      this.clawConfig.rightRotZ = 0;
+      this.clawConfig.rightMirrorX = false;
+      this.clawConfig.rightFlipY = false;
+      this.clawConfig.rightFlipZ = false;
+      this.syncTunerInputs(tuner);
       this.updateClawPlacements();
     };
 
     btnClose.onclick = () => {
       tuner.style.display = 'none';
     };
+  },
+
+  syncTunerInputs(tuner) {
+    if (!tuner) return;
+    const setVal = (id, val) => {
+      const el = tuner.querySelector(id);
+      if (el) el.value = val;
+    };
+    const setText = (id, txt) => {
+      const el = tuner.querySelector(id);
+      if (el) el.textContent = txt;
+    };
+    setVal('#dtSliderX', this.clawConfig.spacingX);
+    setText('#dtTuneValX', `${this.clawConfig.spacingX} mm`);
+    setVal('#dtSliderY', this.clawConfig.mountY);
+    setText('#dtTuneValY', `${this.clawConfig.mountY} mm`);
+    setVal('#dtSliderZ', this.clawConfig.offsetZ);
+    setText('#dtTuneValZ', `${this.clawConfig.offsetZ} mm`);
+    setVal('#dtSliderAngle', Math.round(this.clawConfig.restAngle * 180 / Math.PI));
+    setText('#dtTuneValAngle', `${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}°`);
+
+    setVal('#dtSliderLRotX', this.clawConfig.leftRotX);
+    setText('#dtValLRotX', `${this.clawConfig.leftRotX}°`);
+    setVal('#dtSliderLRotY', this.clawConfig.leftRotY);
+    setText('#dtValLRotY', `${this.clawConfig.leftRotY}°`);
+    setVal('#dtSliderLRotZ', this.clawConfig.leftRotZ);
+    setText('#dtValLRotZ', `${this.clawConfig.leftRotZ}°`);
+
+    setVal('#dtSliderRRotX', this.clawConfig.rightRotX);
+    setText('#dtValRRotX', `${this.clawConfig.rightRotX}°`);
+    setVal('#dtSliderRRotY', this.clawConfig.rightRotY);
+    setText('#dtValRRotY', `${this.clawConfig.rightRotY}°`);
+    setVal('#dtSliderRRotZ', this.clawConfig.rightRotZ);
+    setText('#dtValRRotZ', `${this.clawConfig.rightRotZ}°`);
+
+    const setBorder = (id, cond) => {
+      const el = tuner.querySelector(id);
+      if (el) el.style.borderColor = cond ? 'var(--accent-primary)' : '';
+    };
+    setBorder('#btnToggleLMirror', this.clawConfig.leftMirrorX);
+    setBorder('#btnToggleLFlipY', this.clawConfig.leftFlipY);
+    setBorder('#btnToggleLFlipZ', this.clawConfig.leftFlipZ);
+    setBorder('#btnToggleRMirror', this.clawConfig.rightMirrorX);
+    setBorder('#btnToggleRFlipY', this.clawConfig.rightFlipY);
+    setBorder('#btnToggleRFlipZ', this.clawConfig.rightFlipZ);
   },
 
   toggleTunerPanel() {
@@ -306,11 +641,44 @@ const DigitalTwinPanel = {
   },
 
   updateClawPlacements() {
+    const deg2rad = Math.PI / 180;
+
+    // Update parent mount positions
     if (this.clawLeftGroup) {
       this.clawLeftGroup.position.set(-this.clawConfig.spacingX, this.clawConfig.mountY, this.clawConfig.offsetZ);
     }
     if (this.clawRightGroup) {
       this.clawRightGroup.position.set(this.clawConfig.spacingX, this.clawConfig.mountY, this.clawConfig.offsetZ);
+    }
+
+    // Apply individual rotation and mirror/flip transforms to Left Claw mesh
+    const meshLeft = this.meshes['gripper_claw_left'];
+    if (meshLeft) {
+      meshLeft.rotation.set(
+        this.clawConfig.leftRotX * deg2rad,
+        this.clawConfig.leftRotY * deg2rad,
+        this.clawConfig.leftRotZ * deg2rad
+      );
+      meshLeft.scale.set(
+        this.clawConfig.leftMirrorX ? -1 : 1,
+        this.clawConfig.leftFlipY ? -1 : 1,
+        this.clawConfig.leftFlipZ ? -1 : 1
+      );
+    }
+
+    // Apply individual rotation and mirror/flip transforms to Right Claw mesh
+    const meshRight = this.meshes['gripper_claw_right'];
+    if (meshRight) {
+      meshRight.rotation.set(
+        this.clawConfig.rightRotX * deg2rad,
+        this.clawConfig.rightRotY * deg2rad,
+        this.clawConfig.rightRotZ * deg2rad
+      );
+      meshRight.scale.set(
+        this.clawConfig.rightMirrorX ? -1 : 1,
+        this.clawConfig.rightFlipY ? -1 : 1,
+        this.clawConfig.rightFlipZ ? -1 : 1
+      );
     }
   },
 
@@ -618,6 +986,7 @@ const DigitalTwinPanel = {
 
           loadedCount++;
           if (loadedCount === totalCount) {
+            this.updateClawPlacements();
             this.hideLoadingOverlay();
             this.updateStatusPill(true);
           }
@@ -628,6 +997,7 @@ const DigitalTwinPanel = {
           loadedCount++;
           if (loadedCount === totalCount) {
             this.buildProceduralFallbacks();
+            this.updateClawPlacements();
             this.hideLoadingOverlay();
             this.updateStatusPill(true);
           }
