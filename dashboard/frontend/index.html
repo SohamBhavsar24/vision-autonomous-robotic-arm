@@ -326,6 +326,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (Orbit Controls: Drag to rotate • Scroll to zoom • Right-click to pan)</span>
               <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary" id="btnDtTune" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleTunerPanel()">Tune Claws</button>
                 <button class="btn btn-secondary" id="btnDtHome" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setHomePose()">Home Pose (90°)</button>
                 <button class="btn btn-secondary" id="btnDtToggleGrid" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGrid()">Toggle Grid</button>
                 <button class="btn btn-secondary" id="btnDtResetCamera" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.resetCamera()">Reset Camera</button>
@@ -866,11 +867,11 @@
   <script src="js/libs/STLLoader.js"></script>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.47"></script>
-  <script src="js/servo_panel.js?v=1.0.47"></script>
-  <script src="js/teleop_panel.js?v=1.0.47"></script>
-  <script src="js/dataset_panel.js?v=1.0.47"></script>
-  <script src="js/autonomous_panel.js?v=1.0.47"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.47"></script>
+  <script src="js/app.js?v=1.0.48"></script>
+  <script src="js/servo_panel.js?v=1.0.48"></script>
+  <script src="js/teleop_panel.js?v=1.0.48"></script>
+  <script src="js/dataset_panel.js?v=1.0.48"></script>
+  <script src="js/autonomous_panel.js?v=1.0.48"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.48"></script>
 </body>
 </html>
