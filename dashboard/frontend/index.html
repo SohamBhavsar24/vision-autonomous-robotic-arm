@@ -68,6 +68,12 @@
           </a>
         </li>
         <li>
+          <a class="nav-item" data-panel="panel-ros">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span>ROS 2</span>
+          </a>
+        </li>
+        <li>
           <a class="nav-item" data-panel="panel-journal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
             <span>Journal</span>
@@ -299,17 +305,17 @@
 
       </main>
 
-      <!-- Panel: 3D Digital Twin Simulation (Baby ROS / URDF Integration) -->
+      <!-- Panel: 3D Digital Twin Simulation (Three.js WebGL CAD Model) -->
       <main class="content-panel" id="panel-digital-twin">
         
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
           <div>
-            <h3 class="card-title">3D Digital Twin Simulation (Baby ROS / URDF Model)</h3>
+            <h3 class="card-title">3D Digital Twin Simulation</h3>
             <p class="card-subtitle">Real-time 3D CAD visualization synced with physical arm telemetry via WebSockets.</p>
           </div>
           <div class="status-pill" id="dtStatusPill">
             <span class="status-dot"></span>
-            <span>Digital Twin Sync: Standing By (Awaiting URDF)</span>
+            <span>Digital Twin Sync: Loading 3D CAD Geometries...</span>
           </div>
         </div>
 
@@ -318,57 +324,232 @@
           <!-- Full-Screen 3D Viewport Box -->
           <div class="card" style="grid-column: span 12;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (Orbit Controls: Drag to rotate • Scroll to zoom)</span>
+              <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (Orbit Controls: Drag to rotate • Scroll to zoom • Right-click to pan)</span>
               <div style="display: flex; gap: 8px;">
-                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" onclick="App.log('Action: Reset 3D Camera View')">Reset Camera</button>
-                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" onclick="App.log('Action: Toggle Grid Floor')">Toggle Grid</button>
+                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setHomePose()">Home Pose (90°)</button>
+                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGrid()">Toggle Grid</button>
+                <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.resetCamera()">Reset Camera</button>
               </div>
             </div>
 
             <!-- Large 3D Rendering Canvas Area -->
-            <div id="digitalTwinViewport" style="width: 100%; height: 500px; background: #2A2624; border-radius: 8px; border: 1px solid var(--border-card); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-              
-              <!-- 3D Perspective Grid Placeholder / Render Target -->
-              <svg width="100%" height="100%" style="position: absolute; top:0; left:0; opacity: 0.15;">
-                <defs>
-                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E0D6C8" stroke-width="1"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-              </svg>
+            <div id="digitalTwinViewport" style="width: 100%; height: 520px; background: #23201D; border-radius: 8px; border: 1px solid var(--border-card); position: relative; overflow: hidden;">
+              <!-- Populated dynamically by DigitalTwinPanel (Three.js WebGL) -->
+            </div>
+          </div>
 
-              <!-- Central 3D Robot Arm Visualization Node -->
-              <div style="position: relative; z-index: 2; text-align: center; color: #FAF7F2; background: rgba(42, 38, 36, 0.85); padding: 24px 36px; border-radius: 12px; border: 1px solid rgba(224, 214, 200, 0.2); backdrop-filter: blur(8px);">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="1.5" style="margin-bottom: 12px;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                <h4 style="font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 4px;">3D Digital Twin Viewport</h4>
-                <p style="font-size: 0.85rem; color: #E0D6C8; margin-bottom: 12px;">3D URDF model container listening on WebSocket `/ws` for live joint telemetry.</p>
-                <div style="display: inline-block; font-family: var(--font-mono); font-size: 0.75rem; background: rgba(196,120,74,0.2); color: var(--accent-primary); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--accent-primary);">
-                  Awaiting URDF File Export (`robot_arm.urdf`)
-                </div>
+          <!-- Left Card: Physical Kinematic Specifications -->
+          <div class="card" style="grid-column: span 6;">
+            <h3 class="card-title">Kinematic Specifications</h3>
+            <p class="card-subtitle">Physical measurements matching 3D print CAD models & ik_solver.py</p>
+            <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-family: var(--font-mono); font-size: 0.8rem;">
+              <div style="background: var(--bg-page); padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <div style="color: var(--text-muted); font-size: 0.72rem;">Base Height (L1)</div>
+                <div style="font-weight: 600; color: var(--accent-primary); font-size: 1rem; margin-top: 2px;">9.5 cm</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Ground to Shoulder Pivot</div>
               </div>
-
-              <!-- Live Joint Telemetry Overlay Bar (Bottom Left of 3D Viewport) -->
-              <div style="position: absolute; bottom: 16px; left: 16px; z-index: 3; background: rgba(26, 24, 23, 0.85); border: 1px solid rgba(224, 214, 200, 0.2); padding: 10px 16px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.75rem; color: #FAF7F2; display: flex; gap: 16px;">
-                <div>θ1: <span id="dtVal0" style="color: var(--accent-primary);">90°</span></div>
-                <div>θ2: <span id="dtVal1" style="color: var(--accent-primary);">90°</span></div>
-                <div>θ3: <span id="dtVal2" style="color: var(--accent-primary);">90°</span></div>
-                <div>θ4: <span id="dtVal3" style="color: var(--accent-primary);">90°</span></div>
-                <div>θ5: <span id="dtVal4" style="color: var(--accent-primary);">90°</span></div>
-                <div>Claw: <span id="dtVal5" style="color: var(--accent-primary);">10°</span></div>
+              <div style="background: var(--bg-page); padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <div style="color: var(--text-muted); font-size: 0.72rem;">Upper Arm (L2)</div>
+                <div style="font-weight: 600; color: var(--accent-primary); font-size: 1rem; margin-top: 2px;">12.0 cm</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Shoulder to Elbow Pivot</div>
               </div>
+              <div style="background: var(--bg-page); padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <div style="color: var(--text-muted); font-size: 0.72rem;">Forearm (L3)</div>
+                <div style="font-weight: 600; color: var(--accent-primary); font-size: 1rem; margin-top: 2px;">9.0 cm</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Elbow to Wrist Pitch</div>
+              </div>
+              <div style="background: var(--bg-page); padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <div style="color: var(--text-muted); font-size: 0.72rem;">End-Effector (L4)</div>
+                <div style="font-weight: 600; color: var(--accent-primary); font-size: 1rem; margin-top: 2px;">14.0 cm</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Wrist to Gripper Tip</div>
+              </div>
+            </div>
+          </div>
 
+          <!-- Right Card: 3D CAD Print Models Inventory -->
+          <div class="card" style="grid-column: span 6;">
+            <h3 class="card-title">3D Print CAD Models</h3>
+            <p class="card-subtitle">Active STL meshes loaded directly from Robotic_Arm_3D_Model.STEP</p>
+            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px; font-family: var(--font-mono); font-size: 0.78rem;">
+              <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: var(--bg-page); border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <span>Base.STL (Turntable Foundation)</span>
+                <span style="color: var(--accent-primary); font-weight: 600;">Joint 0 • Fixed</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: var(--bg-page); border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <span>Waist.STL (Rotating Turntable)</span>
+                <span style="color: var(--accent-primary); font-weight: 600;">Joint 1 • Base Yaw</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: var(--bg-page); border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <span>Arm 01.STL (Shoulder Segment)</span>
+                <span style="color: var(--accent-primary); font-weight: 600;">Joint 2 • Shoulder Pitch</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: var(--bg-page); border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <span>Arm 02 v3.STL (Forearm Segment)</span>
+                <span style="color: var(--accent-primary); font-weight: 600;">Joint 3 • Elbow Pitch</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: var(--bg-page); border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <span>Arm 03.STL & Gripper base.STL</span>
+                <span style="color: var(--accent-primary); font-weight: 600;">Joint 4 & 5 • Pitch & Roll</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: var(--bg-page); border-radius: 6px; border: 1px solid var(--border-subtle);">
+                <span>Gripper 1.STL (Claw Fingers)</span>
+                <span style="color: var(--accent-primary); font-weight: 600;">Joint 6 • Claw Gripper</span>
+              </div>
             </div>
           </div>
 
           <!-- Bottom Card: Digital Twin Architecture Notes -->
           <div class="card" style="grid-column: span 12; border-left: 4px solid var(--accent-primary);">
-            <h3 class="card-title">Digital Twin & Simulation Pipeline</h3>
+            <h3 class="card-title">Digital Twin Telemetry Synchronization</h3>
             <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
-              <strong>How the Digital Twin Synchronizes:</strong><br>
-              1. <strong>Baby ROS / Three.js URDF Loader:</strong> 3D CAD mesh files are parsed using standard URDF joint origins and rotational axes.<br>
-              2. <strong>Bi-Directional Telemetry:</strong> Moving sliders or teleoperating with PS5 updates both the physical servos via Arduino and the 3D Digital Twin model simultaneously in 30Hz real-time.<br>
-              3. <strong>Safe Motion Validation:</strong> Digital Twin can be used in offline simulation mode to preview trajectory execution before sending power to physical motors.
+              1. <strong>Real-Time WebGL Kinematics:</strong> Every servo change across PS5 Teleoperation, Slider Control, or Autonomous Policy streaming over WebSocket (/ws) updates the 3D digital twin at 60 FPS.<br>
+              2. <strong>Exact Pivot Alignment:</strong> The Three.js hierarchy aligns precisely with the physical pivot pin holes and link lengths (L1=9.5cm, L2=12.0cm, L3=9.0cm, L4=14.0cm).<br>
+              3. <strong>Safe Motion Validation:</strong> The digital twin allows offline simulation and visual verification before powering physical hardware.
+            </p>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- Panel: Dedicated ROS 2 Architecture & Computational Graph -->
+      <main class="content-panel" id="panel-ros">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div>
+            <h3 class="card-title">ROS 2 Humble Architecture & Computational Graph</h3>
+            <p class="card-subtitle">Decoupled robotics middleware design for ROS 2 node graph, MoveIt 2 motion planning, and rosbridge WebSocket gateway.</p>
+          </div>
+          <div class="status-pill" id="rosStatusPill">
+            <span class="status-dot"></span>
+            <span>Target Distribution: ROS 2 Humble Hawksbill</span>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          
+          <!-- Card 1: Computational Node Graph Architecture -->
+          <div class="card" style="grid-column: span 12;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div>
+                <h3 class="card-title">ROS 2 Computational Node Graph</h3>
+                <p class="card-subtitle">Planned inter-node communications, publishers, subscribers, and hardware interface controllers</p>
+              </div>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196,120,74,0.12); padding: 4px 10px; border-radius: 4px; font-weight: 600;">ros2_control Pipeline</span>
+            </div>
+
+            <!-- Visual Flowchart Node Architecture Grid -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 14px;">
+              
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; margin-bottom: 4px;">NODE: /robot_state_publisher</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 6px; color: var(--text-main);">Robot State Publisher</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Parses robot URDF / Xacro model and publishes static and dynamic TF transforms.</p>
+                <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Publishes: <code style="color: var(--accent-primary);">/tf</code>, <code style="color: var(--accent-primary);">/tf_static</code></div>
+              </div>
+
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; margin-bottom: 4px;">NODE: /joint_state_broadcaster</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 6px; color: var(--text-main);">Joint State Broadcaster</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Streams live 6-DOF joint positions (Base, Shoulder, Elbow, Wrist Pitch, Wrist Roll, Claw) at 50 Hz.</p>
+                <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Publishes: <code style="color: var(--accent-primary);">/joint_states</code></div>
+              </div>
+
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; margin-bottom: 4px;">NODE: /arm_controller</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 6px; color: var(--text-main);">Joint Trajectory Controller</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">ros2_control hardware interface commanding interpolated trajectory setpoints to Arduino driver.</p>
+                <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Subscribes: <code style="color: var(--accent-primary);">/arm_controller/joint_trajectory</code></div>
+              </div>
+
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; margin-bottom: 4px;">NODE: /rosbridge_websocket</div>
+                <h4 style="font-size: 0.95rem; margin-bottom: 6px; color: var(--text-main);">Rosbridge WebSocket Daemon</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">Bridges ROS 2 topics and actions directly to the browser dashboard on port 9090.</p>
+                <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">Endpoint: <code style="color: var(--accent-primary);">ws://localhost:9090</code></div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Card 2: Active & Planned Topic Streams -->
+          <div class="card" style="grid-column: span 6;">
+            <h3 class="card-title">ROS 2 Topic Streams</h3>
+            <p class="card-subtitle">Message specifications and planned publication frequencies</p>
+
+            <div style="margin-top: 14px; overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.78rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border-card); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 8px;">Topic</th>
+                    <th style="padding: 8px;">Message Type</th>
+                    <th style="padding: 8px;">Rate</th>
+                    <th style="padding: 8px;">Direction</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 8px; color: var(--accent-primary); font-weight: 600;">/joint_states</td>
+                    <td style="padding: 8px;">sensor_msgs/msg/JointState</td>
+                    <td style="padding: 8px;">50 Hz</td>
+                    <td style="padding: 8px;"><span style="color: var(--accent-success);">Publish</span></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 8px; color: var(--accent-primary); font-weight: 600;">/robot_description</td>
+                    <td style="padding: 8px;">std_msgs/msg/String</td>
+                    <td style="padding: 8px;">Latched</td>
+                    <td style="padding: 8px;"><span style="color: var(--accent-success);">Publish</span></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 8px; color: var(--accent-primary); font-weight: 600;">/tf & /tf_static</td>
+                    <td style="padding: 8px;">tf2_msgs/msg/TFMessage</td>
+                    <td style="padding: 8px;">50 Hz</td>
+                    <td style="padding: 8px;"><span style="color: var(--accent-success);">Publish</span></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-subtle);">
+                    <td style="padding: 8px; color: var(--accent-primary); font-weight: 600;">/arm_controller/joint_trajectory</td>
+                    <td style="padding: 8px;">trajectory_msgs/msg/JointTrajectory</td>
+                    <td style="padding: 8px;">Action</td>
+                    <td style="padding: 8px;"><span style="color: var(--accent-warning);">Subscribe</span></td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px; color: var(--accent-primary); font-weight: 600;">/camera/color/image_raw</td>
+                    <td style="padding: 8px;">sensor_msgs/msg/Image</td>
+                    <td style="padding: 8px;">30 Hz</td>
+                    <td style="padding: 8px;"><span style="color: var(--accent-success);">Publish</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Card 3: TF2 Coordinate Frame Hierarchy -->
+          <div class="card" style="grid-column: span 6;">
+            <h3 class="card-title">TF2 Coordinate Frame Hierarchy</h3>
+            <p class="card-subtitle">Kinematic link chains and reference frames for MoveIt 2 and RViz</p>
+
+            <div style="margin-top: 14px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.8;">
+              <div style="color: var(--text-main); font-weight: 600;">world (Fixed Inertial Frame)</div>
+              <div style="padding-left: 18px; color: var(--text-muted);">└─ <span style="color: var(--accent-primary); font-weight: 600;">base_link</span> (Base.STL • Ground Origin)</div>
+              <div style="padding-left: 36px; color: var(--text-muted);">└─ <span style="color: var(--accent-primary); font-weight: 600;">waist_link</span> (Waist.STL • Continuous Yaw θ1)</div>
+              <div style="padding-left: 54px; color: var(--text-muted);">└─ <span style="color: var(--accent-primary); font-weight: 600;">shoulder_link</span> (Arm 01.STL • Revolute Pitch θ2 • L1=9.5cm)</div>
+              <div style="padding-left: 72px; color: var(--text-muted);">└─ <span style="color: var(--accent-primary); font-weight: 600;">elbow_link</span> (Arm 02 v3.STL • Revolute Pitch θ3 • L2=12.0cm)</div>
+              <div style="padding-left: 90px; color: var(--text-muted);">└─ <span style="color: var(--accent-primary); font-weight: 600;">wrist_pitch_link</span> (Arm 03.STL • Revolute Pitch θ4 • L3=9.0cm)</div>
+              <div style="padding-left: 108px; color: var(--text-muted);">└─ <span style="color: var(--accent-primary); font-weight: 600;">wrist_roll_link</span> (Gripper base.STL • Continuous Roll θ5)</div>
+              <div style="padding-left: 126px; color: var(--text-muted);">├─ <span style="color: var(--accent-primary); font-weight: 600;">gripper_left_finger_link</span> (Gripper 1.STL)</div>
+              <div style="padding-left: 126px; color: var(--text-muted);">├─ <span style="color: var(--accent-primary); font-weight: 600;">gripper_right_finger_link</span> (Gripper 1.STL Mirrored)</div>
+              <div style="padding-left: 126px; color: var(--text-muted);">└─ <span style="color: #7A9E7E; font-weight: 600;">tool_center_point (TCP)</span> (Tip of Claws • L4=14.0cm)</div>
+            </div>
+          </div>
+
+          <!-- Card 4: URDF Pipeline & ros2_control Setup -->
+          <div class="card" style="grid-column: span 12; border-left: 4px solid var(--accent-primary);">
+            <h3 class="card-title">URDF / Xacro Model Pipeline & MoveIt 2 Integration</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
+              <strong>Upcoming ROS 2 Integration Roadmap:</strong><br>
+              1. <strong>URDF / Xacro Definition:</strong> Export complete <code>robotic_arm.urdf.xacro</code> using the STL geometries from <code>Robotic_Arm_3D_Model.STEP</code>, including calculated moments of inertia and collision boxes.<br>
+              2. <strong>ros2_control Hardware Interface:</strong> Write a custom <code>SystemInterface</code> C++ plugin communicating over serial with the Arduino PCA9685 driver via 6-byte binary packets.<br>
+              3. <strong>MoveIt 2 Motion Planning:</strong> Configure MoveIt Setup Assistant for collision-free trajectory planning, Cartesian workspace constraints, and pick-and-place execution.<br>
+              4. <strong>Rosbridge Live Telemetry:</strong> Connect the web dashboard to <code>rosbridge_websocket</code> on port 9090 for bidirectional ROS 2 topic inspection and teleoperation.
             </p>
           </div>
 
@@ -749,11 +930,17 @@
     </div>
   </div>
 
+  <!-- Vendor 3D Libraries for Digital Twin (100% Local / Offline) -->
+  <script src="js/libs/three.min.js"></script>
+  <script src="js/libs/OrbitControls.js"></script>
+  <script src="js/libs/STLLoader.js"></script>
+
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.44"></script>
-  <script src="js/servo_panel.js?v=1.0.44"></script>
-  <script src="js/teleop_panel.js?v=1.0.44"></script>
-  <script src="js/dataset_panel.js?v=1.0.44"></script>
-  <script src="js/autonomous_panel.js?v=1.0.44"></script>
+  <script src="js/app.js?v=1.0.45"></script>
+  <script src="js/servo_panel.js?v=1.0.45"></script>
+  <script src="js/teleop_panel.js?v=1.0.45"></script>
+  <script src="js/dataset_panel.js?v=1.0.45"></script>
+  <script src="js/autonomous_panel.js?v=1.0.45"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.45"></script>
 </body>
 </html>

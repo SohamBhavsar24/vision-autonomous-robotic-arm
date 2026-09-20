@@ -28,7 +28,8 @@ const App = {
 
     const titles = {
       'panel-control': 'Robot Servo Control & Assembly Helper',
-      'panel-digital-twin': '3D Digital Twin Simulation (Baby ROS / URDF)',
+      'panel-digital-twin': '3D Digital Twin Simulation (Interactive WebGL CAD)',
+      'panel-ros': 'ROS 2 Humble Architecture & Computational Graph',
       'panel-journal': 'Robotic Arm Project Journal & Log Archive',
       'panel-camera': 'Live Dual-Camera Feeds',
       'panel-perception': 'OpenCV Perception & Coordinate Mapping',
@@ -54,6 +55,13 @@ const App = {
             p.classList.remove('active');
           }
         });
+
+        // Trigger resize for WebGL digital twin viewport if opened
+        if (targetPanelId === 'panel-digital-twin' && window.DigitalTwinPanel) {
+          setTimeout(() => {
+            window.DigitalTwinPanel.onResize();
+          }, 50);
+        }
 
         // Update title
         if (pageTitle && titles[targetPanelId]) {
@@ -152,8 +160,11 @@ const App = {
       window.ServoPanel.updateSlidersFromBackend(data.angles);
     }
 
-    // Update Digital Twin 3D Viewport Telemetry Overlay
+    // Update Digital Twin 3D Viewport Telemetry Overlay & Three.js Model
     if (data.angles) {
+      if (window.DigitalTwinPanel) {
+        window.DigitalTwinPanel.updateAngles(data.angles);
+      }
       for (let i = 0; i < Math.min(data.angles.length, 6); i++) {
         const el = document.getElementById(`dtVal${i}`);
         if (el) el.textContent = `${data.angles[i]}°`;
