@@ -1129,6 +1129,7 @@ const DigitalTwinPanel = {
         transform: (geo) => {
           geo.computeVertexNormals();
           geo.translate(-48.43, 0, -49.23);
+          geo.rotateY(Math.PI);
         }
       },
       // 3. Shoulder Arm 01
