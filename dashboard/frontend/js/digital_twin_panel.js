@@ -37,15 +37,15 @@ const DigitalTwinPanel = {
 
   // Gripper Claw Offsets (User-Adjustable in Digital Space)
   clawConfig: {
-    spacingX: 14.0,   // mm from center
-    mountY: 60.0,     // mm forward on gripper base
-    offsetZ: 0.0,     // mm Z elevation
-    restAngle: 0.22,  // radians inward tilt at closed rest
+    spacingX: 15.5,   // mm from center (matches physical Gripper base pin holes at X = ±15.5 mm)
+    mountY: 72.0,     // mm forward on gripper base (matches front pin holes at Y = 72.0 mm)
+    offsetZ: -21.5,   // mm Z elevation (matches front pin holes at Z = -21.5 mm)
+    restAngle: 0.0,   // radians inward tilt offset at closed rest
     maxSpread: 0.45   // radians outward spread when open
   },
 
   // Current and Target Joint Angles (Degrees)
-  // [Base θ1, Shoulder θ2, Elbow θ3, Wrist Pitch θ4, Wrist Roll θ5, Gripper θ6]
+  // [Base θ1, Shoulder θ2, Elbow θ3, Wrist Roll θ4, Wrist Pitch θ5, Gripper θ6]
   currentAngles: [90, 90, 90, 90, 90, 140],
   targetAngles: [90, 90, 90, 90, 90, 140],
 
@@ -54,8 +54,8 @@ const DigitalTwinPanel = {
   SHOULDER_OFFSET: 39.0,   // Shoulder pivot height above waist (L1 = 56 + 39 = 95mm)
   L1: 95.0,                // Base ground to shoulder pivot (9.5 cm)
   L2: 120.0,               // Arm 01: Shoulder to Elbow pivot (12.0 cm)
-  L3: 100.0,               // Arm 02 v3: Elbow to Wrist Pitch pivot (10.0 cm)
-  ARM3_HOLE_DIST: 33.2,    // Arm 03: Distance between bottom and top wall holes (33.2 mm)
+  L3: 100.0,               // Arm 02 v3: Elbow to Wrist Roll pivot (10.0 cm)
+  ARM3_HOLE_DIST: 38.9,    // Arm 03: Distance between bottom and top wall holes (38.9 mm)
 
   // Meshes dictionary
   meshes: {},
@@ -215,7 +215,7 @@ const DigitalTwinPanel = {
           <span>Claw Spacing (X):</span>
           <span id="dtTuneValX" style="color: var(--accent-primary);">${this.clawConfig.spacingX} mm</span>
         </div>
-        <input type="range" id="dtSliderX" min="6" max="26" step="0.5" value="${this.clawConfig.spacingX}" style="width: 100%;">
+        <input type="range" id="dtSliderX" min="8" max="26" step="0.5" value="${this.clawConfig.spacingX}" style="width: 100%;">
       </div>
 
       <div style="margin-bottom: 10px;">
@@ -223,7 +223,7 @@ const DigitalTwinPanel = {
           <span>Mount Position (Y):</span>
           <span id="dtTuneValY" style="color: var(--accent-primary);">${this.clawConfig.mountY} mm</span>
         </div>
-        <input type="range" id="dtSliderY" min="40" max="75" step="0.5" value="${this.clawConfig.mountY}" style="width: 100%;">
+        <input type="range" id="dtSliderY" min="45" max="85" step="0.5" value="${this.clawConfig.mountY}" style="width: 100%;">
       </div>
 
       <div style="margin-bottom: 10px;">
@@ -231,7 +231,7 @@ const DigitalTwinPanel = {
           <span>Elevation (Z):</span>
           <span id="dtTuneValZ" style="color: var(--accent-primary);">${this.clawConfig.offsetZ} mm</span>
         </div>
-        <input type="range" id="dtSliderZ" min="-15" max="15" step="0.5" value="${this.clawConfig.offsetZ}" style="width: 100%;">
+        <input type="range" id="dtSliderZ" min="-30" max="10" step="0.5" value="${this.clawConfig.offsetZ}" style="width: 100%;">
       </div>
 
       <div style="margin-bottom: 12px;">
@@ -279,18 +279,18 @@ const DigitalTwinPanel = {
     };
 
     btnResetTuner.onclick = () => {
-      this.clawConfig.spacingX = 14.0;
-      this.clawConfig.mountY = 60.0;
-      this.clawConfig.offsetZ = 0.0;
-      this.clawConfig.restAngle = 0.22;
-      sliderX.value = 14.0;
-      sliderY.value = 60.0;
-      sliderZ.value = 0.0;
-      sliderAngle.value = 13;
-      tuner.querySelector('#dtTuneValX').textContent = '14 mm';
-      tuner.querySelector('#dtTuneValY').textContent = '60 mm';
-      tuner.querySelector('#dtTuneValZ').textContent = '0 mm';
-      tuner.querySelector('#dtTuneValAngle').textContent = '13°';
+      this.clawConfig.spacingX = 15.5;
+      this.clawConfig.mountY = 72.0;
+      this.clawConfig.offsetZ = -21.5;
+      this.clawConfig.restAngle = 0.0;
+      sliderX.value = 15.5;
+      sliderY.value = 72.0;
+      sliderZ.value = -21.5;
+      sliderAngle.value = 0;
+      tuner.querySelector('#dtTuneValX').textContent = '15.5 mm';
+      tuner.querySelector('#dtTuneValY').textContent = '72 mm';
+      tuner.querySelector('#dtTuneValZ').textContent = '-21.5 mm';
+      tuner.querySelector('#dtTuneValAngle').textContent = '0°';
       this.updateClawPlacements();
     };
 
@@ -429,32 +429,34 @@ const DigitalTwinPanel = {
     this.elbowGroup.position.set(0, this.L2, 0);
     this.shoulderGroup.add(this.elbowGroup);
 
-    // 6. Wrist Pitch group (Pivot at Y = L3 = 100mm where Arm 02 ends! Rotates around X axis, Joint 4 / Wrist Pitch θ4)
-    this.wristPitchGroup = new THREE.Group();
-    this.wristPitchGroup.position.set(0, this.L3, 0);
-    this.elbowGroup.add(this.wristPitchGroup);
-
-    // 7. Wrist Roll group (Connected directly at the vertical wall hole of Arm 03 at Y = 33.2mm!)
-    // Rotates around Y/longitudinal axis, Joint 5 / Wrist Roll θ5
+    // 6. Wrist Roll group (Rotates around Y/longitudinal axis, Joint 4 / Wrist Roll θ4)
+    // Pivot at Y = L3 = 100mm where Arm 02 ends! Arm 03 is attached inside here.
     this.wristRollGroup = new THREE.Group();
-    this.wristRollGroup.position.set(0, this.ARM3_HOLE_DIST, 0);
-    this.wristPitchGroup.add(this.wristRollGroup);
+    this.wristRollGroup.position.set(0, this.L3, 0);
+    this.elbowGroup.add(this.wristRollGroup);
 
-    // 8. Gripper Claws (2x Gripper 1.STL Claws mounted on front of Gripper Base)
+    // 7. Wrist Pitch group (Rotates around X axis, Joint 5 / Wrist Pitch θ5 - tilts UP AND DOWN)
+    // Connected directly at the vertical wall hole of Arm 03 at Y = 38.9mm! Gripper base sits inside here.
+    this.wristPitchGroup = new THREE.Group();
+    this.wristPitchGroup.position.set(0, this.ARM3_HOLE_DIST, 4.67);
+    this.wristRollGroup.add(this.wristPitchGroup);
+
+    // 8. Gripper Claws (2x Gripper 1.STL Claws mounted on front of Gripper Base inside wristPitchGroup)
     this.clawLeftGroup = new THREE.Group();
     this.clawLeftGroup.position.set(-this.clawConfig.spacingX, this.clawConfig.mountY, this.clawConfig.offsetZ);
-    this.wristRollGroup.add(this.clawLeftGroup);
+    this.wristPitchGroup.add(this.clawLeftGroup);
 
     this.clawRightGroup = new THREE.Group();
     this.clawRightGroup.position.set(this.clawConfig.spacingX, this.clawConfig.mountY, this.clawConfig.offsetZ);
-    this.wristRollGroup.add(this.clawRightGroup);
+    this.wristPitchGroup.add(this.clawRightGroup);
 
     // Brass joint pin accent cylinders at each physical joint axis
     this.addJointPin(this.shoulderGroup, 32, 10);
     this.addJointPin(this.elbowGroup, 28, 8);
-    this.addJointPin(this.wristPitchGroup, 24, 7);
+    // Brass pin at wrist roll base
+    this.addJointPin(this.wristRollGroup, 24, 7);
     // Brass pin locking Arm 03 and Gripper base together through their vertical wall holes!
-    this.addJointPin(this.wristRollGroup, 22, 4.5);
+    this.addJointPin(this.wristPitchGroup, 22, 4.5);
   },
 
   addJointPin(parent, length, radius) {
@@ -541,35 +543,35 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          geo.translate(-19.2, -11.5, -16.8);
+          geo.translate(-19.29, -11.5, -13.88);
           geo.rotateY(Math.PI / 2);
         }
       },
-      // 5. Wrist Pitch Arm 03 (Starts after Arm 02 ends)
+      // 5. Wrist Roll Arm 03 (Starts after Arm 02 ends, rolls around Y)
       {
         name: 'arm3',
         file: 'Arm 03.STL',
-        parent: this.wristPitchGroup,
+        parent: this.wristRollGroup,
         material: matWarmLinen,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Bottom hole is at (16.5, 5.0, 14.0). Top wall hole is at (16.5, 38.2, 9.1).
-          geo.translate(-16.5, -5.0, -14.0);
-          geo.rotateY(Math.PI / 2);
+          // Bottom hole is at (16.5, 3.34, 7.52). Top hole is at (16.5, 42.25, 12.19).
+          // Centering bottom hole to (0, 0, 0) leaves top wall hole at (0, 38.91, 4.67).
+          geo.translate(-16.5, -3.34, -7.52);
         }
       },
-      // 6. Gripper Base (Mounted directly at vertical wall hole of Arm 03)
+      // 6. Gripper Base (Mounted at top vertical wall hole of Arm 03 inside wristPitchGroup)
       {
         name: 'gripper_base',
         file: 'Gripper base.STL',
-        parent: this.wristRollGroup,
+        parent: this.wristPitchGroup,
         material: matCharcoal,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // The vertical wall mount hole in Gripper base is at (10.4, 14.0, 12.2).
-          // Centering this hole to (0, 0, 0) makes it mate directly into Arm 03!
-          geo.translate(-22.2, -14.0, -12.2);
-          geo.rotateX(-Math.PI / 2);
+          // Tab hole is at (15.5, 25.5, 72.0).
+          // Centering this tab hole and rotating by rotateX(PI/2) mates it directly into Arm 03 slot!
+          geo.translate(-15.5, -25.5, -72.0);
+          geo.rotateX(Math.PI / 2);
         }
       },
       // 7. Left Claw Finger (Gripper 1.STL)
@@ -580,11 +582,21 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          geo.translate(-4.25, -10.2, -5.0);
-          geo.rotateX(-Math.PI / 2);
+          // Native claw: Pin hole at (4.25, 5.0, 38.31), curved fingertip at (4.25, 18.4, 2.7).
+          // Translate pin hole to origin
+          geo.translate(-4.25, -5.0, -38.31);
+          // Rotation mapping: X_new = +Y_orig, Y_new = -Z_orig, Z_new = -X_orig
+          // Extends claw along +Y (forward) with inward curve along +X (towards center)
+          const mLeft = new THREE.Matrix4().set(
+            0,  1,  0, 0,
+            0,  0, -1, 0,
+           -1,  0,  0, 0,
+            0,  0,  0, 1
+          );
+          geo.applyMatrix4(mLeft);
         }
       },
-      // 8. Right Claw Finger (Gripper 1.STL, mirrored)
+      // 8. Right Claw Finger (Gripper 1.STL)
       {
         name: 'gripper_claw_right',
         file: 'Gripper 1.STL',
@@ -592,9 +604,18 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          geo.translate(-4.25, -10.2, -5.0);
-          geo.rotateX(-Math.PI / 2);
-          geo.rotateY(Math.PI);
+          // Native claw: Pin hole at (4.25, 5.0, 38.31), curved fingertip at (4.25, 18.4, 2.7).
+          // Translate pin hole to origin
+          geo.translate(-4.25, -5.0, -38.31);
+          // Rotation mapping: X_new = -Y_orig, Y_new = -Z_orig, Z_new = +X_orig
+          // Extends claw along +Y (forward) with inward curve along -X (towards center)
+          const mRight = new THREE.Matrix4().set(
+            0, -1,  0, 0,
+            0,  0, -1, 0,
+            1,  0,  0, 0,
+            0,  0,  0, 1
+          );
+          geo.applyMatrix4(mRight);
         }
       }
     ];
@@ -675,7 +696,7 @@ const DigitalTwinPanel = {
       const gMesh = new THREE.Mesh(gGeo, matDark);
       gMesh.position.y = 32.5;
       gMesh.castShadow = true;
-      this.wristRollGroup.add(gMesh);
+      this.wristPitchGroup.add(gMesh);
     }
   },
 
@@ -798,25 +819,28 @@ const DigitalTwinPanel = {
       this.elbowGroup.rotation.x = (a2 - 45) * deg2rad;
     }
 
-    // 4. Joint 4: Wrist Pitch (Rotation around X axis)
-    // 90° is inline with forearm.
-    if (this.wristPitchGroup) {
-      this.wristPitchGroup.rotation.x = (a3 - 90) * deg2rad;
-    }
-
-    // 5. Joint 5: Wrist Roll (Rotation around Y/longitudinal axis)
-    // 90° is neutral center.
+    // 4. Joint 4: Wrist Roll (Rotation around Y/longitudinal axis, θ4 / Servo 3)
+    // 90° is neutral roll orientation. Rolls Arm 03 and Gripper together.
     if (this.wristRollGroup) {
-      this.wristRollGroup.rotation.y = (a4 - 90) * deg2rad;
+      this.wristRollGroup.rotation.y = (a3 - 90) * deg2rad;
     }
 
-    // 6. Joint 6: Dual Gripper Claw Articulation (2x Gripper 1.STL)
-    // a5 is Gripper angle: 140° is open, 10°-40° is closed.
+    // 5. Joint 5: Wrist Pitch (Rotation around X axis, θ5 / Servo 4)
+    // 90° is inline with Arm 03. Tilts Gripper Base and Claws UP AND DOWN!
+    if (this.wristPitchGroup) {
+      this.wristPitchGroup.rotation.x = (a4 - 90) * deg2rad;
+    }
+
+    // 6. Joint 6: Dual Gripper Claw Articulation (2x Gripper 1.STL, θ6 / Servo 5)
+    // a5 is Gripper angle: 140° is open, 10°-40° is closed (rest).
     if (this.clawLeftGroup && this.clawRightGroup) {
+      // 35° or lower = closed (openRatio = 0); 140° = fully open (openRatio = 1)
       const openRatio = Math.max(0, Math.min(1, (a5 - 35) / 105));
-      const spreadAngle = (openRatio - 0.5) * this.clawConfig.maxSpread;
-      this.clawLeftGroup.rotation.z = -this.clawConfig.restAngle - spreadAngle;
-      this.clawRightGroup.rotation.z = this.clawConfig.restAngle + spreadAngle;
+      const spreadAngle = openRatio * this.clawConfig.maxSpread;
+      // Left claw swings outward (-X) with positive Z rotation
+      this.clawLeftGroup.rotation.z = this.clawConfig.restAngle + spreadAngle;
+      // Right claw swings outward (+X) with negative Z rotation
+      this.clawRightGroup.rotation.z = -this.clawConfig.restAngle - spreadAngle;
     }
 
     // Update OrbitControls
