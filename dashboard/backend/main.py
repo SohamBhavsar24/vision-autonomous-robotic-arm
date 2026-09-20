@@ -123,6 +123,7 @@ class ServoAnglesRequest(BaseModel):
 
 
 CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "kinematics_config.json"))
+CLAW_CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "claw_config.json"))
 JOURNAL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "journal_entries.json"))
 DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "dataset_episodes.json"))
 DATASETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "datasets"))
@@ -249,6 +250,30 @@ async def save_kinematics_config(req: KinematicsConfigRequest):
     serial_manager.gripper_open = req.gripper_open
     serial_manager.gripper_closed = req.gripper_closed
     return {"status": "saved", "config": data}
+
+
+@app.get("/api/digital_twin/claw_config")
+async def get_claw_config():
+    """Returns persistent digital twin claw placement parameters."""
+    if os.path.exists(CLAW_CONFIG_PATH):
+        try:
+            with open(CLAW_CONFIG_PATH, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error loading claw_config.json: {e}")
+    return {}
+
+
+@app.post("/api/digital_twin/claw_config")
+async def save_claw_config(config: dict):
+    """Saves updated digital twin claw placement parameters."""
+    try:
+        with open(CLAW_CONFIG_PATH, "w") as f:
+            json.dump(config, f, indent=2)
+        return {"status": "saved", "config": config}
+    except Exception as e:
+        logger.error(f"Error saving claw_config.json: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 @app.post("/api/ik/solve")

@@ -92,6 +92,7 @@ const DigitalTwinPanel = {
 
     this.createOverlayUI();
     this.createTunerPanel();
+    this.loadSavedClawConfig();
     this.initScene();
     this.initLighting();
     this.buildKinematicHierarchy();
@@ -208,6 +209,97 @@ const DigitalTwinPanel = {
     this.container.appendChild(helperOverlay);
   },
 
+  /* Persistence for Gripper Claw Configuration */
+  loadSavedClawConfig() {
+    // 1. Synchronously restore from localStorage for instant offline readiness
+    try {
+      const cached = localStorage.getItem('dt_claw_config');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          Object.assign(this.clawConfig, parsed);
+          const tuner = document.getElementById('dtTunerPanel');
+          if (tuner) this.syncTunerInputs(tuner);
+          this.updateClawPlacements();
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read cached claw config from localStorage:', e);
+    }
+
+    // 2. Asynchronously sync with backend if available
+    fetch('/api/digital_twin/claw_config')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+          Object.assign(this.clawConfig, data);
+          try {
+            localStorage.setItem('dt_claw_config', JSON.stringify(this.clawConfig));
+          } catch (e) {}
+          const tuner = document.getElementById('dtTunerPanel');
+          if (tuner) this.syncTunerInputs(tuner);
+          this.updateClawPlacements();
+        }
+      })
+      .catch(() => {
+        // Backend offline or unreachable, localStorage fallback already loaded
+      });
+  },
+
+  handleSaveClawConfig() {
+    // 1. Persist to localStorage
+    try {
+      localStorage.setItem('dt_claw_config', JSON.stringify(this.clawConfig));
+    } catch (e) {
+      console.warn('Could not save claw config to localStorage:', e);
+    }
+
+    // 2. Persist to backend JSON
+    fetch('/api/digital_twin/claw_config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(this.clawConfig)
+    }).catch(err => {
+      console.warn('Could not sync claw config to backend:', err);
+    });
+
+    // 3. Visual feedback across both top and bottom save buttons
+    const tuner = document.getElementById('dtTunerPanel');
+    const btnTop = tuner ? tuner.querySelector('#btnDtSaveClawConfigTop') : null;
+    const btnBottom = tuner ? tuner.querySelector('#btnDtSaveClawConfigBottom') : null;
+    const statusTop = tuner ? tuner.querySelector('#dtSaveStatusTop') : null;
+    const statusBottom = tuner ? tuner.querySelector('#dtSaveStatusBottom') : null;
+
+    const originalText = 'Save Configuration';
+    if (btnTop) {
+      btnTop.textContent = 'Saved Successfully!';
+      btnTop.style.background = '#4E8046';
+      btnTop.style.borderColor = '#4E8046';
+    }
+    if (btnBottom) {
+      btnBottom.textContent = 'Saved Successfully!';
+      btnBottom.style.background = '#4E8046';
+      btnBottom.style.borderColor = '#4E8046';
+    }
+    if (statusTop) statusTop.style.display = 'block';
+    if (statusBottom) statusBottom.style.display = 'block';
+
+    setTimeout(() => {
+      if (btnTop) {
+        btnTop.textContent = originalText;
+        btnTop.style.background = 'var(--accent-primary)';
+        btnTop.style.borderColor = 'var(--accent-primary)';
+      }
+      if (btnBottom) {
+        btnBottom.textContent = originalText;
+        btnBottom.style.background = 'var(--accent-primary)';
+        btnBottom.style.borderColor = 'var(--accent-primary)';
+      }
+      if (statusTop) statusTop.style.display = 'none';
+      if (statusBottom) statusBottom.style.display = 'none';
+    }, 2200);
+  },
+
   /* Interactive Gripper Tuner Panel in Digital Space */
   createTunerPanel() {
     const tuner = document.createElement('div');
@@ -234,6 +326,12 @@ const DigitalTwinPanel = {
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 6px;">
         <span style="font-weight: 600; color: var(--accent-primary); font-size: 0.8rem;">Digital Space Claw Studio</span>
         <button id="btnDtTunerClose" style="background: none; border: none; color: #FAF7F2; cursor: pointer; font-size: 0.95rem;">X</button>
+      </div>
+
+      <!-- Save Action Controls (Top) -->
+      <div style="margin-bottom: 12px;">
+        <button id="btnDtSaveClawConfigTop" class="btn btn-primary" style="width: 100%; font-weight: 600; font-size: 0.74rem; padding: 7px; background: var(--accent-primary); border: 1px solid var(--accent-primary); color: #FAF7F2; cursor: pointer;">Save Configuration</button>
+        <div id="dtSaveStatusTop" style="font-size: 0.65rem; color: #7DB26C; text-align: center; display: none; margin-top: 4px;">Configuration Saved Successfully</div>
       </div>
 
       <!-- Quick Orientation Presets -->
@@ -418,10 +516,31 @@ const DigitalTwinPanel = {
         </div>
       </div>
 
-      <button id="btnDtResetTuner" class="btn btn-secondary" style="width: 100%; font-size: 0.72rem; padding: 6px;">Reset All Defaults</button>
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button id="btnDtSaveClawConfigBottom" class="btn btn-primary" style="flex: 2; font-weight: 600; font-size: 0.72rem; padding: 7px; background: var(--accent-primary); border: 1px solid var(--accent-primary); color: #FAF7F2; cursor: pointer;">Save Configuration</button>
+        <button id="btnDtResetTuner" class="btn btn-secondary" style="flex: 1; font-size: 0.70rem; padding: 7px;">Reset Defaults</button>
+      </div>
+      <div id="dtSaveStatusBottom" style="font-size: 0.65rem; color: #7DB26C; text-align: center; display: none; margin-top: 4px;">Configuration Saved Successfully</div>
     `;
 
     this.container.appendChild(tuner);
+
+    // Bind Tuner Save & Reset Action Controls
+    const btnSaveTop = tuner.querySelector('#btnDtSaveClawConfigTop');
+    if (btnSaveTop) {
+      btnSaveTop.onclick = (e) => {
+        e.preventDefault();
+        this.handleSaveClawConfig();
+      };
+    }
+
+    const btnSaveBottom = tuner.querySelector('#btnDtSaveClawConfigBottom');
+    if (btnSaveBottom) {
+      btnSaveBottom.onclick = (e) => {
+        e.preventDefault();
+        this.handleSaveClawConfig();
+      };
+    }
 
     // Bind Tuner slider events
     const sliderX = tuner.querySelector('#dtSliderX');
