@@ -41,18 +41,24 @@ const DigitalTwinPanel = {
     spacingX: 14.0,   // mm from center
     mountY: 60.0,     // mm forward on gripper base
     offsetZ: 0.0,     // mm Z elevation
-    restAngle: 0.22,  // radians inward tilt at closed rest
-    maxSpread: 0.45,  // radians outward spread when open
+    restAngle: 0.0,   // radians inward tilt at closed rest
+    maxSpread: 0.52,  // radians outward spread when open (~30 deg)
 
     // Left Claw Fine Transformations
+    leftPosX: 0.0,    // mm offset X
+    leftPosY: 0.0,    // mm offset Y
+    leftPosZ: 0.0,    // mm offset Z
     leftRotX: 0,      // degrees
     leftRotY: 0,      // degrees
     leftRotZ: 0,      // degrees
     leftMirrorX: false,
-    leftFlipY: false,  // upside down
+    leftFlipY: false, // upside down
     leftFlipZ: false,
 
     // Right Claw Fine Transformations
+    rightPosX: 0.0,   // mm offset X
+    rightPosY: 0.0,   // mm offset Y
+    rightPosZ: 0.0,   // mm offset Z
     rightRotX: 0,     // degrees
     rightRotY: 0,     // degrees
     rightRotZ: 0,     // degrees
@@ -209,8 +215,8 @@ const DigitalTwinPanel = {
     tuner.style.position = 'absolute';
     tuner.style.top = '50px';
     tuner.style.right = '12px';
-    tuner.style.width = '330px';
-    tuner.style.maxHeight = 'calc(100vh - 280px)';
+    tuner.style.width = '340px';
+    tuner.style.maxHeight = 'calc(100% - 65px)';
     tuner.style.overflowY = 'auto';
     tuner.style.background = 'rgba(26, 24, 23, 0.94)';
     tuner.style.border = '1px solid rgba(196, 120, 74, 0.4)';
@@ -243,11 +249,11 @@ const DigitalTwinPanel = {
 
       <!-- Mount Position & Pinch Spread -->
       <div style="margin-bottom: 14px; background: rgba(255,255,255,0.04); padding: 8px; border-radius: 6px;">
-        <div style="font-weight: 600; color: #FAF7F2; margin-bottom: 8px;">Mount Placement & Pinch</div>
+        <div style="font-weight: 600; color: #FAF7F2; margin-bottom: 8px;">Global Mount & Pinch</div>
 
         <div style="margin-bottom: 8px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-            <span>Claw Spacing (X):</span>
+            <span>Claw Base Spacing (X):</span>
             <span id="dtTuneValX" style="color: var(--accent-primary);">${this.clawConfig.spacingX} mm</span>
           </div>
           <input type="range" id="dtSliderX" min="4" max="32" step="0.5" value="${this.clawConfig.spacingX}" style="width: 100%;">
@@ -255,7 +261,7 @@ const DigitalTwinPanel = {
 
         <div style="margin-bottom: 8px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-            <span>Mount Position (Y):</span>
+            <span>Mount Forward (Y):</span>
             <span id="dtTuneValY" style="color: var(--accent-primary);">${this.clawConfig.mountY} mm</span>
           </div>
           <input type="range" id="dtSliderY" min="30" max="85" step="0.5" value="${this.clawConfig.mountY}" style="width: 100%;">
@@ -271,10 +277,10 @@ const DigitalTwinPanel = {
 
         <div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-            <span>Rest Angle:</span>
+            <span>Rest Angle Offset:</span>
             <span id="dtTuneValAngle" style="color: var(--accent-primary);">${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}°</span>
           </div>
-          <input type="range" id="dtSliderAngle" min="0" max="60" step="1" value="${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}" style="width: 100%;">
+          <input type="range" id="dtSliderAngle" min="-30" max="30" step="1" value="${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}" style="width: 100%;">
         </div>
       </div>
 
@@ -283,6 +289,31 @@ const DigitalTwinPanel = {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span style="font-weight: 600; color: var(--accent-primary);">Left Claw Finger</span>
           <button id="btnLeftClawReset" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.68rem; text-decoration: underline;">Reset Left</button>
+        </div>
+
+        <!-- Position Controls (X, Y, Z) -->
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Position X:</span>
+            <span id="dtValLPosX" style="color: var(--accent-primary);">${this.clawConfig.leftPosX} mm</span>
+          </div>
+          <input type="range" id="dtSliderLPosX" min="-30" max="30" step="0.5" value="${this.clawConfig.leftPosX}" style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Position Y:</span>
+            <span id="dtValLPosY" style="color: var(--accent-primary);">${this.clawConfig.leftPosY} mm</span>
+          </div>
+          <input type="range" id="dtSliderLPosY" min="-30" max="30" step="0.5" value="${this.clawConfig.leftPosY}" style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Position Z:</span>
+            <span id="dtValLPosZ" style="color: var(--accent-primary);">${this.clawConfig.leftPosZ} mm</span>
+          </div>
+          <input type="range" id="dtSliderLPosZ" min="-30" max="30" step="0.5" value="${this.clawConfig.leftPosZ}" style="width: 100%;">
         </div>
 
         <!-- Rotate X Slider -->
@@ -325,6 +356,31 @@ const DigitalTwinPanel = {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span style="font-weight: 600; color: var(--accent-primary);">Right Claw Finger</span>
           <button id="btnRightClawReset" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.68rem; text-decoration: underline;">Reset Right</button>
+        </div>
+
+        <!-- Position Controls (X, Y, Z) -->
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Position X:</span>
+            <span id="dtValRPosX" style="color: var(--accent-primary);">${this.clawConfig.rightPosX} mm</span>
+          </div>
+          <input type="range" id="dtSliderRPosX" min="-30" max="30" step="0.5" value="${this.clawConfig.rightPosX}" style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 6px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Position Y:</span>
+            <span id="dtValRPosY" style="color: var(--accent-primary);">${this.clawConfig.rightPosY} mm</span>
+          </div>
+          <input type="range" id="dtSliderRPosY" min="-30" max="30" step="0.5" value="${this.clawConfig.rightPosY}" style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Position Z:</span>
+            <span id="dtValRPosZ" style="color: var(--accent-primary);">${this.clawConfig.rightPosZ} mm</span>
+          </div>
+          <input type="range" id="dtSliderRPosZ" min="-30" max="30" step="0.5" value="${this.clawConfig.rightPosZ}" style="width: 100%;">
         </div>
 
         <!-- Rotate X Slider -->
@@ -399,9 +455,28 @@ const DigitalTwinPanel = {
     };
 
     // Left Claw Sliders
+    const sliderLPosX = tuner.querySelector('#dtSliderLPosX');
+    const sliderLPosY = tuner.querySelector('#dtSliderLPosY');
+    const sliderLPosZ = tuner.querySelector('#dtSliderLPosZ');
     const sliderLRotX = tuner.querySelector('#dtSliderLRotX');
     const sliderLRotY = tuner.querySelector('#dtSliderLRotY');
     const sliderLRotZ = tuner.querySelector('#dtSliderLRotZ');
+
+    sliderLPosX.oninput = (e) => {
+      this.clawConfig.leftPosX = parseFloat(e.target.value);
+      tuner.querySelector('#dtValLPosX').textContent = `${this.clawConfig.leftPosX} mm`;
+      this.updateClawPlacements();
+    };
+    sliderLPosY.oninput = (e) => {
+      this.clawConfig.leftPosY = parseFloat(e.target.value);
+      tuner.querySelector('#dtValLPosY').textContent = `${this.clawConfig.leftPosY} mm`;
+      this.updateClawPlacements();
+    };
+    sliderLPosZ.oninput = (e) => {
+      this.clawConfig.leftPosZ = parseFloat(e.target.value);
+      tuner.querySelector('#dtValLPosZ').textContent = `${this.clawConfig.leftPosZ} mm`;
+      this.updateClawPlacements();
+    };
 
     sliderLRotX.oninput = (e) => {
       this.clawConfig.leftRotX = parseInt(e.target.value, 10);
@@ -420,9 +495,28 @@ const DigitalTwinPanel = {
     };
 
     // Right Claw Sliders
+    const sliderRPosX = tuner.querySelector('#dtSliderRPosX');
+    const sliderRPosY = tuner.querySelector('#dtSliderRPosY');
+    const sliderRPosZ = tuner.querySelector('#dtSliderRPosZ');
     const sliderRRotX = tuner.querySelector('#dtSliderRRotX');
     const sliderRRotY = tuner.querySelector('#dtSliderRRotY');
     const sliderRRotZ = tuner.querySelector('#dtSliderRRotZ');
+
+    sliderRPosX.oninput = (e) => {
+      this.clawConfig.rightPosX = parseFloat(e.target.value);
+      tuner.querySelector('#dtValRPosX').textContent = `${this.clawConfig.rightPosX} mm`;
+      this.updateClawPlacements();
+    };
+    sliderRPosY.oninput = (e) => {
+      this.clawConfig.rightPosY = parseFloat(e.target.value);
+      tuner.querySelector('#dtValRPosY').textContent = `${this.clawConfig.rightPosY} mm`;
+      this.updateClawPlacements();
+    };
+    sliderRPosZ.oninput = (e) => {
+      this.clawConfig.rightPosZ = parseFloat(e.target.value);
+      tuner.querySelector('#dtValRPosZ').textContent = `${this.clawConfig.rightPosZ} mm`;
+      this.updateClawPlacements();
+    };
 
     sliderRRotX.oninput = (e) => {
       this.clawConfig.rightRotX = parseInt(e.target.value, 10);
@@ -476,40 +570,30 @@ const DigitalTwinPanel = {
 
     // Reset Left / Right Individual Buttons
     tuner.querySelector('#btnLeftClawReset').onclick = () => {
+      this.clawConfig.leftPosX = 0;
+      this.clawConfig.leftPosY = 0;
+      this.clawConfig.leftPosZ = 0;
       this.clawConfig.leftRotX = 0;
       this.clawConfig.leftRotY = 0;
       this.clawConfig.leftRotZ = 0;
       this.clawConfig.leftMirrorX = false;
       this.clawConfig.leftFlipY = false;
       this.clawConfig.leftFlipZ = false;
-      sliderLRotX.value = 0;
-      sliderLRotY.value = 0;
-      sliderLRotZ.value = 0;
-      tuner.querySelector('#dtValLRotX').textContent = '0°';
-      tuner.querySelector('#dtValLRotY').textContent = '0°';
-      tuner.querySelector('#dtValLRotZ').textContent = '0°';
-      tuner.querySelector('#btnToggleLMirror').style.borderColor = '';
-      tuner.querySelector('#btnToggleLFlipY').style.borderColor = '';
-      tuner.querySelector('#btnToggleLFlipZ').style.borderColor = '';
+      this.syncTunerInputs(tuner);
       this.updateClawPlacements();
     };
 
     tuner.querySelector('#btnRightClawReset').onclick = () => {
+      this.clawConfig.rightPosX = 0;
+      this.clawConfig.rightPosY = 0;
+      this.clawConfig.rightPosZ = 0;
       this.clawConfig.rightRotX = 0;
       this.clawConfig.rightRotY = 0;
       this.clawConfig.rightRotZ = 0;
       this.clawConfig.rightMirrorX = false;
       this.clawConfig.rightFlipY = false;
       this.clawConfig.rightFlipZ = false;
-      sliderRRotX.value = 0;
-      sliderRRotY.value = 0;
-      sliderRRotZ.value = 0;
-      tuner.querySelector('#dtValRRotX').textContent = '0°';
-      tuner.querySelector('#dtValRRotY').textContent = '0°';
-      tuner.querySelector('#dtValRRotZ').textContent = '0°';
-      tuner.querySelector('#btnToggleRMirror').style.borderColor = '';
-      tuner.querySelector('#btnToggleRFlipY').style.borderColor = '';
-      tuner.querySelector('#btnToggleRFlipZ').style.borderColor = '';
+      this.syncTunerInputs(tuner);
       this.updateClawPlacements();
     };
 
@@ -538,6 +622,9 @@ const DigitalTwinPanel = {
     };
 
     tuner.querySelector('#btnPresetSwapSides').onclick = () => {
+      const tempPosX = this.clawConfig.leftPosX;
+      const tempPosY = this.clawConfig.leftPosY;
+      const tempPosZ = this.clawConfig.leftPosZ;
       const tempRotX = this.clawConfig.leftRotX;
       const tempRotY = this.clawConfig.leftRotY;
       const tempRotZ = this.clawConfig.leftRotZ;
@@ -545,6 +632,9 @@ const DigitalTwinPanel = {
       const tempFlipY = this.clawConfig.leftFlipY;
       const tempFlipZ = this.clawConfig.leftFlipZ;
 
+      this.clawConfig.leftPosX = this.clawConfig.rightPosX;
+      this.clawConfig.leftPosY = this.clawConfig.rightPosY;
+      this.clawConfig.leftPosZ = this.clawConfig.rightPosZ;
       this.clawConfig.leftRotX = this.clawConfig.rightRotX;
       this.clawConfig.leftRotY = this.clawConfig.rightRotY;
       this.clawConfig.leftRotZ = this.clawConfig.rightRotZ;
@@ -552,6 +642,9 @@ const DigitalTwinPanel = {
       this.clawConfig.leftFlipY = this.clawConfig.rightFlipY;
       this.clawConfig.leftFlipZ = this.clawConfig.rightFlipZ;
 
+      this.clawConfig.rightPosX = tempPosX;
+      this.clawConfig.rightPosY = tempPosY;
+      this.clawConfig.rightPosZ = tempPosZ;
       this.clawConfig.rightRotX = tempRotX;
       this.clawConfig.rightRotY = tempRotY;
       this.clawConfig.rightRotZ = tempRotZ;
@@ -567,13 +660,19 @@ const DigitalTwinPanel = {
       this.clawConfig.spacingX = 14.0;
       this.clawConfig.mountY = 60.0;
       this.clawConfig.offsetZ = 0.0;
-      this.clawConfig.restAngle = 0.22;
+      this.clawConfig.restAngle = 0.0;
+      this.clawConfig.leftPosX = 0.0;
+      this.clawConfig.leftPosY = 0.0;
+      this.clawConfig.leftPosZ = 0.0;
       this.clawConfig.leftRotX = 0;
       this.clawConfig.leftRotY = 0;
       this.clawConfig.leftRotZ = 0;
       this.clawConfig.leftMirrorX = false;
       this.clawConfig.leftFlipY = false;
       this.clawConfig.leftFlipZ = false;
+      this.clawConfig.rightPosX = 0.0;
+      this.clawConfig.rightPosY = 0.0;
+      this.clawConfig.rightPosZ = 0.0;
       this.clawConfig.rightRotX = 0;
       this.clawConfig.rightRotY = 0;
       this.clawConfig.rightRotZ = 0;
@@ -608,6 +707,13 @@ const DigitalTwinPanel = {
     setVal('#dtSliderAngle', Math.round(this.clawConfig.restAngle * 180 / Math.PI));
     setText('#dtTuneValAngle', `${Math.round(this.clawConfig.restAngle * 180 / Math.PI)}°`);
 
+    // Left Claw
+    setVal('#dtSliderLPosX', this.clawConfig.leftPosX);
+    setText('#dtValLPosX', `${this.clawConfig.leftPosX} mm`);
+    setVal('#dtSliderLPosY', this.clawConfig.leftPosY);
+    setText('#dtValLPosY', `${this.clawConfig.leftPosY} mm`);
+    setVal('#dtSliderLPosZ', this.clawConfig.leftPosZ);
+    setText('#dtValLPosZ', `${this.clawConfig.leftPosZ} mm`);
     setVal('#dtSliderLRotX', this.clawConfig.leftRotX);
     setText('#dtValLRotX', `${this.clawConfig.leftRotX}°`);
     setVal('#dtSliderLRotY', this.clawConfig.leftRotY);
@@ -615,6 +721,13 @@ const DigitalTwinPanel = {
     setVal('#dtSliderLRotZ', this.clawConfig.leftRotZ);
     setText('#dtValLRotZ', `${this.clawConfig.leftRotZ}°`);
 
+    // Right Claw
+    setVal('#dtSliderRPosX', this.clawConfig.rightPosX);
+    setText('#dtValRPosX', `${this.clawConfig.rightPosX} mm`);
+    setVal('#dtSliderRPosY', this.clawConfig.rightPosY);
+    setText('#dtValRPosY', `${this.clawConfig.rightPosY} mm`);
+    setVal('#dtSliderRPosZ', this.clawConfig.rightPosZ);
+    setText('#dtValRPosZ', `${this.clawConfig.rightPosZ} mm`);
     setVal('#dtSliderRRotX', this.clawConfig.rightRotX);
     setText('#dtValRRotX', `${this.clawConfig.rightRotX}°`);
     setVal('#dtSliderRRotY', this.clawConfig.rightRotY);
@@ -643,12 +756,20 @@ const DigitalTwinPanel = {
   updateClawPlacements() {
     const deg2rad = Math.PI / 180;
 
-    // Update parent mount positions
+    // Update parent mount positions (base spacing + individual offsets)
     if (this.clawLeftGroup) {
-      this.clawLeftGroup.position.set(-this.clawConfig.spacingX, this.clawConfig.mountY, this.clawConfig.offsetZ);
+      this.clawLeftGroup.position.set(
+        -(this.clawConfig.spacingX + this.clawConfig.leftPosX),
+        this.clawConfig.mountY + this.clawConfig.leftPosY,
+        this.clawConfig.offsetZ + this.clawConfig.leftPosZ
+      );
     }
     if (this.clawRightGroup) {
-      this.clawRightGroup.position.set(this.clawConfig.spacingX, this.clawConfig.mountY, this.clawConfig.offsetZ);
+      this.clawRightGroup.position.set(
+        (this.clawConfig.spacingX + this.clawConfig.rightPosX),
+        this.clawConfig.mountY + this.clawConfig.rightPosY,
+        this.clawConfig.offsetZ + this.clawConfig.rightPosZ
+      );
     }
 
     // Apply individual rotation and mirror/flip transforms to Left Claw mesh
@@ -942,7 +1063,7 @@ const DigitalTwinPanel = {
           geo.rotateX(-Math.PI / 2);
         }
       },
-      // 7. Left Claw Finger (Gripper 1.STL - Exchanged with right claw so both look inside)
+      // 7. Left Claw Finger (Gripper 1.STL)
       {
         name: 'gripper_claw_left',
         file: 'Gripper 1.STL',
@@ -950,12 +1071,13 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          geo.translate(-4.25, -10.2, -5.0);
-          geo.rotateX(-Math.PI / 2);
-          geo.rotateY(Math.PI);
+          // Opposite end pivot hole is at (4.25, 5.0, 60.3)
+          geo.translate(-4.25, -5.0, -60.3);
+          geo.rotateY(Math.PI / 2);
+          geo.rotateZ(-Math.PI / 2);
         }
       },
-      // 8. Right Claw Finger (Gripper 1.STL - Exchanged with left claw so both look inside)
+      // 8. Right Claw Finger (Gripper 1.STL)
       {
         name: 'gripper_claw_right',
         file: 'Gripper 1.STL',
@@ -963,8 +1085,11 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          geo.translate(-4.25, -10.2, -5.0);
-          geo.rotateX(-Math.PI / 2);
+          // Opposite end pivot hole is at (4.25, 5.0, 60.3)
+          geo.translate(-4.25, -5.0, -60.3);
+          geo.rotateY(Math.PI / 2);
+          geo.rotateZ(-Math.PI / 2);
+          geo.rotateY(Math.PI);
         }
       }
     ];
@@ -1186,9 +1311,9 @@ const DigitalTwinPanel = {
     // a5 is Gripper angle: 140° is open, 10°-40° is closed.
     if (this.clawLeftGroup && this.clawRightGroup) {
       const openRatio = Math.max(0, Math.min(1, (a5 - 35) / 105));
-      const spreadAngle = (openRatio - 0.5) * this.clawConfig.maxSpread;
-      this.clawLeftGroup.rotation.z = -this.clawConfig.restAngle - spreadAngle;
-      this.clawRightGroup.rotation.z = this.clawConfig.restAngle + spreadAngle;
+      const spreadAngle = openRatio * this.clawConfig.maxSpread;
+      this.clawLeftGroup.rotation.z = this.clawConfig.restAngle + spreadAngle;
+      this.clawRightGroup.rotation.z = -this.clawConfig.restAngle - spreadAngle;
     }
 
     // Update OrbitControls
