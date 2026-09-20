@@ -18,6 +18,8 @@ const DigitalTwinPanel = {
   renderer: null,
   controls: null,
   gridHelper: null,
+  groundMesh: null,
+  ringMesh: null,
   isGridVisible: true,
   isLoading: true,
 
@@ -38,7 +40,9 @@ const DigitalTwinPanel = {
   targetAngles: [90, 90, 90, 90, 90, 140],
 
   // Kinematic parameters (mm) matching physical CAD & ik_solver.py
-  L1: 95.0,  // Base height to Shoulder pivot (9.5 cm)
+  BASE_HEIGHT: 56.0, // Base top resting surface (mm)
+  SHOULDER_OFFSET: 39.0, // Waist shoulder pivot height above base (L1 = 56 + 39 = 95mm)
+  L1: 95.0,  // Ground to Shoulder pivot (9.5 cm)
   L2: 120.0, // Shoulder to Elbow pivot (12.0 cm)
   L3: 90.0,  // Elbow to Wrist Pitch pivot (9.0 cm)
   L4: 140.0, // Wrist to Gripper tip (14.0 cm)
@@ -50,7 +54,7 @@ const DigitalTwinPanel = {
     this.container = document.getElementById('digitalTwinViewport');
     if (!this.container) return;
 
-    // Remove existing placeholder content
+    // Remove existing content
     this.container.innerHTML = '';
 
     this.createOverlayUI();
@@ -59,8 +63,36 @@ const DigitalTwinPanel = {
     this.buildKinematicHierarchy();
     this.loadModels();
     this.setupResizeObserver();
+    this.bindButtons();
+
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
+  },
+
+  bindButtons() {
+    const btnHome = document.getElementById('btnDtHome');
+    if (btnHome) {
+      btnHome.onclick = (e) => {
+        e.preventDefault();
+        this.setHomePose();
+      };
+    }
+
+    const btnToggleGrid = document.getElementById('btnDtToggleGrid');
+    if (btnToggleGrid) {
+      btnToggleGrid.onclick = (e) => {
+        e.preventDefault();
+        this.toggleGrid();
+      };
+    }
+
+    const btnResetCam = document.getElementById('btnDtResetCamera');
+    if (btnResetCam) {
+      btnResetCam.onclick = (e) => {
+        e.preventDefault();
+        this.resetCamera();
+      };
+    }
   },
 
   createOverlayUI() {
@@ -136,11 +168,11 @@ const DigitalTwinPanel = {
 
   initScene() {
     const width = this.container.clientWidth || 800;
-    const height = this.container.clientHeight || 500;
+    const height = this.container.clientHeight || 620;
 
     // Scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x23201D); // Warm dark charcoal studio canvas
+    this.scene.background = new THREE.Color(0x23201D);
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 3000);
@@ -155,13 +187,13 @@ const DigitalTwinPanel = {
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.container.appendChild(this.renderer.domElement);
 
-    // Controls
+    // OrbitControls
     if (typeof THREE.OrbitControls !== 'undefined') {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-      this.controls.target.set(0, 120, 0);
+      this.controls.target.set(0, 140, 0);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.05;
-      this.controls.maxPolarAngle = Math.PI / 2 - 0.02; // Prevent going below floor
+      this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
       this.controls.minDistance = 100;
       this.controls.maxDistance = 1200;
       this.controls.update();
@@ -179,28 +211,26 @@ const DigitalTwinPanel = {
       roughness: 0.85,
       metalness: 0.1
     });
-    const groundMesh = new THREE.Mesh(groundGeo, groundMat);
-    groundMesh.rotation.x = -Math.PI / 2;
-    groundMesh.position.y = -0.5;
-    groundMesh.receiveShadow = true;
-    this.scene.add(groundMesh);
+    this.groundMesh = new THREE.Mesh(groundGeo, groundMat);
+    this.groundMesh.rotation.x = -Math.PI / 2;
+    this.groundMesh.position.y = -0.5;
+    this.groundMesh.receiveShadow = true;
+    this.scene.add(this.groundMesh);
 
     // Work table border ring
     const ringGeo = new THREE.RingGeometry(279, 281, 48);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xC4784A, side: THREE.DoubleSide, opacity: 0.4, transparent: true });
-    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-    ringMesh.rotation.x = -Math.PI / 2;
-    ringMesh.position.y = -0.4;
-    this.scene.add(ringMesh);
+    this.ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    this.ringMesh.rotation.x = -Math.PI / 2;
+    this.ringMesh.position.y = -0.4;
+    this.scene.add(this.ringMesh);
   },
 
   initLighting() {
-    // Warm Ambient Light
-    const ambientLight = new THREE.AmbientLight(0xFFF6EE, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xFFF6EE, 0.85);
     this.scene.add(ambientLight);
 
-    // Key Directional Light (Front-Right Top)
-    const keyLight = new THREE.DirectionalLight(0xFFF3E0, 1.2);
+    const keyLight = new THREE.DirectionalLight(0xFFF3E0, 1.25);
     keyLight.position.set(200, 400, 250);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 2048;
@@ -215,12 +245,10 @@ const DigitalTwinPanel = {
     keyLight.shadow.bias = -0.001;
     this.scene.add(keyLight);
 
-    // Fill Directional Light (Left-Back Soft)
     const fillLight = new THREE.DirectionalLight(0xD8D0C5, 0.6);
     fillLight.position.set(-200, 200, -200);
     this.scene.add(fillLight);
 
-    // Subtle Rim Light
     const rimLight = new THREE.DirectionalLight(0xC4784A, 0.4);
     rimLight.position.set(0, -100, -300);
     this.scene.add(rimLight);
@@ -232,18 +260,20 @@ const DigitalTwinPanel = {
     this.robotRoot.position.set(0, 0, 0);
     this.scene.add(this.robotRoot);
 
-    // 2. Base group (Stationary base on floor)
+    // 2. Base group (Stationary base sitting flat on floor at Y = 0)
     this.baseGroup = new THREE.Group();
     this.robotRoot.add(this.baseGroup);
 
     // 3. Waist group (Rotates around Y axis, Joint 1 / Base θ1)
+    // Sits directly on top of the Base turntable at Y = 56.0 mm!
     this.waistGroup = new THREE.Group();
-    this.waistGroup.position.set(0, 0, 0);
+    this.waistGroup.position.set(0, this.BASE_HEIGHT, 0);
     this.robotRoot.add(this.waistGroup);
 
-    // 4. Shoulder group (Pivot at Y = L1 = 95mm, Rotates around X axis, Joint 2 / Shoulder θ2)
+    // 4. Shoulder group (Pivot at Y = 39.0 mm above waist, giving total height 56 + 39 = 95mm = L1)
+    // Rotates around X axis (pitch), Joint 2 / Shoulder θ2
     this.shoulderGroup = new THREE.Group();
-    this.shoulderGroup.position.set(0, this.L1, 0);
+    this.shoulderGroup.position.set(0, this.SHOULDER_OFFSET, 0);
     this.waistGroup.add(this.shoulderGroup);
 
     // 5. Elbow group (Pivot at Y = L2 = 120mm along shoulder link, Rotates around X axis, Joint 3 / Elbow θ3)
@@ -279,12 +309,12 @@ const DigitalTwinPanel = {
   addJointPin(parent, length, radius) {
     const pinGeo = new THREE.CylinderGeometry(radius, radius, length, 24);
     const pinMat = new THREE.MeshStandardMaterial({
-      color: 0xD4A843, // Warm brass
+      color: 0xD4A843,
       metalness: 0.75,
       roughness: 0.25
     });
     const pinMesh = new THREE.Mesh(pinGeo, pinMat);
-    pinMesh.rotation.z = Math.PI / 2; // Lie along X axis
+    pinMesh.rotation.z = Math.PI / 2;
     parent.add(pinMesh);
   },
 
@@ -325,8 +355,8 @@ const DigitalTwinPanel = {
         material: matCharcoal,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Center base at X=0, Z=0; sitting flat on floor Y=0
-          geo.translate(-60.625, 0, -60.625);
+          // Center base at X=0, Z=0; sitting flat on floor Y=0 (height is 56mm)
+          geo.translate(-60.64, 0, -60.63);
         }
       },
       {
@@ -336,8 +366,9 @@ const DigitalTwinPanel = {
         material: matTerracotta,
         transform: (geo) => {
           geo.computeVertexNormals();
-          // Center waist at X=0, Z=0; top sits under shoulder pivot
-          geo.translate(-48.5, 0, -48.5);
+          // Center waist turntable circle at X=0, Z=0.
+          // Bottom of waist rests flush on top of base at Y = 56mm!
+          geo.translate(-48.43, 0, -49.23);
         }
       },
       {
@@ -440,7 +471,6 @@ const DigitalTwinPanel = {
           console.warn(`Could not load STL ${item.file}:`, error);
           loadedCount++;
           if (loadedCount === totalCount) {
-            // If partial or failed, fill missing with procedural geometry
             this.buildProceduralFallbacks();
             this.hideLoadingOverlay();
             this.updateStatusPill(true);
@@ -451,22 +481,21 @@ const DigitalTwinPanel = {
   },
 
   buildProceduralFallbacks() {
-    // If STL meshes are missing or still loading, create clean kinematic geometric representations
     const matAccent = new THREE.MeshStandardMaterial({ color: 0xC4784A, roughness: 0.4, metalness: 0.2 });
     const matDark = new THREE.MeshStandardMaterial({ color: 0x3E3832, roughness: 0.5, metalness: 0.3 });
 
     if (!this.meshes['base']) {
-      const bGeo = new THREE.CylinderGeometry(55, 60, 50, 32);
+      const bGeo = new THREE.CylinderGeometry(55, 60, 56, 32);
       const bMesh = new THREE.Mesh(bGeo, matDark);
-      bMesh.position.y = 25;
+      bMesh.position.y = 28;
       bMesh.castShadow = true;
       this.baseGroup.add(bMesh);
     }
 
     if (!this.meshes['waist']) {
-      const wGeo = new THREE.CylinderGeometry(45, 48, 45, 32);
+      const wGeo = new THREE.CylinderGeometry(45, 48, 40, 32);
       const wMesh = new THREE.Mesh(wGeo, matAccent);
-      wMesh.position.y = 65;
+      wMesh.position.y = 20;
       wMesh.castShadow = true;
       this.waistGroup.add(wMesh);
     }
@@ -538,17 +567,26 @@ const DigitalTwinPanel = {
 
   /* Reset Viewport Camera */
   resetCamera() {
-    if (!this.camera || !this.controls) return;
+    if (!this.camera) return;
     this.camera.position.set(0, 260, 420);
-    this.controls.target.set(0, 120, 0);
-    this.controls.update();
+    if (this.controls) {
+      this.controls.target.set(0, 140, 0);
+      this.controls.update();
+    }
   },
 
   /* Toggle Ground Grid */
   toggleGrid() {
-    if (!this.gridHelper) return;
     this.isGridVisible = !this.isGridVisible;
-    this.gridHelper.visible = this.isGridVisible;
+    if (this.gridHelper) {
+      this.gridHelper.visible = this.isGridVisible;
+    }
+    if (this.groundMesh) {
+      this.groundMesh.visible = this.isGridVisible;
+    }
+    if (this.ringMesh) {
+      this.ringMesh.visible = this.isGridVisible;
+    }
   },
 
   /* Move to Default Home Pose (90° All) */
@@ -638,6 +676,9 @@ const DigitalTwinPanel = {
     }
   }
 };
+
+// Explicitly export to window scope so buttons and App.js can access it
+window.DigitalTwinPanel = DigitalTwinPanel;
 
 // Initialize when DOM and Three.js are ready
 document.addEventListener('DOMContentLoaded', () => {
