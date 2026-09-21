@@ -473,7 +473,9 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.info("New WebSocket client connected.")
     
     # Send initial status on connect
-    await websocket.send_json({"type": "status", "data": serial_manager.get_status()})
+    initial_status = serial_manager.get_status()
+    initial_status["latest_block_pose"] = vision_manager_cam1.latest_block_pose
+    await websocket.send_json({"type": "status", "data": initial_status})
 
     try:
         while True:
@@ -543,10 +545,13 @@ async def broadcast_status():
     """Broadcasts current status to all connected WebSocket clients."""
     if not active_connections:
         return
+    serial_status = serial_manager.get_status()
+    serial_status["latest_block_pose"] = vision_manager_cam1.latest_block_pose
     status_data = {
         "type": "status",
-        "data": serial_manager.get_status(),
-        "autonomous": autonomous_runner.get_status()
+        "data": serial_status,
+        "autonomous": autonomous_runner.get_status(),
+        "vision": vision_manager_cam1.latest_block_pose
     }
     for conn in list(active_connections):
         try:

@@ -67,6 +67,51 @@ const DigitalTwinPanel = {
     rightFlipZ: false
   },
 
+  // Physical Workspace (25cm x 30cm) & Target Block Tracking Config
+  workspaceConfig: {
+    widthMm: 300.0,       // 30 cm horizontal width (X)
+    depthMm: 250.0,       // 25 cm forward depth (Y in vision, Z in 3D)
+    distFromArmCm: 3.8,   // 3.8 cm distance in front of arm base
+    baseRadiusMm: 48.5,   // Physical base radius of robotic arm
+    gridStepMm: 50.0,     // 5 cm grid squares (6 cols x 5 rows = 30 cells)
+    blockSizeMm: 40.0,    // 4 cm cube block
+    liveCameraSync: true, // Auto-sync from Camera 1 ArUco perception
+    manualXCm: 15.0,      // Manual test X (cm)
+    manualYCm: 12.5,      // Manual test Y (cm)
+    manualThetaDeg: 0.0   // Manual test theta (deg)
+  },
+
+  // Workspace & Target Block Objects
+  workspaceGroup: null,
+  workspaceMesh: null,
+  workspaceEdgeMesh: null,
+  blockGroup: null,
+  blockMesh: null,
+  blockLabelSprite: null,
+  labelCanvas: null,
+  labelCtx: null,
+  labelTexture: null,
+
+  // Live Perception State
+  blockPose: {
+    x_cm: 15.0,
+    y_cm: 12.5,
+    theta_deg: 0.0,
+    valid: false
+  },
+  currentBlock3D: {
+    x: 0,
+    y: 21.5,
+    z: 211.5,
+    theta: 0
+  },
+  targetBlock3D: {
+    x: 0,
+    y: 21.5,
+    z: 211.5,
+    theta: 0
+  },
+
   // Current and Target Joint Angles (Degrees)
   // [Base θ1, Shoulder θ2, Elbow θ3, Wrist Roll θ4, Wrist Pitch θ5, Gripper θ6]
   currentAngles: [90, 90, 90, 90, 90, 140],
@@ -96,6 +141,9 @@ const DigitalTwinPanel = {
     this.initScene();
     this.initLighting();
     this.buildKinematicHierarchy();
+    this.buildWorkspace();
+    this.buildTargetBlock();
+    this.startVisionPolling();
     this.loadModels();
     this.setupResizeObserver();
     this.bindButtons();
@@ -190,6 +238,25 @@ const DigitalTwinPanel = {
       <div>Claw: <span id="dtVal5" style="color: var(--accent-primary); font-weight: 600;">140°</span></div>
     `;
     this.container.appendChild(telemetryOverlay);
+
+    // Live ArUco Perception Badge (bottom left, stacked above telemetry bar)
+    const blockBadge = document.createElement('div');
+    blockBadge.id = 'dtBlockVisionBadge';
+    blockBadge.style.position = 'absolute';
+    blockBadge.style.bottom = '58px';
+    blockBadge.style.left = '16px';
+    blockBadge.style.zIndex = '5';
+    blockBadge.style.background = 'rgba(26, 24, 23, 0.88)';
+    blockBadge.style.border = '1px solid rgba(196, 120, 74, 0.35)';
+    blockBadge.style.padding = '5px 12px';
+    blockBadge.style.borderRadius = '6px';
+    blockBadge.style.fontFamily = 'var(--font-mono)';
+    blockBadge.style.fontSize = '0.70rem';
+    blockBadge.style.color = '#C4784A';
+    blockBadge.style.backdropFilter = 'blur(6px)';
+    blockBadge.style.pointerEvents = 'none';
+    blockBadge.textContent = 'ArUco Vision: Standby (Camera 1)';
+    this.container.appendChild(blockBadge);
 
     // Viewport helper pill (top right)
     const helperOverlay = document.createElement('div');
@@ -516,6 +583,60 @@ const DigitalTwinPanel = {
         </div>
       </div>
 
+      <!-- Physical Workspace & ArUco Block Perception Controls -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.12); padding-top: 10px; margin-top: 10px;">
+        <div style="font-weight: 600; color: var(--accent-primary); margin-bottom: 8px; font-size: 0.76rem; display: flex; justify-content: space-between; align-items: center;">
+          <span>Workspace & ArUco Block</span>
+          <span style="font-size: 0.65rem; color: #FAF7F2; background: rgba(196,120,74,0.2); padding: 2px 6px; border-radius: 4px;">25 x 30 cm</span>
+        </div>
+
+        <!-- Workspace Distance from Arm Base -->
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Distance from Arm:</span>
+            <span id="dtValWsDist" style="color: var(--accent-primary);">${this.workspaceConfig.distFromArmCm} cm</span>
+          </div>
+          <input type="range" id="dtSliderWsDist" min="1.0" max="15.0" step="0.2" value="${this.workspaceConfig.distFromArmCm}" style="width: 100%;">
+        </div>
+
+        <!-- Live Camera Sync Toggle -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; background: rgba(255,255,255,0.04); padding: 6px; border-radius: 4px;">
+          <span>Camera 1 Perception Sync:</span>
+          <label style="position: relative; display: inline-block; width: 34px; height: 18px; margin: 0;">
+            <input type="checkbox" id="dtCheckLiveVision" ${this.workspaceConfig.liveCameraSync ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${this.workspaceConfig.liveCameraSync ? 'var(--accent-primary)' : '#444'}; transition: .3s; border-radius: 18px;" id="dtCheckLiveVisionSlider"></span>
+          </label>
+        </div>
+
+        <!-- Manual Block Test Coordinates -->
+        <div id="dtManualBlockSection" style="opacity: ${this.workspaceConfig.liveCameraSync ? '0.45' : '1.0'};">
+          <div style="font-size: 0.68rem; color: #C4784A; margin-bottom: 4px;">Manual Block Simulation:</div>
+          <div style="margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span>Block X (0-30cm):</span>
+              <span id="dtValManualBlockX" style="color: var(--accent-primary);">${this.workspaceConfig.manualXCm} cm</span>
+            </div>
+            <input type="range" id="dtSliderManualBlockX" min="0" max="30" step="0.5" value="${this.workspaceConfig.manualXCm}" style="width: 100%;">
+          </div>
+
+          <div style="margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span>Block Y (0-25cm):</span>
+              <span id="dtValManualBlockY" style="color: var(--accent-primary);">${this.workspaceConfig.manualYCm} cm</span>
+            </div>
+            <input type="range" id="dtSliderManualBlockY" min="0" max="25" step="0.5" value="${this.workspaceConfig.manualYCm}" style="width: 100%;">
+          </div>
+
+          <div style="margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span>Block Angle:</span>
+              <span id="dtValManualBlockTheta" style="color: var(--accent-primary);">${this.workspaceConfig.manualThetaDeg}°</span>
+            </div>
+            <input type="range" id="dtSliderManualBlockTheta" min="-180" max="180" step="5" value="${this.workspaceConfig.manualThetaDeg}" style="width: 100%;">
+          </div>
+        </div>
+      </div>
+
       <div style="display: flex; gap: 8px; margin-top: 10px;">
         <button id="btnDtSaveClawConfigBottom" class="btn btn-primary" style="flex: 2; font-weight: 600; font-size: 0.72rem; padding: 7px; background: var(--accent-primary); border: 1px solid var(--accent-primary); color: #FAF7F2; cursor: pointer;">Save Configuration</button>
         <button id="btnDtResetTuner" class="btn btn-secondary" style="flex: 1; font-size: 0.70rem; padding: 7px;">Reset Defaults</button>
@@ -802,6 +923,88 @@ const DigitalTwinPanel = {
       this.updateClawPlacements();
     };
 
+    // Workspace & Target Block Tuner Controls
+    const sliderWsDist = tuner.querySelector('#dtSliderWsDist');
+    const checkLiveVision = tuner.querySelector('#dtCheckLiveVision');
+    const sliderBlockX = tuner.querySelector('#dtSliderManualBlockX');
+    const sliderBlockY = tuner.querySelector('#dtSliderManualBlockY');
+    const sliderBlockTheta = tuner.querySelector('#dtSliderManualBlockTheta');
+    const manualBlockSection = tuner.querySelector('#dtManualBlockSection');
+
+    if (sliderWsDist) {
+      sliderWsDist.oninput = (e) => {
+        this.workspaceConfig.distFromArmCm = parseFloat(e.target.value);
+        tuner.querySelector('#dtValWsDist').textContent = `${this.workspaceConfig.distFromArmCm.toFixed(1)} cm`;
+        this.updateWorkspacePosition();
+      };
+    }
+
+    if (checkLiveVision) {
+      checkLiveVision.onchange = (e) => {
+        this.workspaceConfig.liveCameraSync = e.target.checked;
+        const sliderBg = tuner.querySelector('#dtCheckLiveVisionSlider');
+        if (sliderBg) {
+          sliderBg.style.backgroundColor = this.workspaceConfig.liveCameraSync ? 'var(--accent-primary)' : '#444';
+        }
+        if (manualBlockSection) {
+          manualBlockSection.style.opacity = this.workspaceConfig.liveCameraSync ? '0.45' : '1.0';
+        }
+        if (!this.workspaceConfig.liveCameraSync) {
+          this.updateBlock3DPosition(
+            this.workspaceConfig.manualXCm,
+            this.workspaceConfig.manualYCm,
+            this.workspaceConfig.manualThetaDeg,
+            true
+          );
+        }
+      };
+    }
+
+    if (sliderBlockX) {
+      sliderBlockX.oninput = (e) => {
+        this.workspaceConfig.manualXCm = parseFloat(e.target.value);
+        tuner.querySelector('#dtValManualBlockX').textContent = `${this.workspaceConfig.manualXCm.toFixed(1)} cm`;
+        if (!this.workspaceConfig.liveCameraSync) {
+          this.updateBlock3DPosition(
+            this.workspaceConfig.manualXCm,
+            this.workspaceConfig.manualYCm,
+            this.workspaceConfig.manualThetaDeg,
+            true
+          );
+        }
+      };
+    }
+
+    if (sliderBlockY) {
+      sliderBlockY.oninput = (e) => {
+        this.workspaceConfig.manualYCm = parseFloat(e.target.value);
+        tuner.querySelector('#dtValManualBlockY').textContent = `${this.workspaceConfig.manualYCm.toFixed(1)} cm`;
+        if (!this.workspaceConfig.liveCameraSync) {
+          this.updateBlock3DPosition(
+            this.workspaceConfig.manualXCm,
+            this.workspaceConfig.manualYCm,
+            this.workspaceConfig.manualThetaDeg,
+            true
+          );
+        }
+      };
+    }
+
+    if (sliderBlockTheta) {
+      sliderBlockTheta.oninput = (e) => {
+        this.workspaceConfig.manualThetaDeg = parseFloat(e.target.value);
+        tuner.querySelector('#dtValManualBlockTheta').textContent = `${this.workspaceConfig.manualThetaDeg}°`;
+        if (!this.workspaceConfig.liveCameraSync) {
+          this.updateBlock3DPosition(
+            this.workspaceConfig.manualXCm,
+            this.workspaceConfig.manualYCm,
+            this.workspaceConfig.manualThetaDeg,
+            true
+          );
+        }
+      };
+    }
+
     btnClose.onclick = () => {
       tuner.style.display = 'none';
     };
@@ -853,6 +1056,18 @@ const DigitalTwinPanel = {
     setText('#dtValRRotY', `${this.clawConfig.rightRotY}°`);
     setVal('#dtSliderRRotZ', this.clawConfig.rightRotZ);
     setText('#dtValRRotZ', `${this.clawConfig.rightRotZ}°`);
+
+    // Workspace & Block
+    setVal('#dtSliderWsDist', this.workspaceConfig.distFromArmCm);
+    setText('#dtValWsDist', `${this.workspaceConfig.distFromArmCm.toFixed(1)} cm`);
+    const checkLive = tuner.querySelector('#dtCheckLiveVision');
+    if (checkLive) checkLive.checked = this.workspaceConfig.liveCameraSync;
+    setVal('#dtSliderManualBlockX', this.workspaceConfig.manualXCm);
+    setText('#dtValManualBlockX', `${this.workspaceConfig.manualXCm.toFixed(1)} cm`);
+    setVal('#dtSliderManualBlockY', this.workspaceConfig.manualYCm);
+    setText('#dtValManualBlockY', `${this.workspaceConfig.manualYCm.toFixed(1)} cm`);
+    setVal('#dtSliderManualBlockTheta', this.workspaceConfig.manualThetaDeg);
+    setText('#dtValManualBlockTheta', `${this.workspaceConfig.manualThetaDeg}°`);
 
     const setBorder = (id, cond) => {
       const el = tuner.querySelector(id);
@@ -956,12 +1171,12 @@ const DigitalTwinPanel = {
     }
 
     // Grid Floor
-    this.gridHelper = new THREE.GridHelper(600, 30, 0xC4784A, 0x423B35);
+    this.gridHelper = new THREE.GridHelper(800, 40, 0xC4784A, 0x423B35);
     this.gridHelper.position.y = 0;
     this.scene.add(this.gridHelper);
 
     // Circular ground ring
-    const groundGeo = new THREE.CircleGeometry(280, 48);
+    const groundGeo = new THREE.CircleGeometry(420, 64);
     const groundMat = new THREE.MeshStandardMaterial({
       color: 0x1E1B19,
       roughness: 0.85,
@@ -974,7 +1189,7 @@ const DigitalTwinPanel = {
     this.scene.add(this.groundMesh);
 
     // Work table border ring
-    const ringGeo = new THREE.RingGeometry(279, 281, 48);
+    const ringGeo = new THREE.RingGeometry(419, 421, 64);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xC4784A, side: THREE.DoubleSide, opacity: 0.4, transparent: true });
     this.ringMesh = new THREE.Mesh(ringGeo, ringMat);
     this.ringMesh.rotation.x = -Math.PI / 2;
@@ -1384,14 +1599,460 @@ const DigitalTwinPanel = {
     this.renderer.setSize(width, height);
   },
 
+  /* Build Physical Workspace Pad (25cm x 30cm) directly in front of the arm */
+  buildWorkspace() {
+    this.workspaceGroup = new THREE.Group();
+    this.workspaceGroup.name = 'workspace_pad';
+
+    const width = this.workspaceConfig.widthMm;   // 300 mm (X)
+    const depth = this.workspaceConfig.depthMm;   // 250 mm (Z)
+    const thickness = 1.6;
+
+    // Create high-resolution canvas texture for white mat with clean grid lines
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 1024 * (depth / width); // maintain aspect ratio
+    const ctx = canvas.getContext('2d');
+
+    // Fill white background with subtle warmth
+    ctx.fillStyle = '#FAFAF8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw outer border
+    ctx.strokeStyle = '#D5CEC5';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+
+    // Inner accent border
+    ctx.strokeStyle = '#C4784A';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+    // Grid: 6 columns (X) by 5 rows (Y), 50mm (5cm) squares
+    const numCols = 6;
+    const numRows = 5;
+    const stepX = (canvas.width - 20) / numCols;
+    const stepY = (canvas.height - 20) / numRows;
+
+    // Grid lines
+    ctx.strokeStyle = '#E2DDD6';
+    ctx.lineWidth = 1.5;
+    for (let c = 1; c < numCols; c++) {
+      ctx.beginPath();
+      ctx.moveTo(10 + c * stepX, 10);
+      ctx.lineTo(10 + c * stepX, canvas.height - 10);
+      ctx.stroke();
+    }
+    for (let r = 1; r < numRows; r++) {
+      ctx.beginPath();
+      ctx.moveTo(10, 10 + r * stepY);
+      ctx.lineTo(canvas.width - 10, 10 + r * stepY);
+      ctx.stroke();
+    }
+
+    // Origin Badge (ArUco ID 2 at bottom-left corner of workspace)
+    // Physical origin (X=0, Y=0) for vision coordinates
+    const markerSize = Math.min(stepX, stepY) * 0.75;
+    const markerX = 16;
+    const markerY = canvas.height - markerSize - 16;
+
+    // Marker background (black border)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(markerX, markerY, markerSize, markerSize);
+
+    // Inner 4x4 ArUco Marker ID 2 bit representation
+    // ID 2 in 4x4: row0: [1,1,0,0], row1: [1,1,0,0], row2: [1,1,0,1], row3: [0,0,1,0]
+    const bitMatrix = [
+      [1, 1, 0, 0],
+      [1, 1, 0, 0],
+      [1, 1, 0, 1],
+      [0, 0, 1, 0]
+    ];
+    const cellSize = (markerSize * 0.66) / 4;
+    const innerOffset = markerSize * 0.17;
+    ctx.fillStyle = '#FFFFFF';
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 4; col++) {
+        if (bitMatrix[row][col] === 1) {
+          ctx.fillRect(
+            markerX + innerOffset + col * cellSize,
+            markerY + innerOffset + row * cellSize,
+            cellSize,
+            cellSize
+          );
+        }
+      }
+    }
+
+    // Grid coordinate numbers & text labels
+    ctx.font = 'bold 22px monospace';
+    ctx.fillStyle = '#8B847E';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Origin (ID: 2) (0,0)', markerX + markerSize + 8, markerY + markerSize / 2);
+
+    // Size text top-right
+    ctx.font = 'bold 24px monospace';
+    ctx.fillStyle = '#C4784A';
+    ctx.textAlign = 'right';
+    ctx.fillText('WORKSPACE 25cm x 30cm', canvas.width - 24, 38);
+
+    // Coordinate axis arrows on pad
+    ctx.font = 'bold 18px monospace';
+    ctx.fillStyle = '#D9534F';
+    ctx.fillText('+X (Width 30cm) ->', markerX + markerSize + 8, markerY + markerSize + 2);
+    ctx.fillStyle = '#4E8046';
+    ctx.fillText('^ +Y (Depth 25cm)', markerX, markerY - 12);
+
+    // Grid dimension numbers along edges
+    ctx.font = '16px monospace';
+    ctx.fillStyle = '#A89E96';
+    ctx.textAlign = 'center';
+    for (let c = 1; c < numCols; c++) {
+      const xCm = c * 5;
+      ctx.fillText(`${xCm}cm`, 10 + c * stepX, canvas.height - 12);
+    }
+    ctx.textAlign = 'right';
+    for (let r = 1; r < numRows; r++) {
+      const yCm = (numRows - r) * 5;
+      ctx.fillText(`${yCm}cm`, canvas.width - 14, 10 + r * stepY + 4);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = 8;
+
+    const padGeo = new THREE.BoxGeometry(width, thickness, depth);
+    const padMat = new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.7,
+      metalness: 0.05
+    });
+
+    this.workspaceMesh = new THREE.Mesh(padGeo, padMat);
+    this.workspaceMesh.receiveShadow = true;
+    this.workspaceGroup.add(this.workspaceMesh);
+
+    // Subtle edge rim around the pad
+    const rimMat = new THREE.MeshBasicMaterial({ color: 0xD5CEC5 });
+    const edgeGeo = new THREE.EdgesGeometry(padGeo);
+    this.workspaceEdgeMesh = new THREE.LineSegments(edgeGeo, rimMat);
+    this.workspaceGroup.add(this.workspaceEdgeMesh);
+
+    // 3D Axis Helper at Marker ID 2 (Bottom-left origin of physical workspace)
+    const originAxis = new THREE.AxesHelper(35);
+    originAxis.position.set(-width / 2 + 15, thickness / 2 + 1, -depth / 2 + 15);
+    // Orient axes: Red = +X (along width), Green = +Y (up), Blue = +Z (along depth)
+    this.workspaceGroup.add(originAxis);
+
+    this.scene.add(this.workspaceGroup);
+    this.updateWorkspacePosition();
+  },
+
+  /* Position workspace pad in front of arm based on distFromArmCm */
+  updateWorkspacePosition() {
+    if (!this.workspaceGroup) return;
+
+    const distMm = this.workspaceConfig.distFromArmCm * 10.0;
+    const baseRadius = this.workspaceConfig.baseRadiusMm;
+    const depth = this.workspaceConfig.depthMm;
+    const thickness = 1.6;
+
+    // Near edge of workspace sits (baseRadius + distMm) in front of robot base (+Z)
+    // Center Z = near edge + (depth / 2)
+    const centerZ = baseRadius + distMm + (depth / 2.0);
+    const centerY = thickness / 2.0;
+
+    this.workspaceGroup.position.set(0, centerY, centerZ);
+
+    // Recompute current block 3D target coordinates when workspace moves
+    this.updateBlock3DPosition(
+      this.blockPose.x_cm,
+      this.blockPose.y_cm,
+      this.blockPose.theta_deg,
+      this.blockPose.valid
+    );
+  },
+
+  /* Build 3D ArUco Target Block (40mm x 40mm x 40mm) */
+  buildTargetBlock() {
+    this.blockGroup = new THREE.Group();
+    this.blockGroup.name = 'aruco_target_block';
+
+    const size = this.workspaceConfig.blockSizeMm; // 40 mm cube
+
+    // 1. Create top face ArUco Marker ID 0 texture
+    // Bit matrix for ArUco 4x4 ID 0:
+    // row0: [0, 1, 0, 0], row1: [1, 0, 1, 0], row2: [1, 1, 0, 0], row3: [1, 1, 0, 1]
+    const tagCanvas = document.createElement('canvas');
+    tagCanvas.width = 256;
+    tagCanvas.height = 256;
+    const tctx = tagCanvas.getContext('2d');
+
+    // Foam block color border
+    tctx.fillStyle = '#2A7B9B';
+    tctx.fillRect(0, 0, 256, 256);
+
+    // Black marker border
+    tctx.fillStyle = '#000000';
+    tctx.fillRect(24, 24, 208, 208);
+
+    // 4x4 bit grid
+    const bitMatrix0 = [
+      [0, 1, 0, 0],
+      [1, 0, 1, 0],
+      [1, 1, 0, 0],
+      [1, 1, 0, 1]
+    ];
+    const cellSize = 140 / 4;
+    tctx.fillStyle = '#FFFFFF';
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (bitMatrix0[r][c] === 1) {
+          tctx.fillRect(58 + c * cellSize, 58 + r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    // Direction indicator on block top face (+Y heading dot)
+    tctx.fillStyle = '#FF4444';
+    tctx.beginPath();
+    tctx.arc(128, 14, 8, 0, Math.PI * 2);
+    tctx.fill();
+
+    const tagTexture = new THREE.CanvasTexture(tagCanvas);
+
+    // Materials: top has ArUco marker, sides are colored sponge foam
+    const sideMat = new THREE.MeshStandardMaterial({
+      color: 0x2A7B9B,
+      roughness: 0.6,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.95
+    });
+    const topMat = new THREE.MeshStandardMaterial({
+      map: tagTexture,
+      roughness: 0.4,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.98
+    });
+    const bottomMat = new THREE.MeshStandardMaterial({
+      color: 0x1E5970,
+      roughness: 0.8,
+      transparent: true,
+      opacity: 0.95
+    });
+
+    const cubeMats = [
+      sideMat,   // +X
+      sideMat,   // -X
+      topMat,    // +Y (Top face with ArUco ID 0)
+      bottomMat, // -Y (Bottom)
+      sideMat,   // +Z (Front)
+      sideMat    // -Z (Back)
+    ];
+
+    const blockGeo = new THREE.BoxGeometry(size, size, size);
+    this.blockMesh = new THREE.Mesh(blockGeo, cubeMats);
+    this.blockMesh.castShadow = true;
+    this.blockMesh.receiveShadow = true;
+    this.blockMesh.position.y = size / 2.0; // rest on ground plane
+    this.blockGroup.add(this.blockMesh);
+
+    // Heading arrow on block
+    const arrowDir = new THREE.Vector3(0, 0, -1);
+    const arrowOrigin = new THREE.Vector3(0, size + 2, 0);
+    this.blockArrow = new THREE.ArrowHelper(arrowDir, arrowOrigin, 20, 0xFF4444, 8, 4);
+    this.blockGroup.add(this.blockArrow);
+
+    // 2. Floating HUD Billboard Label above the block
+    this.labelCanvas = document.createElement('canvas');
+    this.labelCanvas.width = 512;
+    this.labelCanvas.height = 160;
+    this.labelCtx = this.labelCanvas.getContext('2d');
+    this.labelTexture = new THREE.CanvasTexture(this.labelCanvas);
+
+    const spriteMat = new THREE.SpriteMaterial({
+      map: this.labelTexture,
+      transparent: true,
+      depthTest: false
+    });
+    this.blockLabelSprite = new THREE.Sprite(spriteMat);
+    this.blockLabelSprite.position.set(0, size + 34, 0);
+    this.blockLabelSprite.scale.set(68, 21.25, 1);
+    this.blockGroup.add(this.blockLabelSprite);
+
+    this.updateBlockLabel('Block 1 (Tag 0)', 'X: 15.0cm  Y: 12.5cm  θ: 0°');
+
+    // Initial position on workspace center
+    this.scene.add(this.blockGroup);
+    this.updateBlock3DPosition(15.0, 12.5, 0.0, false);
+  },
+
+  /* Update floating 2D text label over target block */
+  updateBlockLabel(title, coordsText) {
+    if (!this.labelCtx || !this.labelTexture) return;
+
+    const ctx = this.labelCtx;
+    ctx.clearRect(0, 0, 512, 160);
+
+    // Pill background
+    ctx.fillStyle = 'rgba(26, 24, 23, 0.92)';
+    ctx.strokeStyle = this.blockPose.valid ? '#C4784A' : 'rgba(224, 214, 200, 0.3)';
+    ctx.lineWidth = 4;
+
+    const r = 18;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(512 - r, 0);
+    ctx.quadraticCurveTo(512, 0, 512, r);
+    ctx.lineTo(512, 160 - r);
+    ctx.quadraticCurveTo(512, 160, 512 - r, 160);
+    ctx.lineTo(r, 160);
+    ctx.quadraticCurveTo(0, 160, 0, 160 - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Status dot
+    ctx.fillStyle = this.blockPose.valid ? '#4E8046' : '#C4784A';
+    ctx.beginPath();
+    ctx.arc(28, 44, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Title line
+    ctx.font = 'bold 34px sans-serif';
+    ctx.fillStyle = '#FAF7F2';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title, 50, 44);
+
+    // Coordinates line
+    ctx.font = 'bold 26px monospace';
+    ctx.fillStyle = '#C4784A';
+    ctx.fillText(coordsText, 24, 104);
+
+    this.labelTexture.needsUpdate = true;
+  },
+
+  /* Transform real-world workspace coordinates (cm) to 3D Three.js world coordinates (mm) */
+  updateBlock3DPosition(x_cm, y_cm, theta_deg, valid) {
+    this.blockPose.x_cm = x_cm;
+    this.blockPose.y_cm = y_cm;
+    this.blockPose.theta_deg = theta_deg;
+    this.blockPose.valid = Boolean(valid);
+
+    const distMm = this.workspaceConfig.distFromArmCm * 10.0;
+    const baseRadius = this.workspaceConfig.baseRadiusMm;
+    const thickness = 1.6;
+
+    // Coordinate conversion:
+    // Physical Workspace width X = 30cm, robot base is aligned at X = 15cm (center)
+    // Three.js X_3D (mm) = (X_cm - 15.0) * 10.0
+    const x_3d = (x_cm - 15.0) * 10.0;
+
+    // Physical Workspace depth Y = 25cm (0cm is near edge 3.8cm from arm, 25cm is far edge)
+    // Three.js Z_3D (mm) = baseRadius + distMm + (Y_cm * 10.0)
+    const z_3d = baseRadius + distMm + (y_cm * 10.0);
+
+    // Block rests on top of the workspace pad surface
+    const y_3d = thickness;
+
+    // Heading rotation: ArUco rotation around vertical Y-axis
+    const theta_rad = -theta_deg * (Math.PI / 180.0);
+
+    this.targetBlock3D.x = x_3d;
+    this.targetBlock3D.y = y_3d;
+    this.targetBlock3D.z = z_3d;
+    this.targetBlock3D.theta = theta_rad;
+
+    // Update HUD text
+    const statusStr = this.blockPose.valid ? 'Active Track' : 'Simulated / Standby';
+    this.updateBlockLabel(
+      `ArUco 0 • ${statusStr}`,
+      `X: ${x_cm.toFixed(1)}cm  Y: ${y_cm.toFixed(1)}cm  θ: ${Math.round(theta_deg)}°`
+    );
+
+    // Update badge in viewport
+    const badge = document.getElementById('dtBlockVisionBadge');
+    if (badge) {
+      if (this.blockPose.valid) {
+        badge.style.color = '#7DB26C';
+        badge.style.borderColor = 'rgba(125, 178, 108, 0.4)';
+        badge.textContent = `ArUco Block: Tracking (${x_cm.toFixed(1)}cm, ${y_cm.toFixed(1)}cm, ${Math.round(theta_deg)}°)`;
+      } else {
+        badge.style.color = '#C4784A';
+        badge.style.borderColor = 'rgba(196, 120, 74, 0.35)';
+        badge.textContent = `ArUco Vision: Standby (${x_cm.toFixed(1)}cm, ${y_cm.toFixed(1)}cm)`;
+      }
+    }
+  },
+
+  /* Update Block Pose from Camera 1 Perception Streaming */
+  updateBlockPose(pose) {
+    if (!pose || typeof pose !== 'object') return;
+    if (!this.workspaceConfig.liveCameraSync) return; // Ignore live vision if user is in manual mode
+
+    const x_cm = pose.x_cm !== undefined ? Number(pose.x_cm) : (pose.x !== undefined ? Number(pose.x) : 15.0);
+    const y_cm = pose.y_cm !== undefined ? Number(pose.y_cm) : (pose.y !== undefined ? Number(pose.y) : 12.5);
+    const theta_deg = pose.theta_deg !== undefined ? Number(pose.theta_deg) : (pose.theta !== undefined ? Number(pose.theta) : 0.0);
+    const valid = pose.valid !== undefined ? Boolean(pose.valid) : true;
+
+    this.updateBlock3DPosition(x_cm, y_cm, theta_deg, valid);
+  },
+
+  /* Start periodic perception polling fallback for offline / low-rate states */
+  startVisionPolling() {
+    setInterval(() => {
+      if (!this.workspaceConfig.liveCameraSync) return;
+
+      fetch('/api/vision/status')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.latest_block_pose) {
+            this.updateBlockPose(data.latest_block_pose);
+          }
+        })
+        .catch(() => {
+          // Camera/backend offline; maintain last pose in standby state
+        });
+    }, 250);
+  },
+
   /* Main 60 FPS Render & Articulation Loop */
   animate() {
     requestAnimationFrame(this.animate);
 
-    // Smooth lerp interpolation for natural motion
+    // Smooth lerp interpolation for arm joint motion
     const lerpFactor = 0.15;
     for (let i = 0; i < 6; i++) {
       this.currentAngles[i] += (this.targetAngles[i] - this.currentAngles[i]) * lerpFactor;
+    }
+
+    // Smooth lerp interpolation for target block movement across workspace
+    if (this.blockGroup) {
+      const blockLerp = 0.18;
+      this.currentBlock3D.x += (this.targetBlock3D.x - this.currentBlock3D.x) * blockLerp;
+      this.currentBlock3D.y += (this.targetBlock3D.y - this.currentBlock3D.y) * blockLerp;
+      this.currentBlock3D.z += (this.targetBlock3D.z - this.currentBlock3D.z) * blockLerp;
+      this.currentBlock3D.theta += (this.targetBlock3D.theta - this.currentBlock3D.theta) * blockLerp;
+
+      this.blockGroup.position.set(
+        this.currentBlock3D.x,
+        this.currentBlock3D.y,
+        this.currentBlock3D.z
+      );
+      this.blockGroup.rotation.y = this.currentBlock3D.theta;
+
+      // Adjust block mesh opacity based on detection validity
+      if (this.blockMesh) {
+        const targetOpacity = this.blockPose.valid ? 0.95 : 0.45;
+        this.blockMesh.material.forEach(mat => {
+          mat.opacity += (targetOpacity - mat.opacity) * 0.1;
+        });
+      }
     }
 
     const [a0, a1, a2, a3, a4, a5] = this.currentAngles;

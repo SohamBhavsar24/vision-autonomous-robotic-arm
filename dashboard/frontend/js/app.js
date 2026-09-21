@@ -170,6 +170,11 @@ const App = {
         if (el) el.textContent = `${data.angles[i]}°`;
       }
     }
+
+    // Update Digital Twin ArUco Block Perception Tracking
+    if (data.latest_block_pose && window.DigitalTwinPanel) {
+      window.DigitalTwinPanel.updateBlockPose(data.latest_block_pose);
+    }
   },
 
   updateStatusPill(isConnected, text) {
