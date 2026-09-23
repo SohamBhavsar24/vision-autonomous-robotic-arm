@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A0 Research Poster • Vision-Guided Autonomous 6-DOF Robotic Arm</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS PAGED MEDIA & EXACT A0 DIMENSIONS (841mm x 1189mm) */
+    @page {
+      size: 841mm 1189mm;
+      margin: 0;
+    }
+
+    :root {
+      --bg-poster: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-card-subtle: #F8FAFC;
+      --border-card: #E2E8F0;
+      --border-accent: #CBD5E1;
+      --text-title: #0F172A;
+      --text-main: #1E293B;
+      --text-muted: #64748B;
+      --text-light: #94A3B8;
+      --accent-tech: #2563EB;
+      --accent-teal: #0D9488;
+      --accent-navy: #1E3A8A;
+      --accent-purple: #7C3AED;
+      --accent-amber: #D97706;
+      --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      background-color: #E2E8F0;
+      color: var(--text-main);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 0 80px 0;
+    }
+
+    .screen-toolbar {
+      position: sticky;
+      top: 16px;
+      z-index: 1000;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 10px 24px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      margin-bottom: 24px;
+    }
+
+    .screen-toolbar span {
+      color: #F8FAFC;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: var(--font-display);
+    }
+
+    .btn-print {
+      background: var(--accent-tech);
+      color: #FFFFFF;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s ease, transform 0.1s ease;
+    }
+
+    .btn-print:hover {
+      background: #1D4ED8;
+      transform: translateY(-1px);
+    }
+
+    .btn-reset {
+      background: rgba(255, 255, 255, 0.12);
+      color: #F8FAFC;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    .btn-reset:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .poster-sheet {
+      width: 841mm;
+      min-height: 1189mm;
+      max-height: 1189mm;
+      background: var(--bg-poster);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 24mm 24mm 20mm 24mm;
+      overflow: hidden;
+    }
+
+    @media screen {
+      body {
+        transform-origin: top center;
+      }
+      .poster-sheet {
+        zoom: 0.42;
+      }
+    }
+
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .screen-toolbar {
+        display: none !important;
+      }
+      .poster-sheet {
+        zoom: 1 !important;
+        box-shadow: none !important;
+        width: 841mm !important;
+        height: 1189mm !important;
+        padding: 24mm 24mm 20mm 24mm !important;
+      }
+      .image-upload-overlay {
+        display: none !important;
+      }
+      .image-slot-empty {
+        border-style: solid !important;
+        border-color: #E2E8F0 !important;
+        background: #F8FAFC !important;
+      }
+    }
+
+    .poster-header {
+      border-bottom: 3.5px solid var(--accent-tech);
+      padding-bottom: 14mm;
+      margin-bottom: 12mm;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20mm;
+      align-items: center;
+    }
+
+    .header-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .tech-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      background: #EFF6FF;
+      color: var(--accent-tech);
+      border: 1.5px solid #BFDBFE;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 13pt;
+      font-weight: 600;
+    }
+
+    .dept-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 14px;
+      background: #F1F5F9;
+      color: var(--text-muted);
+      border: 1.5px solid #CBD5E1;
+      border-radius: 20px;
+      font-family: var(--font-display);
+      font-size: 13pt;
+      font-weight: 600;
+    }
+
+    .poster-title {
+      font-family: var(--font-display);
+      font-size: 38pt;
+      font-weight: 800;
+      line-height: 1.14;
+      color: var(--text-title);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .poster-subtitle {
+      font-family: var(--font-display);
+      font-size: 18pt;
+      font-weight: 600;
+      color: var(--accent-navy);
+      margin-bottom: 14px;
+    }
+
+    .poster-authors {
+      font-size: 15pt;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .poster-authors span {
+      color: var(--accent-tech);
+      margin: 0 8px;
+    }
+
+    .header-logo-box {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .qr-placeholder {
+      width: 48mm;
+      height: 48mm;
+      border: 2px solid var(--border-card);
+      border-radius: 8px;
+      background: #F8FAFC;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 9pt;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 8px;
+    }
+
+    .poster-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.28fr 1fr;
+      gap: 12mm;
+      flex: 1;
+    }
+
+    .poster-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10mm;
+    }
+
+    .poster-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-card);
+      border-radius: 8px;
+      padding: 10mm 9mm;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .poster-card.highlight {
+      border-color: #BFDBFE;
+      background: #F8FAFC;
+    }
+
+    .card-heading {
+      font-family: var(--font-display);
+      font-size: 16pt;
+      font-weight: 800;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6mm;
+      border-bottom: 2px solid #F1F5F9;
+      padding-bottom: 3mm;
+    }
+
+    .card-heading .heading-num {
+      background: var(--accent-tech);
+      color: #FFFFFF;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12pt;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .card-text {
+      font-size: 11pt;
+      color: var(--text-main);
+      line-height: 1.6;
+      margin-bottom: 4mm;
+    }
+
+    .card-text strong {
+      color: var(--text-title);
+      font-weight: 700;
+    }
+
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+      margin: 4mm 0;
+    }
+
+    .specs-table th {
+      background: #F1F5F9;
+      color: var(--text-title);
+      font-family: var(--font-display);
+      font-weight: 700;
+      text-align: left;
+      padding: 6px 10px;
+      border: 1px solid var(--border-card);
+    }
+
+    .specs-table td {
+      padding: 5px 10px;
+      border: 1px solid var(--border-card);
+      font-family: var(--font-mono);
+      color: var(--text-main);
+    }
+
+    .specs-table tr:nth-child(even) {
+      background: #F8FAFC;
+    }
+
+    .flowchart-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4.5mm;
+    }
+
+    .flow-block {
+      background: #FFFFFF;
+      border: 2px solid var(--border-card);
+      border-left: 6px solid var(--accent-tech);
+      border-radius: 6px;
+      padding: 5mm 6mm;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      position: relative;
+    }
+
+    .flow-block.accent-teal {
+      border-left-color: var(--accent-teal);
+    }
+
+    .flow-block.accent-navy {
+      border-left-color: var(--accent-navy);
+    }
+
+    .flow-block.accent-purple {
+      border-left-color: var(--accent-purple);
+    }
+
+    .flow-block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2mm;
+    }
+
+    .flow-block-title {
+      font-family: var(--font-display);
+      font-size: 12pt;
+      font-weight: 800;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-block-tag {
+      font-family: var(--font-mono);
+      font-size: 8pt;
+      font-weight: 600;
+      background: #F1F5F9;
+      color: var(--accent-navy);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #CBD5E1;
+    }
+
+    .flow-block-desc {
+      font-size: 9.8pt;
+      color: var(--text-main);
+      line-height: 1.45;
+    }
+
+    .flow-arrow-down {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--accent-tech);
+      font-weight: 800;
+      font-size: 14pt;
+      margin: -2mm 0;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+      margin-top: 3mm;
+    }
+
+    .metric-card {
+      background: #F8FAFC;
+      border: 1.5px solid var(--border-card);
+      border-radius: 6px;
+      padding: 4mm;
+      text-align: center;
+    }
+
+    .metric-val {
+      font-family: var(--font-display);
+      font-size: 20pt;
+      font-weight: 800;
+      color: var(--accent-tech);
+      line-height: 1.1;
+    }
+
+    .metric-label {
+      font-size: 8.5pt;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 3px;
+    }
+
+    .twin-function-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 3.5mm;
+      align-items: flex-start;
+    }
+
+    .twin-fn-num {
+      background: #EFF6FF;
+      color: var(--accent-tech);
+      font-family: var(--font-mono);
+      font-size: 9pt;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid #BFDBFE;
+      margin-top: 1px;
+    }
+
+    .twin-fn-body {
+      font-size: 9.8pt;
+      color: var(--text-main);
+      line-height: 1.4;
+    }
+
+    .twin-fn-body strong {
+      color: var(--text-title);
+    }
+
+    .image-slot {
+      position: relative;
+      width: 100%;
+      height: 48mm;
+      border: 2px dashed #CBD5E1;
+      border-radius: 6px;
+      background: #F8FAFC;
+      overflow: hidden;
+      margin: 4mm 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .image-slot:hover {
+      border-color: var(--accent-tech);
+      background-color: #EFF6FF;
+    }
+
+    .image-slot.has-image {
+      border-style: solid;
+      border-color: var(--border-card);
+      background: #FFFFFF;
+    }
+
+    .image-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .image-slot.has-image img {
+      display: block;
+    }
+
+    .image-slot-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      text-align: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .image-slot.has-image .image-slot-empty {
+      display: none;
+    }
+
+    .slot-icon {
+      width: 28px;
+      height: 28px;
+      stroke: var(--accent-tech);
+      fill: none;
+    }
+
+    .slot-label {
+      font-size: 9pt;
+      font-weight: 700;
+      color: var(--text-title);
+      font-family: var(--font-display);
+    }
+
+    .slot-hint {
+      font-size: 7.5pt;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .image-upload-overlay {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #FFFFFF;
+      font-size: 7.5pt;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+
+    .image-slot:hover .image-upload-overlay {
+      opacity: 1;
+    }
+
+    .hidden-file-input {
+      display: none;
+    }
+
+    .poster-footer {
+      border-top: 2px solid var(--border-card);
+      margin-top: 8mm;
+      padding-top: 4mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8.5pt;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="screen-toolbar">
+    <span>A0 Academic Research Poster Preview (841mm x 1189mm)</span>
+    <button class="btn-print" onclick="window.print()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      Print / Export A0 PDF
+    </button>
+    <button class="btn-reset" onclick="resetAllImages()">Clear Uploaded Images</button>
+  </div>
+
+  <div class="poster-sheet" id="posterRoot">
+
+    <header class="poster-header">
+      <div>
+        <div class="header-badge-row">
+          <span class="tech-badge">CAPSTONE ENGINEERING PROJECT 2026</span>
+          <span class="dept-badge">Dept. of Electronics & Computer Engineering</span>
+          <span class="dept-badge">Autonomous Robotics & Cyber-Physical Systems</span>
+        </div>
+        <h1 class="poster-title">
+          Vision-Guided Autonomous 6-DOF Robotic Arm Using Imitation Learning & Cyber-Physical Digital Twin
+        </h1>
+        <div class="poster-subtitle">
+          Real-Time Behavior Cloning with Overhead OpenCV Perception and Offline WebGL Simulation
+        </div>
+        <div class="poster-authors">
+          <strong>Soham Bhavsar</strong> <span>•</span> 
+          <strong>Divyansh Dewangan</strong> <span>•</span> 
+          <strong>Toshal Kumbhar</strong>
+        </div>
+      </div>
+
+      <div class="header-logo-box">
+        <div class="qr-placeholder">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" style="margin-bottom: 4px;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <div><strong>PROJECT REPO</strong></div>
+          <div style="font-size: 7.5pt; color: #64748B;">Scan for Code & Live Demo</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="poster-grid">
+
+      <div class="poster-column">
+
+        <section class="poster-card">
+          <h2 class="card-heading">
+            <span class="heading-num">1</span> Abstract & Motivation
+          </h2>
+          <p class="card-text">
+            Autonomous pick-and-place manipulation in unstructured environments presents a dilemma: traditional Inverse Kinematics (IK) requires brittle geometric hard-coding that fails when objects shift, whereas pure end-to-end Deep Reinforcement Learning requires millions of trials that wear down affordable hobbyist servo motors.
+          </p>
+          <p class="card-text">
+            <strong>Proposed Approach:</strong> We present an affordable, hybrid cyber-physical robotic system combining:
+          </p>
+          <ul style="font-size: 10.2pt; padding-left: 18px; margin-bottom: 4mm; color: var(--text-main); line-height: 1.6;">
+            <li><strong>OpenCV Perception Engine:</strong> Decouples optical tracking from neural control, extracting lighting-invariant spatial feature vectors.</li>
+            <li><strong>Imitation Learning (Behavior Cloning):</strong> Trains a motion policy directly from human PS5 teleoperation demonstrations.</li>
+            <li><strong>WebGL Digital Twin:</strong> Enforces workspace geofencing and real-time tracking error validation.</li>
+          </ul>
+
+          <div class="image-slot" id="slot-robot" onclick="triggerFileInput('input-robot')">
+            <input type="file" id="input-robot" class="hidden-file-input" accept="image/*" onchange="handleFileSelect(event, 'slot-robot')">
+            <img src="" alt="Physical Robot Arm Setup" id="img-slot-robot">
+            <div class="image-slot-empty">
+              <svg class="slot-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <div class="slot-label">Click or Drop Image: Physical Robotic Arm</div>
+              <div class="slot-hint">6-DOF Manipulator on 25cm x 30cm Workspace Table</div>
+            </div>
+            <div class="image-upload-overlay">Change Image</div>
+          </div>
+        </section>
+
+        <section class="poster-card">
+          <h2 class="card-heading">
+            <span class="heading-num">2</span> Kinematic & Hardware Architecture
+          </h2>
+          <p class="card-text">
+            The manipulator is built from 3D-printed CAD segments loaded from <code>Robotic_Arm_3D_Model.STEP</code>, articulated with metal-gear servos driven via an isolated 6V 5Ah power bus.
+          </p>
+
+          <table class="specs-table">
+            <thead>
+              <tr>
+                <th>Joint / Link</th>
+                <th>Actuator</th>
+                <th>Dimension / Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>theta1 • Base Yaw</strong></td>
+                <td>MG996R (Ch 0)</td>
+                <td>Turntable Pivot • L1 = 9.5 cm</td>
+              </tr>
+              <tr>
+                <td><strong>theta2 • Shoulder</strong></td>
+                <td>MG996R (Ch 1)</td>
+                <td>Upper Arm Pitch • L2 = 12.0 cm</td>
+              </tr>
+              <tr>
+                <td><strong>theta3 • Elbow</strong></td>
+                <td>MG996R (Ch 2)</td>
+                <td>Forearm Pitch • L3 = 10.0 cm</td>
+              </tr>
+              <tr>
+                <td><strong>theta4 • Wrist Roll</strong></td>
+                <td>MG90S (Ch 3)</td>
+                <td>Longitudinal Arm Roll</td>
+              </tr>
+              <tr>
+                <td><strong>theta5 • Wrist Pitch</strong></td>
+                <td>MG90S (Ch 4)</td>
+                <td>End-Effector Elevation</td>
+              </tr>
+              <tr>
+                <td><strong>theta6 • Gripper Claw</strong></td>
+                <td>MG90S (Ch 5)</td>
+                <td>Dual-Gear Claw • L4 = 14.0 cm</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top: 3mm; font-size: 9.8pt; color: var(--text-muted); line-height: 1.5;">
+            <strong>Control Hardware:</strong> Arduino Uno Rev3 operating as an asynchronous binary serial bridge (115200 baud, 6-byte packets at 30Hz) driving a PCA9685 16-channel 12-bit PWM generator with a 500ms hardware watchdog.
+          </div>
+        </section>
+
+      </div>
+
+      <div class="poster-column">
+
+        <section class="poster-card highlight" style="flex: 1;">
+          <h2 class="card-heading" style="border-bottom-color: #BFDBFE;">
+            <span class="heading-num">3</span> End-to-End System Pipeline Flowchart
+          </h2>
+          <p class="card-text" style="margin-bottom: 5mm;">
+            The cyber-physical architecture executes a closed-loop sensing, simulation, and actuation cycle across seven interconnected blocks:
+          </p>
+
+          <div class="flowchart-container">
+
+            <div class="flow-block">
+              <div class="flow-block-header">
+                <span class="flow-block-title">
+                  <span style="color: var(--accent-tech);">[1]</span> Overhead Vision Perception
+                </span>
+                <span class="flow-block-tag">Hardware Sensor</span>
+              </div>
+              <p class="flow-block-desc">
+                Logitech C270 camera positioned on a rigid vertical mount captures continuous 30 FPS video frames (640 x 480) overlooking the 25cm x 30cm workspace surface.
+              </p>
+            </div>
+
+            <div class="flow-arrow-down">|</div>
+
+            <div class="flow-block accent-teal">
+              <div class="flow-block-header">
+                <span class="flow-block-title">
+                  <span style="color: var(--accent-teal);">[2]</span> OpenCV Perception Engine
+                </span>
+                <span class="flow-block-tag">vision_manager.py</span>
+              </div>
+              <p class="flow-block-desc">
+                Detects 4x4 ArUco markers with sub-pixel corner refinement. Marker ID 2 sets the static World Origin (0, 0); Marker ID 0 tracks the target pick cube (u0, v0, theta0).
+              </p>
+            </div>
+
+            <div class="flow-arrow-down">|</div>
+
+            <div class="flow-block">
+              <div class="flow-block-header">
+                <span class="flow-block-title">
+                  <span style="color: var(--accent-tech);">[3]</span> Calibrated World Coordinate Mapping
+                </span>
+                <span class="flow-block-tag">Metric Homography</span>
+              </div>
+              <p class="flow-block-desc">
+                Transforms optical image pixels (u, v) into metric centimeters (X_cm, Y_cm) relative to the robot base, eliminating camera altitude and lens distortion sensitivity.
+              </p>
+            </div>
+
+            <div class="image-slot" style="height: 38mm;" id="slot-vision" onclick="triggerFileInput('input-vision')">
+              <input type="file" id="input-vision" class="hidden-file-input" accept="image/*" onchange="handleFileSelect(event, 'slot-vision')">
+              <img src="" alt="Perception Stream with Bounding Box" id="img-slot-vision">
+              <div class="image-slot-empty">
+                <svg class="slot-icon" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                <div class="slot-label">Click or Drop: Camera 1 ArUco Detection Stream</div>
+                <div class="slot-hint">Showing Neon Green Bounding Boxes & World Origin (0,0)</div>
+              </div>
+              <div class="image-upload-overlay">Change Image</div>
+            </div>
+
+            <div class="flow-arrow-down">|</div>
+
+            <div class="flow-block accent-purple">
+              <div class="flow-block-header">
+                <span class="flow-block-title">
+                  <span style="color: var(--accent-purple);">[4]</span> Behavior Cloning Policy / Teleoperation
+                </span>
+                <span class="flow-block-tag">PyTorch / Direct Rate</span>
+              </div>
+              <p class="flow-block-desc">
+                Learned policy predicts 6-DOF joint trajectory vectors from target pose vector, pre-trained on 75 PS5 human demonstrations recorded at 30 Hz with EMA filtering.
+              </p>
+            </div>
+
+            <div class="flow-arrow-down">|</div>
+
+            <div class="flow-block accent-navy">
+              <div class="flow-block-header">
+                <span class="flow-block-title">
+                  <span style="color: var(--accent-navy);">[5-6]</span> Arduino Uno Driver & Physical Arm
+                </span>
+                <span class="flow-block-tag">115200 Baud Binary I2C</span>
+              </div>
+              <p class="flow-block-desc">
+                Arduino unpacks 6 raw bytes [0..180 deg] to drive PCA9685 PWM registers. The physical arm moves smoothly to pick up the 4cm sponge cube without servo stalls.
+              </p>
+            </div>
+
+            <div class="flow-arrow-down">|</div>
+
+            <div class="flow-block">
+              <div class="flow-block-header">
+                <span class="flow-block-title">
+                  <span style="color: var(--accent-tech);">[7]</span> WebGL Cyber-Physical Digital Twin
+                </span>
+                <span class="flow-block-tag">Three.js 60 FPS Engine</span>
+              </div>
+              <p class="flow-block-desc">
+                Bidirectional synchronization: calculates real-time tracking error, acts as a virtual collision barrier, and validates policy trajectories in shadow simulation.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+
+      <div class="poster-column">
+
+        <section class="poster-card">
+          <h2 class="card-heading">
+            <span class="heading-num">4</span> Role of the Cyber-Physical Digital Twin
+          </h2>
+          <p class="card-text">
+            In our architecture, the Three.js Digital Twin is not a cosmetic animation—it is a functional mathematical guardian with 5 engineering mandates:
+          </p>
+
+          <div class="twin-function-item">
+            <span class="twin-fn-num">01</span>
+            <div class="twin-fn-body">
+              <strong>Sim-to-Real Discrepancy & Stall Detection:</strong> Compares theoretical Forward Kinematics end-effector position against observed camera pose to detect motor gear slips.
+            </div>
+          </div>
+
+          <div class="twin-function-item">
+            <span class="twin-fn-num">02</span>
+            <div class="twin-fn-body">
+              <strong>Virtual Workspace Geofencing:</strong> Enforces spatial bounding boxes preventing the arm from colliding with the camera pole or impacting the table surface.
+            </div>
+          </div>
+
+          <div class="twin-function-item">
+            <span class="twin-fn-num">03</span>
+            <div class="twin-fn-body">
+              <strong>Demonstration Quality Filter:</strong> Real-time Jacobian conditioning checks automatically reject jerky or singular human teleoperation demonstrations.
+            </div>
+          </div>
+
+          <div class="twin-function-item">
+            <span class="twin-fn-num">04</span>
+            <div class="twin-fn-body">
+              <strong>Extrinsic Calibration Monitoring:</strong> Tracks fixed Marker 2 coordinates to alert operators when camera mounting poles flex or drift.
+            </div>
+          </div>
+
+          <div class="twin-function-item">
+            <span class="twin-fn-num">05</span>
+            <div class="twin-fn-body">
+              <strong>Policy Shadow Mode:</strong> New policy checkpoints execute inside the 3D twin first; only verified collision-free paths stream to physical motors.
+            </div>
+          </div>
+
+          <div class="image-slot" id="slot-twin" onclick="triggerFileInput('input-twin')">
+            <input type="file" id="input-twin" class="hidden-file-input" accept="image/*" onchange="handleFileSelect(event, 'slot-twin')">
+            <img src="" alt="Three.js Digital Twin Viewport" id="img-slot-twin">
+            <div class="image-slot-empty">
+              <svg class="slot-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              <div class="slot-label">Click or Drop: Three.js Digital Twin Viewport</div>
+              <div class="slot-hint">3D CAD Mesh, 25cm x 30cm Workspace Pad & Live Target Block</div>
+            </div>
+            <div class="image-upload-overlay">Change Image</div>
+          </div>
+        </section>
+
+        <section class="poster-card">
+          <h2 class="card-heading">
+            <span class="heading-num">5</span> Experimental Validation & Metrics
+          </h2>
+          <p class="card-text">
+            Evaluated on real-world multi-cell pick-and-place tasks across the calibrated 25cm x 30cm physical workspace:
+          </p>
+
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-val">&lt; 15 ms</div>
+              <div class="metric-label">Perception Latency</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-val">75 Demos</div>
+              <div class="metric-label">Sample Efficiency</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-val">&lt; 0.8 cm</div>
+              <div class="metric-label">Repeatability Error</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-val">60 FPS</div>
+              <div class="metric-label">Twin Telemetry Sync</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 5mm; background: #F8FAFC; border: 1px solid var(--border-card); border-radius: 6px; padding: 4mm;">
+            <div style="font-family: var(--font-display); font-size: 10.5pt; font-weight: 700; color: var(--text-title); margin-bottom: 2px;">
+              Key Engineering Takeaway
+            </div>
+            <p style="font-size: 9.3pt; color: var(--text-main); line-height: 1.45;">
+              Decoupling visual feature extraction (OpenCV) from motor policy generation (Behavior Cloning) reduces training sample requirements by over 99% compared to end-to-end vision models, allowing practical autonomous policy deployment on affordable edge hardware.
+            </p>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+    <footer class="poster-footer">
+      <div>Project Repository: https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git</div>
+      <div>Standard ISO A0 Dimensions (841 x 1189 mm) • Formatted for 300 DPI Vector PDF Print</div>
+      <div>Academic Capstone 2026</div>
+    </footer>
+
+  </div>
+
+  <script>
+    const STORAGE_KEY_PREFIX = 'dt_poster_img_';
+
+    function triggerFileInput(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) input.click();
+    }
+
+    function handleFileSelect(event, slotId) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        setImageInSlot(slotId, base64Data);
+        try {
+          localStorage.setItem(STORAGE_KEY_PREFIX + slotId, base64Data);
+        } catch (err) {
+          console.warn('Image size too large for localStorage caching:', err);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setImageInSlot(slotId, src) {
+      const slot = document.getElementById(slotId);
+      const img = document.getElementById('img-' + slotId);
+      if (slot && img) {
+        img.src = src;
+        slot.classList.add('has-image');
+      }
+    }
+
+    function loadSavedImages() {
+      ['slot-robot', 'slot-vision', 'slot-twin'].forEach(slotId => {
+        try {
+          const cached = localStorage.getItem(STORAGE_KEY_PREFIX + slotId);
+          if (cached) {
+            setImageInSlot(slotId, cached);
+          }
+        } catch (e) {}
+      });
+    }
+
+    function resetAllImages() {
+      if (confirm('Clear all uploaded images from poster preview?')) {
+        ['slot-robot', 'slot-vision', 'slot-twin'].forEach(slotId => {
+          localStorage.removeItem(STORAGE_KEY_PREFIX + slotId);
+          const slot = document.getElementById(slotId);
+          const img = document.getElementById('img-' + slotId);
+          if (slot && img) {
+            img.src = '';
+            slot.classList.remove('has-image');
+          }
+        });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSavedImages();
+
+      ['slot-robot', 'slot-vision', 'slot-twin'].forEach(slotId => {
+        const slot = document.getElementById(slotId);
+        if (!slot) return;
+
+        ['dragenter', 'dragover'].forEach(evt => {
+          slot.addEventListener(evt, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            slot.style.borderColor = '#2563EB';
+            slot.style.backgroundColor = '#EFF6FF';
+          });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+          slot.addEventListener(evt, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            slot.style.borderColor = '';
+            slot.style.backgroundColor = '';
+          });
+        });
+
+        slot.addEventListener('drop', (e) => {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          if (files && files.length > 0) {
+            const input = slot.querySelector('input[type="file"]');
+            if (input) {
+              input.files = files;
+              handleFileSelect({ target: input }, slotId);
+            }
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
