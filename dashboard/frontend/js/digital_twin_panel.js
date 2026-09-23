@@ -1738,7 +1738,7 @@ const DigitalTwinPanel = {
     this.workspaceEdgeMesh = new THREE.LineSegments(edgeGeo, rimMat);
     this.workspaceGroup.add(this.workspaceEdgeMesh);
 
-    // 3D Axis Helper at Marker ID 2 (Bottom-left origin of physical workspace)
+    // 3D Axis Helper at Marker ID 2 (Bottom-left origin of physical workspace at near edge)
     const originAxis = new THREE.AxesHelper(35);
     originAxis.position.set(-width / 2 + 15, thickness / 2 + 1, -depth / 2 + 15);
     // Orient axes: Red = +X (along width), Green = +Y (up), Blue = +Z (along depth)
@@ -1954,8 +1954,9 @@ const DigitalTwinPanel = {
     const x_3d = (x_cm - 15.0) * 10.0;
 
     // Physical Workspace depth Y = 25cm (0cm is near edge 3.8cm from arm, 25cm is far edge)
-    // Three.js Z_3D (mm) = baseRadius + distMm + (Y_cm * 10.0)
-    const z_3d = baseRadius + distMm + (y_cm * 10.0);
+    // Inverted Y axis fix: When Y=0 (near edge closest to arm), Z_3D = baseRadius + distMm
+    // When Y=25 (far edge away from arm), Z_3D = baseRadius + distMm + (25.0 * 10.0)
+    const z_3d = baseRadius + distMm + ((25.0 - y_cm) * 10.0);
 
     // Block rests on top of the workspace pad surface
     const y_3d = thickness;
