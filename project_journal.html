@@ -453,6 +453,27 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-16",
+        date: "Saturday, 26th September 2026",
+        title: "Continuous Autonomous Mode Redesign (Before vs After) & Three.js 3D Mesh Table Penetration Prevention",
+        paragraphs: [
+          "In today's session, we completely overhauled the Autonomous Mode execution flow to prepare for our upcoming journal paper evaluation trials. In our previous Phase D implementation, each registered policy model (v1, v2, v3) had an individual manual launch button on the UI card, requiring the operator to manually click 'Start Autonomous Pick & Place' each time a block was placed. Furthermore, the previous system lacked perception stability verification, meaning placing a block by hand could prematurely trigger execution mid-placement, and having the drop box within camera view risked false duplicate picks.",
+          "We resolved these bottlenecks by building a unified Continuous Autonomous Execution Engine featuring a Master Control Bar with a dynamic model selector dropdown and single Start/Stop toggle button. The arm now parks in a safe Standby pose at Home ([90°, 90°, 90°, 90°, 90°, openAngle]) while continuously monitoring the 25cm x 30cm manipulation pad via Camera 1. When a target block (ArUco ID 0) is placed, the system automatically initiates a 1.0-second stationary stability countdown (Δx ≤ 0.8 cm, Δy ≤ 0.8 cm, Δθ ≤ 15°). Any human hand movement or block displacement instantly resets the countdown. Once 1.0s stability is verified, the selected policy rolls out the 30Hz trajectory, deposits the block into the target box, smoothly returns to Home, and immediately re-enters Standby ready for the next block. The overhead camera field-of-view is strictly decoupled from the drop location, permanently eliminating duplicate pick triggers.",
+          "To solve the physical issue of the robotic arm and gripper occasionally slamming into the workspace table during manual teleoperation and autonomous rollouts, we implemented a 100% Digital Twin-based Table Penetration Prevention and Safe Revert Geofencing system. In strict compliance with our project's core research philosophy, this solution operates with ZERO complex analytical kinematics equations. Instead, it tests candidate joint angles on the Three.js 3D scene-graph groups off-screen, computes the exact world elevation (Y_min in mm) of the gripper claws via THREE.Box3().setFromObject(this.wristPitchGroup), and compares it against an 8.0 mm safety floor threshold above the tabletop (table wood at Y = 0 mm, calibrated pad at Y = 1.6 mm, leaving a 6.4 mm air cushion).",
+          "This safety guard is universally enforced across manual sliders, PS5 DualSense teleoperation (intercepted pre-flight in throttledSendAngles()), and live autonomous mode execution. If candidate angles command claws below 8.0 mm, transmission is blocked, a flashing crimson HUD banner ('TABLE PENETRATION DETECTED: REVERTED TO SAFE POSE') alerts the operator, colliding claws highlight in red, and the arm is held at the last safe pose. We updated all safe fallbacks to dynamically resolve the user's calibrated gripper openAngle rather than hardcoding 140°, and added a header toggle button ('Table Safety: OFF' by default, toggleable to 'ON') with browser localStorage persistence to provide full operator control."
+        ]
+      },
+      {
+        id: "entry-15",
+        date: "Sunday, 20th September 2026",
+        title: "3D WebGL Digital Twin Simulation Engine (Three.js) & Dedicated ROS 2 Architecture",
+        paragraphs: [
+          "In this session, we engineered and deployed a dedicated 3D WebGL Digital Twin simulation engine on the web dashboard (panel-digital-twin), completely offline without external CDN dependencies. Built on Three.js, OrbitControls, and STLLoader, the digital twin loads the genuine CAD STL mesh components of our 6-DOF robotic arm (Base.STL, Waist.STL, Arm 01.STL, Arm 02 v3.STL, Arm 03.STL, Gripper base.STL, and Gripper 1.STL). The simulator constructs a hierarchical kinematic scene-graph (waistGroup -> shoulderGroup -> elbowGroup -> wristRollGroup -> wristPitchGroup -> clawLeftGroup / clawRightGroup) with exact physical joint pivot offsets (Base turntable height 56mm, shoulder pivot L1 95mm, arm link L2 120mm, elbow link L3 100mm, and gripper mount 60mm) and studio lighting.",
+          "The digital twin is connected directly to the dashboard's live WebSocket (/ws) telemetry stream, interpolating physical servo angles [θ1..θ6] at 60 FPS using smooth lerp integration. We implemented interactive OrbitControls (drag to orbit, scroll to zoom, right-click to pan), a persistent claw tuner interface for fine mesh calibration, camera reset presets, and an overlay displaying real-time joint angles and ArUco target block tracking in the 3D space.",
+          "Additionally, we decoupled the ROS 2 integration into its own dedicated dashboard panel (panel-ros). The new panel displays the full ROS 2 computational graph visualization (robot_state_publisher, joint_state_broadcaster, rosbridge_websocket, arm_controller), active topic monitors (/joint_states, /robot_description, /tf, /arm_controller/joint_trajectory), the TF2 transform tree hierarchy, and URDF/Xacro pipeline specifications, bridging our lightweight web dashboard with standard ROS 2 robotics middleware."
+        ]
+      },
+      {
         id: "entry-14",
         date: "Wednesday, 09th September 2026",
         title: "Behavior Cloning Policy v1 Deployment, Zero-IK Tri-Anchor Joint-Space Blending & Autonomous Execution Subsystem",
@@ -876,7 +897,7 @@
         <article class="journal-entry">
           <div class="entry-header-row">
             <div class="entry-date">${highlightText(item.date, query)}</div>
-            <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry" style="font-size: 0.9rem; background: none; border: none; cursor: pointer;">🗑️</button>
+            <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry" style="font-size: 0.78rem; background: none; border: 1px solid var(--border-subtle, #ccc); border-radius: 4px; padding: 2px 6px; cursor: pointer; color: #e53935;">Delete</button>
           </div>
           <h2 class="entry-title">${highlightText(item.title, query)}</h2>
           <div class="entry-content">

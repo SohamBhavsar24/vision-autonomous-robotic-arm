@@ -180,6 +180,7 @@
   - **Live Clearance Meter (`#dtClearanceMeter`):** Renders dynamic 60 FPS clearance readout ("Clearance: 42.5 mm", turning crimson "Clearance: 0.0 mm (BREACH)" when breached).
   - **Floating HUD Collision Banner (`#dtCollisionBanner`):** Displays red pulsing alert banner (`TABLE PENETRATION DETECTED: REVERTED TO SAFE POSE`) inside the WebGL viewport and highlights gripper claw meshes red with a 1.4-second auto-fade.
 - **Dynamic Gripper Open Angle Resolution:** Safe pose baseline and fallbacks dynamically retrieve the calibrated `openAngle` (`[90, 90, 90, 90, 90, openAngle]`) from UI inputs (`#angleGripperOpen`, `#inputGripperOpenCard`) or `localStorage`, eliminating hardcoded 140° gripper angles.
+- **Supabase Cloud Journal Sync (Entries 15 & 16):** Successfully published Log Entry #15 (Three.js WebGL Digital Twin & ROS 2 Architecture) and Log Entry #16 (Continuous Autonomous Execution Engine & 3D Mesh Table Penetration Prevention) directly to the live Supabase PostgreSQL database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`) and synchronized local backend JSON and Vercel PWA seed entries.
 - **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all modified JavaScript, HTML, CSS, and markdown files.
 
 ---
