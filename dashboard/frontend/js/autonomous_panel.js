@@ -386,6 +386,23 @@ const AutonomousPanel = {
         const j = status.current_angles;
         const gStr = j[5] <= 110 ? 'CLOSED' : 'OPEN';
         this.anglesText.textContent = `Base: ${j[0]}° | Shoulder: ${j[1]}° | Elbow: ${j[2]}° | Wrist: ${j[3]}° | Roll: ${j[4]}° | Claw: ${gStr}`;
+
+        // Digital Twin Geofence Safety Guard for Autonomous Execution
+        if (status.is_running && window.DigitalTwinPanel && typeof window.DigitalTwinPanel.evaluateAnglesSafety === 'function') {
+          const safety = window.DigitalTwinPanel.evaluateAnglesSafety(j);
+          if (!safety.isSafe) {
+            this.stopAutonomousLoop();
+            window.DigitalTwinPanel.triggerTableCollisionAlert(safety.lowestY);
+            const safe = window.DigitalTwinPanel.lastSafeAngles;
+            if (window.App && App.sendWS) {
+              App.sendWS('set_angles', { angles: safe });
+            }
+            if (window.App && App.log) {
+              App.log(`CRITICAL: Autonomous execution halted by Digital Twin Table Safety (${safety.lowestY.toFixed(1)}mm). Arm reverted to safe pose.`);
+            }
+            return;
+          }
+        }
       }
     }
   },

@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-09-26 (Session 14 — Continuous Autonomous Mode Redesign, 1.0s Stability Verification, Journal Paper ACT Roadmap & A0 Research Poster Overhaul)
+> **Last Updated:** 2026-09-26 (Session 15 — Three.js Digital Twin 3D Mesh Table Penetration Prevention, Revert Geofencing & Runtime Toggle)
 
 ---
 
@@ -89,6 +89,7 @@
 | 28 | Journal Paper Evaluation Strategy (BC vs ACT with Feature Vectors) | Empirical evaluation matrix comparing Behavior Cloning (BC) baseline across progressive dataset tiers (30 vs 60 vs 90 human teleoperated demonstration episodes) against Action Chunking with Transformers (ACT) conditioned directly on lightweight OpenCV feature vectors (ArUco coordinates $X, Y$ and orientation $\theta$), circumventing heavy CNN visual latency on embedded edge hardware |
 | 29 | Standalone Decoupled Research Poster | High-resolution print-ready A0 academic poster web application hosted independently on port 8055, decoupled from dashboard telemetry to prevent runtime interference |
 | 30 | Offline 3D STL Digital Twin | Zero-CDN Three.js + STLLoader WebGL engine loading local CAD meshes (`Arm 01.STL`, `Arm 02 v3.STL`, `Arm 03.STL`, `Base.STL`, `Waist.STL`, `Gripper base.STL`, `Gripper 1.STL`) with live WebSocket `/ws` joint telemetry mapping |
+| 31 | Digital Twin 3D Mesh Table Penetration Prevention & Geofencing Floor Guard | Zero analytical kinematics equations. Derives exact end-effector / claw 3D world elevation ($Y_{\text{min}}$ in mm) directly from Three.js scene-graph mesh forward transforms (`THREE.Box3().setFromObject(this.wristPitchGroup)`). If candidate joint angles command claws below $8.0\text{ mm}$ safety threshold ($Y_{\text{floor\_limit}}$) above tabletop ($Y = 0\text{ mm}$ table, $Y = 1.6\text{ mm}$ pad), commands are blocked at transmission, a flashing red HUD collision banner is displayed, claws highlight red, and angles revert to `lastSafeAngles`. Enforced universally across PS5 Teleoperation (Joint & IK modes), Manual Sliders, and Autonomous Mode execution. Runtime toggle button (`#btnDtToggleGeofence`) with `localStorage` persistence enables on-the-fly override |
 
 ---
 
@@ -161,11 +162,30 @@
   - Clean high-contrast white aesthetic with blue accent cards, custom inline SVG pipeline flowchart, and print CSS styling.
 - **Strict Zero-Emoji Enforcement:** Preserved 100% zero-emoji rule across all files, tools, and documentation.
 
+### Session 15 (2026-09-26) — THREE.JS DIGITAL TWIN 3D MESH TABLE PENETRATION PREVENTION & UNIVERSAL REVERT GEOFENCING
+- **Problem Statement & Zero-Kinematics Mandate:** Multiple physical test runs resulted in the robotic arm or gripper slamming downward into the table workspace plank. While conventional robotics relies on analytical forward/inverse kinematics solvers, the core philosophy of this project strictly avoids complex analytical kinematics solvers in runtime control to favor lightweight imitation learning and direct joint-space demonstration manifolds.
+- **Three.js Scene-Graph 3D Mesh Bounding Box Architecture:**
+  - Utilized the existing Three.js digital twin WebGL scene graph to evaluate safety without trigonometry or kinematics equations.
+  - Developed `DigitalTwinPanel.evaluateAnglesSafety(candidateAngles)`: applies candidate joint angles to the Three.js hierarchical groups (`waistGroup` -> `shoulderGroup` -> `elbowGroup` -> `wristRollGroup` -> `wristPitchGroup` -> `clawLeftGroup`/`clawRightGroup`) off-screen, invokes `robotRoot.updateMatrixWorld(true)`, and measures the lowest world-space vertex elevation ($Y_{\text{min}}$ in mm) via `THREE.Box3().setFromObject(this.wristPitchGroup)` and `setFromObject(this.elbowGroup)`.
+  - Immediate rotation rollback ensures the visible digital twin animation remains synchronized to telemetry.
+- **Table Pad Calibration & Safety Cushion:**
+  - Table wood surface: $Y = 0.0\text{ mm}$.
+  - Calibrated manipulation pad: $Y = 1.6\text{ mm}$.
+  - Safety floor threshold: $Y_{\text{floor\_limit}} = 8.0\text{ mm}$ ($0.8\text{ cm}$). This gives a 6.4mm air cushion above the pad, preventing gripper slams while allowing 40mm sponge block pick acquisitions ($Y \approx 12\text{--}15\text{ mm}$) without false alarms.
+- **Universal Revert Enforcement:**
+  - **Manual Sliders & PS5 Teleoperation (`servo_panel.js`):** Intercepted in `throttledSendAngles()`. Candidate angles breaching the 8.0mm limit are blocked from WebSocket transmission. Sliders and `TeleopPanel` integrated/smoothed state instantly revert to `lastSafeAngles`, and safe angles are resent to the robot.
+  - **Autonomous Mode (`autonomous_panel.js`):** Added live safety guard in `updateExecutionUI()` during autonomous execution (`status.is_running`). If live telemetry violates the threshold, the autonomous loop aborts, triggers the collision alert, and commands safe recovery angles.
+- **Digital Twin UI Indicators & Runtime Toggle:**
+  - **Table Safety Toggle Button (`#btnDtToggleGeofence`):** Positioned in the `#panel-digital-twin` header. Allows user to toggle protection ON or OFF on the fly, with state saved to `localStorage`.
+  - **Live Clearance Meter (`#dtClearanceMeter`):** Renders dynamic 60 FPS clearance readout ("Clearance: 42.5 mm", turning crimson "Clearance: 0.0 mm (BREACH)" when breached).
+  - **Floating HUD Collision Banner (`#dtCollisionBanner`):** Displays red pulsing alert banner (`TABLE PENETRATION DETECTED: REVERTED TO SAFE POSE`) inside the WebGL viewport and highlights gripper claw meshes red with a 1.4-second auto-fade.
+- **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all modified JavaScript, HTML, CSS, and markdown files.
+
 ---
 
 ## 5. Next Steps
 
-1. **Physical Continuous Autonomous Trials:** Perform live continuous pick-and-place trial runs using the new Standby and 1.0s stability verification loop with model `v1 (30 Demos)`.
+1. **Physical Continuous Autonomous Trials & Geofence Verification:** Perform live continuous pick-and-place trial runs with model `v1 (30 Demos)` while verifying that table penetration prevention smoothly prevents floor collisions during teleoperation and autonomous rollouts.
 2. **Pass 2 Demonstration Collection (60 Demos):** Log 30 additional demonstrations across the 30 grid cells with varied block angles ($0^\circ, 30^\circ, 45^\circ$) to evaluate accuracy improvement for the journal paper.
 3. **Action Chunking with Transformers (ACT) Policy Pipeline:** Implement lightweight ACT policy conditioned on OpenCV coordinate and orientation feature vectors ($X, Y, \theta$) and compare performance metrics against baseline Behavior Cloning.
 4. **Pick Sequence Fault Detection:** Implement vision verification step to detect grasp slip or dropped blocks and trigger safe recovery trajectories.

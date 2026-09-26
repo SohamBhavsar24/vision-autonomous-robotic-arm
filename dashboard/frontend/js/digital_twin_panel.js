@@ -24,6 +24,19 @@ const DigitalTwinPanel = {
   isGridVisible: true,
   isLoading: true,
 
+  // Geofencing & Table Penetration Protection (Zero Kinematics, Pure Three.js 3D Bounds)
+  geofenceEnabled: true,
+  tableFloorLimitY: 8.0, // mm above ground plane (wood tabletop is at Y=0, pad surface is at Y=1.6)
+  lastSafeAngles: [90, 90, 90, 90, 90, 140],
+  isCollisionTriggered: false,
+  collisionAlertTimer: null,
+  collisionBanner: null,
+  lowestMeshY: 100.0,
+  currentClearanceMm: 100.0,
+  matCollisionRed: null,
+  normalClawMat: null,
+  normalBaseMat: null,
+
   // Kinematic Link Groups (Pivots)
   robotRoot: null,
   baseGroup: null,
@@ -147,12 +160,21 @@ const DigitalTwinPanel = {
     this.loadModels();
     this.setupResizeObserver();
     this.bindButtons();
+    this.initGeofencing();
 
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
   },
 
   bindButtons() {
+    const btnGeofence = document.getElementById('btnDtToggleGeofence');
+    if (btnGeofence) {
+      btnGeofence.onclick = (e) => {
+        e.preventDefault();
+        this.toggleGeofence();
+      };
+    }
+
     const btnHome = document.getElementById('btnDtHome');
     if (btnHome) {
       btnHome.onclick = (e) => {
@@ -274,6 +296,31 @@ const DigitalTwinPanel = {
     helperOverlay.id = 'dtFpsCounter';
     helperOverlay.textContent = 'WebGL 60 FPS • Real-Time Sync';
     this.container.appendChild(helperOverlay);
+
+    // Floating Table Penetration Collision Alert Banner (top center)
+    const collisionBanner = document.createElement('div');
+    collisionBanner.id = 'dtCollisionBanner';
+    collisionBanner.style.position = 'absolute';
+    collisionBanner.style.top = '16px';
+    collisionBanner.style.left = '50%';
+    collisionBanner.style.transform = 'translateX(-50%)';
+    collisionBanner.style.background = 'rgba(229, 57, 53, 0.95)';
+    collisionBanner.style.color = '#FFFFFF';
+    collisionBanner.style.padding = '10px 24px';
+    collisionBanner.style.borderRadius = '8px';
+    collisionBanner.style.fontFamily = 'var(--font-mono)';
+    collisionBanner.style.fontWeight = '700';
+    collisionBanner.style.fontSize = '0.85rem';
+    collisionBanner.style.boxShadow = '0 4px 20px rgba(229, 57, 53, 0.5)';
+    collisionBanner.style.zIndex = '25';
+    collisionBanner.style.textAlign = 'center';
+    collisionBanner.style.border = '1px solid #FF8A80';
+    collisionBanner.style.pointerEvents = 'none';
+    collisionBanner.style.display = 'none';
+    collisionBanner.style.transition = 'opacity 0.25s ease';
+    collisionBanner.innerHTML = 'TABLE PENETRATION DETECTED: REVERTED TO SAFE POSE';
+    this.container.appendChild(collisionBanner);
+    this.collisionBanner = collisionBanner;
   },
 
   /* Persistence for Gripper Claw Configuration */
@@ -1323,6 +1370,16 @@ const DigitalTwinPanel = {
       metalness: 0.3
     });
 
+    this.normalClawMat = matTerracotta;
+    this.normalBaseMat = matCharcoal;
+    this.matCollisionRed = new THREE.MeshStandardMaterial({
+      color: 0xFF1E1E,
+      emissive: 0x990000,
+      emissiveIntensity: 0.8,
+      roughness: 0.3,
+      metalness: 0.4
+    });
+
     const modelsToLoad = [
       // 1. Base Foundation
       {
@@ -1536,6 +1593,204 @@ const DigitalTwinPanel = {
         <span>Digital Twin: Standing By</span>
       `;
     }
+  },
+
+  /* Initialize Geofencing and Table Protection State */
+  initGeofencing() {
+    try {
+      const stored = localStorage.getItem('dt_geofence_enabled');
+      if (stored !== null) {
+        this.geofenceEnabled = (stored !== 'false');
+      }
+    } catch (e) {}
+    this.updateGeofenceButtonUI();
+    this.updateClearanceDisplay(this.currentClearanceMm, false);
+  },
+
+  /* Toggle Geofencing ON / OFF via User Button */
+  toggleGeofence() {
+    this.geofenceEnabled = !this.geofenceEnabled;
+    try {
+      localStorage.setItem('dt_geofence_enabled', this.geofenceEnabled ? 'true' : 'false');
+    } catch (e) {}
+
+    this.updateGeofenceButtonUI();
+
+    if (!this.geofenceEnabled) {
+      if (this.collisionBanner) {
+        this.collisionBanner.style.display = 'none';
+      }
+      this.updateClearanceDisplay(0, false);
+      if (window.App && App.log) {
+        App.log('Digital Twin: Table Geofencing Protection BYPASSED (OFF).');
+      }
+    } else {
+      if (window.App && App.log) {
+        App.log(`Digital Twin: Table Geofencing Protection ACTIVE (ON). Safety ceiling: ${this.tableFloorLimitY}mm.`);
+      }
+    }
+  },
+
+  /* Update Geofence Toggle Button UI styling */
+  updateGeofenceButtonUI() {
+    const btn = document.getElementById('btnDtToggleGeofence');
+    if (btn) {
+      if (this.geofenceEnabled) {
+        btn.textContent = 'Table Safety: ON';
+        btn.style.background = '#00B048';
+        btn.style.borderColor = '#00B048';
+        btn.style.color = '#FFFFFF';
+      } else {
+        btn.textContent = 'Table Safety: OFF';
+        btn.style.background = '#555555';
+        btn.style.borderColor = '#444444';
+        btn.style.color = '#BBBBBB';
+      }
+    }
+  },
+
+  /* Update Live Vertical Clearance Readout Meter */
+  updateClearanceDisplay(clearanceMm, isBreached) {
+    const meter = document.getElementById('dtClearanceMeter');
+    if (!meter) return;
+    if (!this.geofenceEnabled) {
+      meter.textContent = 'Safety: BYPASSED';
+      meter.style.color = '#888888';
+      meter.style.background = 'rgba(150, 150, 150, 0.12)';
+      meter.style.borderColor = 'rgba(150, 150, 150, 0.25)';
+      return;
+    }
+
+    if (isBreached) {
+      meter.textContent = 'Clearance: 0.0 mm (BLOCKED)';
+      meter.style.color = '#E53935';
+      meter.style.background = 'rgba(229, 57, 53, 0.15)';
+      meter.style.borderColor = 'rgba(229, 57, 53, 0.35)';
+    } else {
+      meter.textContent = `Clearance: ${Math.round(clearanceMm)} mm`;
+      meter.style.color = '#00B048';
+      meter.style.background = 'rgba(0, 176, 72, 0.12)';
+      meter.style.borderColor = 'rgba(0, 176, 72, 0.25)';
+    }
+  },
+
+  /* Display Floating Table Collision Alert and Highlight Meshes Red */
+  triggerTableCollisionAlert(lowestY) {
+    if (!this.geofenceEnabled) return;
+
+    if (!this.collisionBanner) {
+      this.collisionBanner = document.getElementById('dtCollisionBanner');
+    }
+    if (this.collisionBanner) {
+      this.collisionBanner.textContent = `TABLE PENETRATION DETECTED (${lowestY.toFixed(1)}mm <= ${this.tableFloorLimitY.toFixed(1)}mm): REVERTED TO SAFE POSE`;
+      this.collisionBanner.style.display = 'block';
+      this.collisionBanner.style.opacity = '1';
+    }
+
+    // Highlight claws in bright red
+    if (this.matCollisionRed) {
+      if (this.meshes['gripper_claw_left']) this.meshes['gripper_claw_left'].material = this.matCollisionRed;
+      if (this.meshes['gripper_claw_right']) this.meshes['gripper_claw_right'].material = this.matCollisionRed;
+      if (this.meshes['gripper_base']) this.meshes['gripper_base'].material = this.matCollisionRed;
+    }
+
+    if (this.collisionAlertTimer) {
+      clearTimeout(this.collisionAlertTimer);
+    }
+    this.collisionAlertTimer = setTimeout(() => {
+      if (this.collisionBanner) {
+        this.collisionBanner.style.opacity = '0';
+        setTimeout(() => {
+          if (this.collisionBanner) this.collisionBanner.style.display = 'none';
+        }, 250);
+      }
+      // Restore normal materials
+      if (this.normalClawMat) {
+        if (this.meshes['gripper_claw_left']) this.meshes['gripper_claw_left'].material = this.normalClawMat;
+        if (this.meshes['gripper_claw_right']) this.meshes['gripper_claw_right'].material = this.normalClawMat;
+      }
+      if (this.normalBaseMat && this.meshes['gripper_base']) {
+        this.meshes['gripper_base'].material = this.normalBaseMat;
+      }
+    }, 1400);
+  },
+
+  /* Evaluates whether candidate angles cause arm/gripper meshes to penetrate table safety floor */
+  evaluateAnglesSafety(candidateAngles) {
+    if (!this.geofenceEnabled) {
+      return { isSafe: true, lowestY: 50.0, clearanceMm: 50.0 };
+    }
+    if (!this.robotRoot || !this.wristPitchGroup) {
+      return { isSafe: true, lowestY: 100.0, clearanceMm: 100.0 };
+    }
+    if (!Array.isArray(candidateAngles) || candidateAngles.length < 6) {
+      return { isSafe: true, lowestY: 100.0, clearanceMm: 100.0 };
+    }
+
+    const deg2rad = Math.PI / 180;
+    const [a0, a1, a2, a3, a4, a5] = candidateAngles;
+
+    // Cache current group rotations
+    const prevW = this.waistGroup ? this.waistGroup.rotation.y : 0;
+    const prevS = this.shoulderGroup ? this.shoulderGroup.rotation.x : 0;
+    const prevE = this.elbowGroup ? this.elbowGroup.rotation.x : 0;
+    const prevWR = this.wristRollGroup ? this.wristRollGroup.rotation.y : 0;
+    const prevWP = this.wristPitchGroup ? this.wristPitchGroup.rotation.x : 0;
+    const prevCL = this.clawLeftGroup ? this.clawLeftGroup.rotation.z : 0;
+    const prevCR = this.clawRightGroup ? this.clawRightGroup.rotation.z : 0;
+
+    // Apply candidate rotations to scene graph
+    if (this.waistGroup) this.waistGroup.rotation.y = (a0 - 90) * deg2rad;
+    if (this.shoulderGroup) this.shoulderGroup.rotation.x = (90 - a1) * deg2rad;
+    if (this.elbowGroup) this.elbowGroup.rotation.x = (a2 - 45) * deg2rad;
+    if (this.wristRollGroup) this.wristRollGroup.rotation.y = (a3 - 90) * deg2rad;
+    if (this.wristPitchGroup) this.wristPitchGroup.rotation.x = (a4 - 90) * deg2rad;
+    if (this.clawLeftGroup && this.clawRightGroup) {
+      const openRatio = Math.max(0, Math.min(1, (a5 - 35) / 105));
+      const spreadAngle = openRatio * this.clawConfig.maxSpread;
+      this.clawLeftGroup.rotation.z = this.clawConfig.restAngle + spreadAngle;
+      this.clawRightGroup.rotation.z = -this.clawConfig.restAngle - spreadAngle;
+    }
+
+    // Force world transform matrix computation
+    this.robotRoot.updateMatrixWorld(true);
+
+    // Compute bounding box of wristPitchGroup (which holds gripper base & claws)
+    const box = new THREE.Box3();
+    box.setFromObject(this.wristPitchGroup);
+    let lowestY = box.min.y;
+
+    // Also check elbow group for extreme backward dip
+    if (this.elbowGroup) {
+      const ebBox = new THREE.Box3();
+      ebBox.setFromObject(this.elbowGroup);
+      lowestY = Math.min(lowestY, ebBox.min.y);
+    }
+
+    // Restore previous rotations
+    if (this.waistGroup) this.waistGroup.rotation.y = prevW;
+    if (this.shoulderGroup) this.shoulderGroup.rotation.x = prevS;
+    if (this.elbowGroup) this.elbowGroup.rotation.x = prevE;
+    if (this.wristRollGroup) this.wristRollGroup.rotation.y = prevWR;
+    if (this.wristPitchGroup) this.wristPitchGroup.rotation.x = prevWP;
+    if (this.clawLeftGroup) this.clawLeftGroup.rotation.z = prevCL;
+    if (this.clawRightGroup) this.clawRightGroup.rotation.z = prevCR;
+    this.robotRoot.updateMatrixWorld(true);
+
+    const isSafe = (lowestY > this.tableFloorLimitY);
+    const clearanceMm = Math.max(0, lowestY - this.tableFloorLimitY);
+
+    if (isSafe) {
+      this.lastSafeAngles = [...candidateAngles];
+      this.lowestMeshY = lowestY;
+      this.currentClearanceMm = clearanceMm;
+      this.updateClearanceDisplay(clearanceMm, false);
+    } else {
+      this.triggerTableCollisionAlert(lowestY);
+      this.updateClearanceDisplay(0, true);
+    }
+
+    return { isSafe, lowestY, clearanceMm };
   },
 
   /* Update Joint Angles from Backend WebSocket Status */
@@ -2096,6 +2351,19 @@ const DigitalTwinPanel = {
       const spreadAngle = openRatio * this.clawConfig.maxSpread;
       this.clawLeftGroup.rotation.z = this.clawConfig.restAngle + spreadAngle;
       this.clawRightGroup.rotation.z = -this.clawConfig.restAngle - spreadAngle;
+    }
+
+    // Compute real-time lowest mesh elevation for live clearance meter
+    if (this.wristPitchGroup && this.robotRoot && !this.isLoading) {
+      const liveBox = new THREE.Box3();
+      liveBox.setFromObject(this.wristPitchGroup);
+      const curLowestY = liveBox.min.y;
+      const curClearance = Math.max(0, curLowestY - this.tableFloorLimitY);
+      if (Math.abs(curClearance - this.currentClearanceMm) > 0.5) {
+        this.currentClearanceMm = curClearance;
+        this.lowestMeshY = curLowestY;
+        this.updateClearanceDisplay(curClearance, curLowestY <= this.tableFloorLimitY);
+      }
     }
 
     // Update OrbitControls

@@ -215,13 +215,30 @@ const ServoPanel = {
     this.throttledSendAngles();
   },
 
-  /* Throttled WebSocket sender to maintain ~30Hz packet rate */
+  /* Throttled WebSocket sender to maintain ~30Hz packet rate with Digital Twin Geofence Protection */
   throttledSendAngles() {
     const now = Date.now();
     if (now - this.lastSendTime >= this.sendIntervalMs) {
       this.lastSendTime = now;
-      const angles = this.getAnglesFromSliders();
-      App.sendWS('set_angles', { angles });
+      const candidateAngles = this.getAnglesFromSliders();
+
+      // Check Digital Twin Table Safety Protection (Zero Kinematics, Pure Three.js 3D Bounds)
+      if (window.DigitalTwinPanel && typeof window.DigitalTwinPanel.evaluateAnglesSafety === 'function') {
+        const safety = window.DigitalTwinPanel.evaluateAnglesSafety(candidateAngles);
+        if (!safety.isSafe) {
+          // Revert sliders and teleop to last safe angles
+          const safe = window.DigitalTwinPanel.lastSafeAngles;
+          this.setSlidersFromAngles(safe);
+          if (window.TeleopPanel) {
+            window.TeleopPanel.integratedAngles = [...safe];
+            window.TeleopPanel.smoothedAngles = [...safe];
+          }
+          App.sendWS('set_angles', { angles: safe });
+          return;
+        }
+      }
+
+      App.sendWS('set_angles', { angles: candidateAngles });
     }
   },
 

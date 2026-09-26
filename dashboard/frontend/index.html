@@ -325,7 +325,9 @@
           <div class="card" style="grid-column: span 12;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (Orbit Controls: Drag to rotate • Scroll to zoom • Right-click to pan)</span>
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span id="dtClearanceMeter" style="font-family: var(--font-mono); font-size: 0.75rem; color: #00B048; background: rgba(0, 176, 72, 0.12); border: 1px solid rgba(0, 176, 72, 0.25); padding: 4px 10px; border-radius: 4px; font-weight: 600;">Clearance: -- mm</span>
+                <button class="btn btn-primary" id="btnDtToggleGeofence" style="font-size: 0.75rem; padding: 4px 12px; background: #00B048; border-color: #00B048; color: #fff; font-weight: 600; cursor: pointer;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGeofence()">Table Safety: ON</button>
                 <button class="btn btn-secondary" id="btnDtTune" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleTunerPanel()">Tune Claws</button>
                 <button class="btn btn-secondary" id="btnDtHome" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setHomePose()">Home Pose (90°)</button>
                 <button class="btn btn-secondary" id="btnDtToggleGrid" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGrid()">Toggle Grid</button>
@@ -336,6 +338,11 @@
             <!-- Large 3D Rendering Canvas Area -->
             <div id="digitalTwinViewport" style="width: 100%; height: calc(100vh - 220px); min-height: 580px; background: #23201D; border-radius: 8px; border: 1px solid var(--border-card); position: relative; overflow: hidden;">
               <!-- Populated dynamically by DigitalTwinPanel (Three.js WebGL) -->
+              
+              <!-- Floating Table Penetration Collision Alert Banner -->
+              <div id="dtCollisionBanner" style="display: none; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(229, 57, 53, 0.95); color: #fff; padding: 12px 28px; border-radius: 8px; font-family: var(--font-mono); font-weight: 700; font-size: 0.88rem; box-shadow: 0 4px 24px rgba(229, 57, 53, 0.5); z-index: 25; text-align: center; border: 1px solid #FF8A80; pointer-events: none; transition: opacity 0.25s ease;">
+                TABLE PENETRATION PREVENTED: REVERTED TO SAFE POSE
+              </div>
             </div>
           </div>
 
@@ -902,10 +909,10 @@
 
   <!-- Dashboard JavaScript with Cache Busting -->
   <script src="js/app.js?v=1.0.56"></script>
-  <script src="js/servo_panel.js?v=1.0.56"></script>
-  <script src="js/teleop_panel.js?v=1.0.56"></script>
+  <script src="js/servo_panel.js?v=1.0.58"></script>
+  <script src="js/teleop_panel.js?v=1.0.58"></script>
   <script src="js/dataset_panel.js?v=1.0.56"></script>
-  <script src="js/autonomous_panel.js?v=1.0.57"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.56"></script>
+  <script src="js/autonomous_panel.js?v=1.0.58"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.58"></script>
 </body>
 </html>
