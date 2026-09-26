@@ -6,16 +6,18 @@
    Location: dashboard/frontend/js/
 
    PURPOSE:
-     Manages Phase D Autonomous Policy Execution. Displays registered
-     model versions (v1 (30 Demos)), real-time camera perception status,
-     triggers autonomous pick-and-place policy execution, displays live
-     execution progress/phases, and provides an immediate emergency abort.
+     Manages Phase D Continuous Autonomous Mode & Model Registry.
+     Features a single Master Autonomous Run/Stop control bar, dynamic model
+     selection dropdown, live 1.0s block stability verification meter,
+     closed-loop 30Hz trajectory execution telemetry, and safe Standby Home
+     positioning.
    ========================================================================== */
 
 const AutonomousPanel = {
   models: [],
   activeModelId: 'v1',
   isRunning: false,
+  isLoopActive: false,
   pollTimer: null,
   visionTimer: null,
   lastKnownBlockPose: null,
@@ -31,7 +33,14 @@ const AutonomousPanel = {
   cacheDOM() {
     this.blockPoseStatus = document.getElementById('lblAutoBlockPoseStatus');
     this.modelsList = document.getElementById('autonomousModelsList');
+    this.selModel = document.getElementById('selAutonomousModel');
+    this.btnToggleLoop = document.getElementById('btnToggleAutonomousLoop');
+    this.lblLoopState = document.getElementById('lblAutoLoopState');
+    this.dotLoopState = document.getElementById('dotAutoLoopState');
+    this.txtLoopState = document.getElementById('txtAutoLoopState');
     this.executionCard = document.getElementById('autonomousExecutionCard');
+    this.autoStatusIndicator = document.getElementById('autoStatusIndicator');
+    this.autoStatusTitle = document.getElementById('autoStatusTitle');
     this.progressFill = document.getElementById('autoProgressFill');
     this.progressText = document.getElementById('autoProgressText');
     this.phaseText = document.getElementById('autoPhaseText');
@@ -42,8 +51,19 @@ const AutonomousPanel = {
   },
 
   bindEvents() {
+    if (this.btnToggleLoop) {
+      this.btnToggleLoop.addEventListener('click', () => this.toggleAutonomousLoop());
+    }
+
+    if (this.selModel) {
+      this.selModel.addEventListener('change', (e) => {
+        this.activeModelId = e.target.value;
+        this.renderModels();
+      });
+    }
+
     if (this.btnAbort) {
-      this.btnAbort.addEventListener('click', () => this.abortExecution());
+      this.btnAbort.addEventListener('click', () => this.stopAutonomousLoop());
     }
 
     if (this.btnTrainNew) {
@@ -109,72 +129,85 @@ const AutonomousPanel = {
     }
   },
 
-  async runModel(modelId) {
-    if (this.isRunning) {
-      alert('Autonomous execution is already in progress.');
+  selectModel(modelId) {
+    if (this.isLoopActive || this.isRunning) {
+      alert('Cannot switch models while Autonomous Mode is running. Please stop autonomous mode first.');
       return;
     }
-
-    if (!this.lastKnownBlockPose || !this.lastKnownBlockPose.valid) {
-      const proceed = confirm(
-        'Warning: Target Block (ArUco ID 0) or Origin (ArUco ID 2) is not currently detected by Camera 1.\n\n' +
-        'Please ensure ArUco Tag 0 is placed in the workspace.\n\n' +
-        'Do you want to attempt autonomous launch anyway?'
-      );
-      if (!proceed) return;
+    this.activeModelId = modelId;
+    if (this.selModel) {
+      this.selModel.value = modelId;
     }
+    this.renderModels();
+  },
 
-    const runBtn = document.getElementById(`btnRunModel-${modelId}`);
-    if (runBtn) {
-      runBtn.disabled = true;
-      runBtn.textContent = 'Launching Policy...';
-      runBtn.style.opacity = '0.7';
+  async toggleAutonomousLoop() {
+    if (this.isLoopActive || this.isRunning) {
+      await this.stopAutonomousLoop();
+    } else {
+      await this.startAutonomousLoop(this.activeModelId);
+    }
+  },
+
+  async startAutonomousLoop(modelId) {
+    const selectedModel = modelId || this.activeModelId || 'v1';
+    
+    if (this.btnToggleLoop) {
+      this.btnToggleLoop.disabled = true;
+      this.btnToggleLoop.textContent = 'Starting Standby...';
     }
 
     try {
       const res = await fetch('/api/autonomous/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model_id: modelId })
+        body: JSON.stringify({ model_id: selectedModel, continuous: true })
       });
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Autonomous launch failed: ${data.detail || data.message || 'Unknown error'}`);
-        if (runBtn) {
-          runBtn.disabled = false;
-          runBtn.textContent = 'Run Autonomous Pick & Place';
-          runBtn.style.opacity = '1';
-        }
+        alert(`Autonomous loop launch failed: ${data.detail || data.message || 'Unknown error'}`);
       } else {
         if (window.App && App.log) {
-          App.log(`AUTONOMOUS POLICY LAUNCHED: Model ${modelId} active. Closed-loop 30Hz rollout started.`);
+          App.log(`AUTONOMOUS MODE ACTIVATED: Arm entering Standby at Home. Monitoring workspace using Model ${selectedModel}.`);
         }
       }
     } catch (e) {
-      alert(`Network error starting autonomous execution: ${e.message}`);
-      if (runBtn) {
-        runBtn.disabled = false;
-        runBtn.textContent = 'Run Autonomous Pick & Place';
-        runBtn.style.opacity = '1';
+      alert(`Network error starting autonomous mode: ${e.message}`);
+    } finally {
+      if (this.btnToggleLoop) {
+        this.btnToggleLoop.disabled = false;
       }
     }
   },
 
-  async abortExecution() {
-    if (!confirm('Abort autonomous execution immediately?')) return;
+  async stopAutonomousLoop() {
+    if (this.btnToggleLoop) {
+      this.btnToggleLoop.disabled = true;
+      this.btnToggleLoop.textContent = 'Stopping...';
+    }
+
     try {
       const res = await fetch('/api/autonomous/stop', { method: 'POST' });
-      if (res.ok && window.App && App.log) {
-        App.log('CRITICAL: Autonomous execution manually aborted by user.');
+      const data = await res.json();
+      if (res.ok) {
+        if (window.App && App.log) {
+          App.log('AUTONOMOUS MODE STOPPED: Arm returning to Home.');
+        }
+      } else {
+        console.warn('Stop autonomous error:', data);
       }
     } catch (e) {
-      console.warn('Abort error:', e);
+      console.warn('Network error stopping autonomous mode:', e);
+    } finally {
+      if (this.btnToggleLoop) {
+        this.btnToggleLoop.disabled = false;
+      }
     }
   },
 
   async deleteModel(modelId, modelName) {
-    if (this.isRunning) {
+    if (this.isRunning || this.isLoopActive) {
       alert('Cannot delete model while autonomous execution is actively running.');
       return;
     }
@@ -229,45 +262,154 @@ const AutonomousPanel = {
   },
 
   updateExecutionUI(status) {
-    this.isRunning = status.is_running;
+    this.isRunning = Boolean(status.is_running);
+    this.isLoopActive = Boolean(status.is_loop_active);
+    const loopState = status.loop_state || (this.isRunning ? 'executing' : 'idle');
+    const isActive = this.isLoopActive || this.isRunning;
 
-    // Toggle execution monitor card visibility
-    if (this.executionCard) {
-      this.executionCard.style.display = status.is_running ? 'block' : 'none';
+    // 1. Update Master Toggle Button
+    if (this.btnToggleLoop) {
+      if (isActive) {
+        this.btnToggleLoop.textContent = 'Stop Autonomous Mode';
+        this.btnToggleLoop.style.background = '#E53935';
+        this.btnToggleLoop.style.borderColor = '#E53935';
+        this.btnToggleLoop.style.boxShadow = '0 4px 14px rgba(229, 57, 53, 0.3)';
+      } else {
+        this.btnToggleLoop.textContent = 'Start Autonomous Mode';
+        this.btnToggleLoop.style.background = '#00B048';
+        this.btnToggleLoop.style.borderColor = '#00B048';
+        this.btnToggleLoop.style.boxShadow = '0 4px 14px rgba(0, 176, 72, 0.25)';
+      }
     }
 
-    if (status.is_running) {
-      if (this.progressFill) {
-        this.progressFill.style.width = `${status.progress_pct}%`;
+    // 2. Disable/Enable Model Dropdown while loop is active
+    if (this.selModel) {
+      this.selModel.disabled = isActive;
+      if (status.model_id && this.selModel.value !== status.model_id && isActive) {
+        this.selModel.value = status.model_id;
+        this.activeModelId = status.model_id;
       }
-      if (this.progressText) {
-        this.progressText.textContent = `${status.progress_pct}%`;
+    }
+
+    // 3. Update Master Loop Status Badge
+    if (this.lblLoopState && this.dotLoopState && this.txtLoopState) {
+      if (loopState === 'standby') {
+        this.txtLoopState.textContent = 'STANDBY (ARM AT HOME)';
+        this.dotLoopState.style.background = '#0099FF';
+        this.lblLoopState.style.background = 'rgba(0, 153, 255, 0.1)';
+        this.lblLoopState.style.borderColor = 'rgba(0, 153, 255, 0.3)';
+        this.lblLoopState.style.color = '#0099FF';
+      } else if (loopState === 'stabilizing') {
+        const cd = (typeof status.stability_countdown === 'number') ? status.stability_countdown.toFixed(1) : '1.0';
+        this.txtLoopState.textContent = `STABILIZING (${cd}s)`;
+        this.dotLoopState.style.background = '#FFB800';
+        this.lblLoopState.style.background = 'rgba(255, 184, 0, 0.15)';
+        this.lblLoopState.style.borderColor = 'rgba(255, 184, 0, 0.4)';
+        this.lblLoopState.style.color = '#D9822B';
+      } else if (loopState === 'executing') {
+        this.txtLoopState.textContent = 'EXECUTING PICK & PLACE';
+        this.dotLoopState.style.background = '#00B048';
+        this.lblLoopState.style.background = 'rgba(0, 176, 72, 0.12)';
+        this.lblLoopState.style.borderColor = 'rgba(0, 176, 72, 0.3)';
+        this.lblLoopState.style.color = '#00B048';
+      } else {
+        this.txtLoopState.textContent = 'IDLE';
+        this.dotLoopState.style.background = '#888';
+        this.lblLoopState.style.background = 'rgba(0, 0, 0, 0.05)';
+        this.lblLoopState.style.borderColor = 'var(--border-subtle)';
+        this.lblLoopState.style.color = 'var(--text-muted)';
       }
-      if (this.phaseText) {
-        this.phaseText.textContent = status.phase;
+    }
+
+    // 4. Update Live Execution Card
+    if (this.executionCard) {
+      this.executionCard.style.display = isActive ? 'block' : 'none';
+    }
+
+    if (isActive) {
+      if (loopState === 'standby') {
+        if (this.autoStatusIndicator) this.autoStatusIndicator.style.background = '#0099FF';
+        if (this.autoStatusTitle) {
+          this.autoStatusTitle.textContent = 'AUTONOMOUS STANDBY ACTIVE';
+          this.autoStatusTitle.style.color = '#0099FF';
+        }
+        if (this.executionCard) this.executionCard.style.borderLeftColor = '#0099FF';
+        if (this.phaseText) this.phaseText.textContent = status.phase || 'Waiting for block in workspace...';
+        if (this.stepText) this.stepText.textContent = 'Arm Parked at Home [90, 90, 90, 90, 90, OPEN]';
+        if (this.progressFill) {
+          this.progressFill.style.width = '0%';
+          this.progressFill.style.background = '#0099FF';
+        }
+        if (this.progressText) {
+          this.progressText.textContent = 'Standby';
+          this.progressText.style.color = '#0099FF';
+        }
+      } else if (loopState === 'stabilizing') {
+        const pct = Math.round((status.stability_progress || 0.0) * 100);
+        const cd = (typeof status.stability_countdown === 'number') ? status.stability_countdown.toFixed(1) : '1.0';
+        if (this.autoStatusIndicator) this.autoStatusIndicator.style.background = '#FFB800';
+        if (this.autoStatusTitle) {
+          this.autoStatusTitle.textContent = 'VERIFYING BLOCK STABILITY';
+          this.autoStatusTitle.style.color = '#D9822B';
+        }
+        if (this.executionCard) this.executionCard.style.borderLeftColor = '#FFB800';
+        if (this.phaseText) this.phaseText.textContent = status.phase || `Stationary countdown: ${cd}s remaining`;
+        if (this.stepText) this.stepText.textContent = `Hold block stationary: ${cd}s remaining`;
+        if (this.progressFill) {
+          this.progressFill.style.width = `${pct}%`;
+          this.progressFill.style.background = '#FFB800';
+        }
+        if (this.progressText) {
+          this.progressText.textContent = `${pct}%`;
+          this.progressText.style.color = '#D9822B';
+        }
+      } else if (loopState === 'executing') {
+        if (this.autoStatusIndicator) this.autoStatusIndicator.style.background = '#00B048';
+        if (this.autoStatusTitle) {
+          this.autoStatusTitle.textContent = 'AUTONOMOUS EXECUTION ACTIVE';
+          this.autoStatusTitle.style.color = '#00B048';
+        }
+        if (this.executionCard) this.executionCard.style.borderLeftColor = '#00B048';
+        if (this.phaseText) this.phaseText.textContent = status.phase || 'Executing rollout...';
+        if (this.stepText) this.stepText.textContent = `Step ${status.current_step} / ${status.total_steps}`;
+        if (this.progressFill) {
+          this.progressFill.style.width = `${status.progress_pct}%`;
+          this.progressFill.style.background = '#00B048';
+        }
+        if (this.progressText) {
+          this.progressText.textContent = `${status.progress_pct}%`;
+          this.progressText.style.color = '#00B048';
+        }
       }
-      if (this.stepText) {
-        this.stepText.textContent = `Step ${status.current_step} / ${status.total_steps}`;
-      }
+
       if (this.anglesText && Array.isArray(status.current_angles)) {
         const j = status.current_angles;
         const gStr = j[5] <= 110 ? 'CLOSED' : 'OPEN';
         this.anglesText.textContent = `Base: ${j[0]}° | Shoulder: ${j[1]}° | Elbow: ${j[2]}° | Wrist: ${j[3]}° | Roll: ${j[4]}° | Claw: ${gStr}`;
       }
-    } else {
-      // Re-enable run buttons
-      this.models.forEach(m => {
-        const btn = document.getElementById(`btnRunModel-${m.id}`);
-        if (btn && btn.disabled) {
-          btn.disabled = false;
-          btn.textContent = 'Run Autonomous Pick & Place';
-          btn.style.opacity = '1';
-        }
-      });
     }
   },
 
   renderModels() {
+    // 1. Sync Dropdown Options
+    if (this.selModel) {
+      const currentVal = this.selModel.value || this.activeModelId;
+      this.selModel.innerHTML = this.models.map(m => `
+        <option value="${m.id}" ${m.id === currentVal ? 'selected' : ''}>
+          ${m.name || m.id} (${m.episodes_count || 30} Demos)
+        </option>
+      `).join('');
+
+      if (this.models.some(m => m.id === currentVal)) {
+        this.selModel.value = currentVal;
+        this.activeModelId = currentVal;
+      } else if (this.models.length > 0) {
+        this.activeModelId = this.models[0].id;
+        this.selModel.value = this.models[0].id;
+      }
+    }
+
+    // 2. Render Models Card List
     if (!this.modelsList) return;
 
     if (this.models.length === 0) {
@@ -283,7 +425,7 @@ const AutonomousPanel = {
       const isCurrentActive = (m.id === this.activeModelId);
       const safeName = (m.name || m.id).replace(/'/g, "\\'");
       return `
-        <div class="card" style="margin-top: 16px; border-left: 4px solid var(--accent-primary); background: var(--bg-card);">
+        <div class="card" style="margin-top: 16px; border-left: 4px solid ${isCurrentActive ? '#00B048' : 'var(--accent-primary)'}; background: var(--bg-card);">
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div>
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
@@ -296,6 +438,10 @@ const AutonomousPanel = {
                 <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); background: rgba(224, 90, 71, 0.1); border: 1px solid rgba(224, 90, 71, 0.25); padding: 2px 8px; border-radius: 4px; font-weight: 600;">
                   ${m.episodes_count || 30} Demos
                 </span>
+                ${isCurrentActive ? `
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; color: #00B048; background: rgba(0, 176, 72, 0.12); border: 1px solid rgba(0, 176, 72, 0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+                  ACTIVE IN DROPDOWN
+                </span>` : ''}
               </div>
               <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
                 Dataset: ${m.transitions_count || 17824} transitions • Train Loss: ${m.loss || 0.51} • Speed: 30Hz Closed-Loop<br>
@@ -304,10 +450,10 @@ const AutonomousPanel = {
             </div>
             
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <button class="btn btn-primary" id="btnRunModel-${m.id}" onclick="AutonomousPanel.runModel('${m.id}')" style="padding: 10px 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(224, 90, 71, 0.25);">
-                Run Autonomous Pick & Place
+              <button class="btn ${isCurrentActive ? 'btn-primary' : 'btn-secondary'}" onclick="AutonomousPanel.selectModel('${m.id}')" style="padding: 9px 18px; font-size: 0.86rem; font-weight: 600; cursor: pointer; ${isCurrentActive ? 'background: #00B048; border-color: #00B048;' : ''}">
+                ${isCurrentActive ? 'Selected in Dropdown' : 'Select in Dropdown'}
               </button>
-              <button class="btn btn-secondary" id="btnDeleteModel-${m.id}" onclick="AutonomousPanel.deleteModel('${m.id}', '${safeName}')" style="padding: 10px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #E53935; border-color: rgba(229, 57, 53, 0.4);">
+              <button class="btn btn-secondary" onclick="AutonomousPanel.deleteModel('${m.id}', '${safeName}')" style="padding: 9px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #E53935; border-color: rgba(229, 57, 53, 0.4);">
                 Delete
               </button>
             </div>

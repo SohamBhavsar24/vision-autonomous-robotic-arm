@@ -819,26 +819,60 @@
             </div>
           </div>
 
-          <!-- Live Autonomous Execution Monitor (Appears when policy is actively running) -->
+          <!-- Master Autonomous Control Bar -->
+          <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+              
+              <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <div>
+                  <label for="selAutonomousModel" style="display: block; font-family: var(--font-mono); font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px;">
+                    Policy Model
+                  </label>
+                  <select id="selAutonomousModel" style="font-family: var(--font-mono); font-size: 0.88rem; font-weight: 600; padding: 9px 14px; border-radius: 6px; border: 1px solid var(--border-subtle); background: var(--bg-page); color: var(--text-main); min-width: 220px; cursor: pointer;">
+                    <option value="v1">v1 (30 Demos)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="display: block; font-family: var(--font-mono); font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; letter-spacing: 0.5px;">
+                    Autonomous Status
+                  </label>
+                  <div id="lblAutoLoopState" style="display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.82rem; padding: 8px 14px; border-radius: 6px; background: rgba(0, 0, 0, 0.05); border: 1px solid var(--border-subtle); color: var(--text-muted); font-weight: 600;">
+                    <span id="dotAutoLoopState" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #888;"></span>
+                    <span id="txtAutoLoopState">IDLE</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-primary" id="btnToggleAutonomousLoop" style="padding: 12px 26px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 176, 72, 0.25); background: #00B048; border-color: #00B048; color: #fff;">
+                  Start Autonomous Mode
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Live Autonomous Execution Monitor (Appears when standby, stabilizing, or executing) -->
           <div id="autonomousExecutionCard" style="display: none; background: var(--bg-page); border: 1px solid var(--border-subtle); border-left: 4px solid #00B048; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="status-indicator live" style="background: #00B048;"></span>
-                <span style="font-family: var(--font-mono); font-size: 0.88rem; font-weight: 600; color: #00B048;">AUTONOMOUS EXECUTION ACTIVE</span>
-                <span id="autoPhaseText" style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-main); background: rgba(0,0,0,0.05); padding: 2px 8px; border-radius: 4px;">Approaching Block</span>
+                <span class="status-indicator live" id="autoStatusIndicator" style="background: #00B048;"></span>
+                <span id="autoStatusTitle" style="font-family: var(--font-mono); font-size: 0.88rem; font-weight: 600; color: #00B048;">AUTONOMOUS EXECUTION ACTIVE</span>
+                <span id="autoPhaseText" style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-main); background: rgba(0,0,0,0.05); padding: 2px 8px; border-radius: 4px;">Standby</span>
               </div>
               <button class="btn btn-secondary" id="btnAbortAutonomous" style="color: #E53935; border-color: rgba(229, 57, 53, 0.4); padding: 6px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">
-                Abort Execution
+                Abort / Stop
               </button>
             </div>
 
-            <!-- Progress Bar -->
+            <!-- Progress Bar (Stabilization countdown or Trajectory Execution) -->
             <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.08); border-radius: 5px; overflow: hidden; margin-bottom: 8px;">
-              <div id="autoProgressFill" style="width: 0%; height: 100%; background: #00B048; transition: width 0.1s linear;"></div>
+              <div id="autoProgressFill" style="width: 0%; height: 100%; background: #00B048; transition: width 0.08s linear;"></div>
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted);">
-              <span id="autoStepText">Step 0 / 0</span>
+              <span id="autoStepText">Standby</span>
               <span id="autoProgressText" style="font-weight: 600; color: #00B048;">0.0%</span>
             </div>
 
@@ -871,7 +905,7 @@
   <script src="js/servo_panel.js?v=1.0.56"></script>
   <script src="js/teleop_panel.js?v=1.0.56"></script>
   <script src="js/dataset_panel.js?v=1.0.56"></script>
-  <script src="js/autonomous_panel.js?v=1.0.56"></script>
+  <script src="js/autonomous_panel.js?v=1.0.57"></script>
   <script src="js/digital_twin_panel.js?v=1.0.56"></script>
 </body>
 </html>

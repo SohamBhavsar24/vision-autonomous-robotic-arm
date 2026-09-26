@@ -3,44 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Academic Research Poster • Vision-Guided Autonomous 6-DOF Robotic Arm</title>
-  
+  <title>Vision-Guided Autonomous 6-DOF Robotic Arm - ISO A0 Poster</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* ==========================================================================
-       A0 PRINT MEDIA SPECIFICATION (841mm x 1189mm • 1 : 1.4142 Portrait)
-       ========================================================================== */
     @page {
       size: 841mm 1189mm;
       margin: 0;
     }
 
     :root {
-      --bg-canvas: #F1F5F9;
-      --bg-sheet: #FFFFFF;
-      --bg-card: #FFFFFF;
-      --bg-card-tint: #F8FAFC;
-      --bg-navy: #0F172A;
-      
+      --sheet-w: 841mm;
+      --sheet-h: 1189mm;
+      --sheet-bg: #FFFFFF;
+      --card-bg: #FFFFFF;
+      --tint-bg: #F8FAFC;
       --border-card: #CBD5E1;
-      --border-subtle: #E2E8F0;
+      --border-light: #E2E8F0;
+      --border-blue: #93C5FD;
       
-      --text-hero: #090D16;
+      --text-hero: #0F172A;
       --text-main: #1E293B;
       --text-muted: #475569;
-      --text-light: #94A3B8;
+      --text-faint: #64748B;
       
       --accent-blue: #1D4ED8;
+      --accent-electric: #2563EB;
       --accent-cyan: #0284C7;
-      --accent-teal: #0D9488;
-      --accent-indigo: #4338CA;
+      --accent-navy: #0F172A;
+      --accent-green: #059669;
       --accent-amber: #D97706;
-      
-      --font-display: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      --font-display: 'Cabinet Grotesk', -apple-system, sans-serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
 
@@ -53,407 +49,759 @@
     }
 
     body {
-      background-color: var(--bg-canvas);
-      color: var(--text-main);
+      background: #334155;
       font-family: var(--font-body);
-      line-height: 1.5;
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      padding: 30px 40px 100px 300px;
+      min-height: 100vh;
+    }
+
+    /* ── LEFT DOCKED SIDEBAR CONTROLS ── */
+    .sidebar-dock {
+      position: fixed;
+      left: 20px;
+      top: 24px;
+      width: 250px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 18px 16px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+      z-index: 99999;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 30px 0 100px 0;
+      gap: 14px;
+      color: #F8FAFC;
     }
 
-    /* Floating Quick Bar (Hidden during Print) */
-    .screen-nav {
-      position: sticky;
-      top: 18px;
-      z-index: 1000;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(16px);
-      padding: 12px 28px;
-      border-radius: 50px;
+    .dock-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 10px;
+    }
+
+    .dock-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.01em;
+    }
+
+    .dock-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #93C5FD;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .dock-section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94A3B8;
+      margin-bottom: 6px;
+    }
+
+    .zoom-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .zoom-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #CBD5E1;
+      padding: 6px 0;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .zoom-btn:hover {
+      background: rgba(37, 99, 235, 0.35);
+      border-color: #60A5FA;
+      color: #FFFFFF;
+    }
+
+    .zoom-btn.active {
+      background: #2563EB;
+      border-color: #3B82F6;
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+    }
+
+    .zoom-fit-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .zoom-slider-box {
       display: flex;
       align-items: center;
-      gap: 20px;
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
-      margin-bottom: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      gap: 8px;
+      margin-top: 4px;
     }
 
-    .screen-nav span {
-      color: #FFFFFF;
-      font-size: 0.9rem;
+    .zoom-slider-box input[type="range"] {
+      flex: 1;
+      accent-color: #2563EB;
+      cursor: pointer;
+    }
+
+    .zoom-val-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
       font-weight: 700;
-      font-family: var(--font-display);
-      letter-spacing: 0.02em;
+      color: #93C5FD;
+      min-width: 40px;
+      text-align: right;
     }
 
-    .btn-action-primary {
+    .dock-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-top: 12px;
+    }
+
+    .btn-dock-primary {
       background: #2563EB;
       color: #FFFFFF;
       border: none;
-      padding: 9px 22px;
-      border-radius: 30px;
-      font-weight: 700;
-      font-size: 0.88rem;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 13px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 9px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.45);
     }
 
-    .btn-action-primary:hover {
+    .btn-dock-primary:hover {
       background: #1D4ED8;
-      transform: translateY(-1px);
     }
 
-    .btn-action-secondary {
-      background: rgba(255, 255, 255, 0.1);
+    .btn-dock-secondary {
+      background: rgba(255,255,255,0.08);
       color: #E2E8F0;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 8px 16px;
-      border-radius: 30px;
-      font-size: 0.8rem;
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s ease;
+      transition: all 0.15s;
+      text-align: center;
     }
 
-    .btn-action-secondary:hover {
-      background: rgba(255, 255, 255, 0.2);
+    .btn-dock-secondary:hover {
+      background: rgba(255,255,255,0.16);
       color: #FFFFFF;
     }
 
-    /* Master Poster Sheet */
+    .btn-dock-save {
+      background: #059669;
+      color: #FFFFFF;
+      border: 1px solid #10B981;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s;
+      box-shadow: 0 4px 14px rgba(5,150,105,0.45);
+    }
+
+    .btn-dock-save:hover {
+      background: #047857;
+      transform: translateY(-1px);
+    }
+
+    .btn-dock-save:active {
+      transform: translateY(0);
+    }
+
+    .save-toast {
+      display: none;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.2);
+      color: #6EE7B7;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 6px 10px;
+      border-radius: 6px;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .save-toast.show {
+      display: block;
+    }
+
+    .dock-tips {
+      font-size: 10.5px;
+      line-height: 1.4;
+      color: #94A3B8;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 10px;
+    }
+
+    .dock-tips strong {
+      color: #CBD5E1;
+    }
+
+    /* ── ISO A0 POSTER CANVAS (841 x 1189 mm) ── */
     .poster-sheet {
-      width: 841mm;
-      height: 1189mm;
-      max-height: 1189mm;
-      background: var(--bg-sheet);
-      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.15);
+      width: var(--sheet-w);
+      height: var(--sheet-h);
+      max-height: var(--sheet-h);
+      background: var(--sheet-bg);
       position: relative;
       display: flex;
       flex-direction: column;
-      padding: 22mm 24mm 18mm 24mm;
+      justify-content: space-between;
+      padding: 8mm 12mm 8mm 12mm;
+      box-shadow: 0 40px 90px rgba(0,0,0,0.35);
       overflow: hidden;
+      transform-origin: top center;
+      gap: 5mm;
     }
 
     @media screen {
       .poster-sheet {
-        zoom: 0.45;
+        zoom: 0.50;
       }
     }
 
     @media print {
-      body {
-        background: #FFFFFF !important;
-        padding: 0 !important;
-        margin: 0 !important;
+      @page {
+        size: 841mm 1189mm;
+        margin: 0mm;
       }
-      .screen-nav {
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-sizing: border-box !important;
+      }
+      html, body {
+        width: 841mm !important;
+        height: 1189mm !important;
+        min-height: 1189mm !important;
+        max-height: 1189mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #FFFFFF !important;
+        overflow: hidden !important;
+        display: block !important;
+      }
+      .sidebar-dock, #saveToast {
         display: none !important;
       }
       .poster-sheet {
         zoom: 1 !important;
-        box-shadow: none !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
         width: 841mm !important;
         height: 1189mm !important;
-        padding: 22mm 24mm 18mm 24mm !important;
+        min-height: 1189mm !important;
+        max-height: 1189mm !important;
+        box-shadow: none !important;
+        padding: 8mm 12mm 8mm 12mm !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        box-sizing: border-box !important;
       }
-      .slot-overlay {
+      .slot-controls, .card-add-btn, .slot-resize-handle, .card-ctrl-bar, .card-resize-handle {
         display: none !important;
       }
-      .image-slot-empty {
+      .poster-body-grid {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.35fr) minmax(0, 1.15fr) !important;
+        gap: 5.5mm !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        box-sizing: border-box !important;
+      }
+      .col-stack {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 5mm !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .pipeline-vertical-col {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+      }
+      .card {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+      }
+      .v-stage-card {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        justify-content: flex-start !important;
+        box-shadow: none !important;
+      }
+      .v-arrow-sep,
+      .v-arrow-shaft,
+      .v-arrow-head,
+      .v-arrow-head svg {
+        box-shadow: none !important;
+        filter: none !important;
+        -webkit-filter: none !important;
+        border: none !important;
+        outline: none !important;
+      }
+      .v-arrow-shaft {
+        background: #1D4ED8 !important;
+      }
+      .v-stage-card .img-slot-wrapper {
+        margin-top: 2mm !important;
+      }
+      .img-slot {
         background: #F8FAFC !important;
-        border-color: #E2E8F0 !important;
+        border: 2px solid var(--border-card) !important;
+        overflow: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+      }
+      .img-slot.active {
+        background: #F8FAFC !important;
+        padding: 0 !important;
+      }
+      .img-slot img {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      .logo-img-slot {
+        width: 130mm !important;
+        height: 48mm !important;
+        border: none !important;
+        background: transparent !important;
+      }
+      .logo-img-slot.active {
+        background: #FFFFFF !important;
+        padding: 2.5mm 4mm !important;
+        border-radius: 8px !important;
+      }
+      .logo-img-slot:not(.active),
+      .logo-clear-btn {
+        display: none !important;
       }
     }
 
-    /* ==========================================================================
-       HEADER HERO SECTION
-       ========================================================================== */
+    /* ── 1. HEADER (Deep Navy) ── */
     .poster-header {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 20mm;
+      background: linear-gradient(135deg, #090D16 0%, #0F172A 40%, #1E3A5F 100%);
+      border-radius: 12px;
+      padding: 8mm 14mm 7.5mm 14mm;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,0.1);
+      display: flex;
       align-items: center;
-      padding-bottom: 12mm;
-      border-bottom: 4px solid var(--accent-blue);
-      margin-bottom: 11mm;
+      justify-content: space-between;
+      gap: 12mm;
+    }
+
+    .header-main-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-logo-container {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-slot-wrapper {
+      margin-top: 0 !important;
+      width: 130mm;
+      height: 48mm;
       position: relative;
     }
 
-    .badge-pill-row {
+    .logo-clear-btn {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #EF4444;
+      color: #FFFFFF;
+      border: 2px solid #0F172A;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      z-index: 10;
+      transition: transform 0.15s, background 0.15s;
+    }
+
+    .logo-clear-btn:hover {
+      background: #DC2626;
+      transform: scale(1.1);
+    }
+
+    .logo-img-slot.active ~ .logo-clear-btn {
+      display: flex;
+    }
+
+    .logo-img-slot {
+      width: 130mm !important;
+      height: 48mm !important;
+      min-height: 48mm !important;
+      max-height: 48mm !important;
+      border: 2.5px dashed rgba(255, 255, 255, 0.45) !important;
+      border-radius: 10px !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
       display: flex;
       align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .logo-img-slot:hover {
+      border-color: #60A5FA !important;
+      background: rgba(255, 255, 255, 0.16) !important;
+    }
+
+    .logo-img-slot.active {
+      border: 2px solid rgba(255, 255, 255, 0.35) !important;
+      background: #FFFFFF !important;
+      padding: 2.5mm 4mm !important;
+    }
+
+    .logo-img-slot.active img {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+      object-position: center center !important;
+    }
+
+    .logo-empty-view {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
       gap: 12px;
-      margin-bottom: 10px;
+      text-align: left;
+      pointer-events: none;
+      padding: 0 12px;
+    }
+
+    .logo-img-slot.active .logo-empty-view {
+      display: none !important;
+    }
+
+    .logo-empty-view svg {
+      width: 34px;
+      height: 34px;
+      stroke: #93C5FD;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    .logo-empty-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-slot-title {
+      font-family: var(--font-display);
+      font-size: 14pt;
+      font-weight: 800;
+      color: #F8FAFC;
+    }
+
+    .logo-slot-sub {
+      font-size: 11pt;
+      color: #94A3B8;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .poster-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(37,99,235,0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 5px;
+      flex-wrap: wrap;
     }
 
     .badge-pill {
       font-family: var(--font-mono);
-      font-size: 13pt;
-      font-weight: 700;
-      padding: 4px 14px;
+      font-size: 20pt;
+      font-weight: 800;
+      padding: 5px 16px;
       border-radius: 6px;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
     }
 
-    .badge-pill.blue {
-      background: #EFF6FF;
-      color: var(--accent-blue);
-      border: 1.5px solid #BFDBFE;
+    .badge-pill.primary {
+      background: rgba(37, 99, 235, 0.35);
+      color: #93C5FD;
+      border: 2px solid rgba(96, 165, 250, 0.5);
     }
 
-    .badge-pill.slate {
-      background: #F1F5F9;
-      color: var(--text-muted);
-      border: 1.5px solid #CBD5E1;
-      font-family: var(--font-body);
+    .badge-pill.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #E2E8F0;
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .badge-pill.green {
+      background: rgba(5, 150, 105, 0.35);
+      color: #6EE7B7;
+      border: 2px solid rgba(52, 211, 153, 0.5);
     }
 
     .hero-title {
       font-family: var(--font-display);
-      font-size: 40pt;
+      font-size: 66pt;
       font-weight: 900;
-      line-height: 1.12;
-      color: var(--text-hero);
-      letter-spacing: -0.03em;
-      margin-bottom: 8px;
+      line-height: 1.05;
+      color: #FFFFFF;
+      letter-spacing: -0.035em;
+      margin-bottom: 6px;
     }
 
     .hero-subtitle {
-      font-family: var(--font-body);
-      font-size: 18pt;
+      font-size: 29pt;
       font-weight: 600;
-      color: var(--accent-cyan);
-      margin-bottom: 12px;
-      letter-spacing: -0.01em;
+      color: #93C5FD;
+      line-height: 1.25;
+      margin-bottom: 8px;
     }
 
     .author-row {
-      font-size: 16pt;
-      color: var(--text-main);
-      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 24pt;
+      color: #E2E8F0;
     }
 
     .author-row strong {
-      color: var(--text-hero);
+      color: #FFFFFF;
+      font-weight: 800;
     }
 
-    .author-row span {
-      color: var(--accent-blue);
-      margin: 0 8px;
+    .author-row .sep {
+      color: #60A5FA;
+      font-weight: 900;
     }
 
-    .header-qr-card {
-      width: 50mm;
-      height: 50mm;
-      background: #F8FAFC;
-      border: 2px solid var(--border-card);
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 8px;
-      gap: 4px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-    }
-
-    .header-qr-card svg {
-      width: 32mm;
-      height: 32mm;
-    }
-
-    .header-qr-card .qr-label {
-      font-family: var(--font-mono);
-      font-size: 8.5pt;
-      font-weight: 700;
-      color: var(--text-hero);
-    }
-
-    /* ==========================================================================
-       THREE-COLUMN BALANCED LAYOUT
-       ========================================================================== */
-    .columns-wrapper {
+    /* ── 2. NEW ARCHITECTURE: 3-COLUMN MAIN BODY (Left | Vertical Flowchart Backbone | Right) ── */
+    .poster-body-grid {
       display: grid;
-      grid-template-columns: 1fr 1.3fr 1fr;
-      gap: 12mm;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.35fr) minmax(0, 1.15fr); /* Center vertical pipeline is prominent */
+      gap: 5.5mm;
+      width: 100%;
+      max-width: 100%;
       flex: 1;
+      min-height: 0;
+      box-sizing: border-box;
     }
 
-    .col {
+    .col-stack {
       display: flex;
       flex-direction: column;
-      gap: 9mm;
+      gap: 5mm;
+      height: 100%;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      min-height: 0;
+      box-sizing: border-box;
     }
 
-    /* Card Panels */
-    .card-panel {
-      background: var(--bg-card);
-      border: 2px solid var(--border-card);
-      border-radius: 10px;
-      padding: 8mm 9mm;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    /* ── CARDS (Left & Right Columns) ── */
+    .card {
+      background: var(--card-bg);
+      border: 2.5px solid var(--border-card);
+      border-radius: 12px;
+      padding: 5.5mm 6.5mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
       position: relative;
+      flex: 1;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      min-height: 0;
+      box-sizing: border-box;
     }
 
-    .card-panel.tinted {
-      background: var(--bg-card-tint);
+    .card.tinted {
+      background: var(--tint-bg);
       border-color: #BFDBFE;
     }
 
-    .panel-header {
+    .card-head {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 5mm;
-      border-bottom: 2.5px solid #F1F5F9;
-      padding-bottom: 3.5mm;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 3mm;
+      padding-bottom: 2.5mm;
+      border-bottom: 3px solid #F1F5F9;
+      flex-shrink: 0;
     }
 
-    .panel-num {
+    .card-head-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .card-num {
       background: var(--accent-blue);
       color: #FFFFFF;
       font-family: var(--font-mono);
-      font-size: 13pt;
+      font-size: 22pt;
       font-weight: 800;
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
+      min-width: 42px;
+      height: 42px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
-    .panel-title {
+    .card-title {
       font-family: var(--font-display);
-      font-size: 18pt;
+      font-size: 32pt;
       font-weight: 900;
       color: var(--text-hero);
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
     }
 
-    .body-copy {
-      font-size: 11pt;
+    .card-body-flow {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      justify-content: space-between;
+      min-height: 0;
+    }
+
+    .body-p {
+      font-size: 21pt;
       color: var(--text-main);
-      line-height: 1.62;
-      margin-bottom: 4mm;
+      line-height: 1.42;
+      margin-bottom: 2.5mm;
     }
 
-    .body-copy strong {
+    .body-p strong {
       color: var(--text-hero);
-      font-weight: 700;
-    }
-
-    /* Interactive Image Containers */
-    .image-box {
-      width: 100%;
-      height: 52mm;
-      border: 2px dashed #94A3B8;
-      border-radius: 8px;
-      background: #F8FAFC;
-      position: relative;
-      overflow: hidden;
-      margin: 4.5mm 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .image-box:hover {
-      border-color: var(--accent-blue);
-      background: #EFF6FF;
-    }
-
-    .image-box.active {
-      border-style: solid;
-      border-color: var(--border-card);
-      background: #000000;
-    }
-
-    .image-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: none;
-    }
-
-    .image-box.active img {
-      display: block;
-    }
-
-    .image-slot-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 6px;
-      padding: 14px;
-      pointer-events: none;
-    }
-
-    .image-box.active .image-slot-empty {
-      display: none;
-    }
-
-    .empty-icon {
-      width: 32px;
-      height: 32px;
-      stroke: var(--accent-blue);
-      fill: none;
-    }
-
-    .empty-title {
-      font-family: var(--font-display);
-      font-size: 10pt;
       font-weight: 800;
+    }
+
+    .body-list {
+      font-size: 20pt;
+      padding-left: 24px;
+      line-height: 1.44;
+      color: var(--text-main);
+      margin-bottom: 2.5mm;
+    }
+
+    .body-list li {
+      margin-bottom: 2mm;
+    }
+
+    .body-list strong {
       color: var(--text-hero);
+      font-weight: 800;
     }
 
-    .empty-sub {
-      font-family: var(--font-mono);
-      font-size: 8pt;
-      color: var(--text-muted);
-    }
-
-    .slot-overlay {
-      position: absolute;
-      bottom: 8px;
-      right: 8px;
-      background: rgba(15, 23, 42, 0.88);
-      color: #FFFFFF;
-      font-size: 8pt;
-      font-family: var(--font-mono);
-      padding: 4px 10px;
-      border-radius: 4px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      pointer-events: none;
-    }
-
-    .image-box:hover .slot-overlay {
-      opacity: 1;
-    }
-
-    .raw-input {
-      display: none;
-    }
-
-    /* Hardware Data Table */
+    /* Tables */
     .data-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 10.2pt;
-      margin: 3.5mm 0;
+      font-size: 17.5pt;
+      margin: 1.5mm 0;
     }
 
     .data-table th {
@@ -462,116 +810,66 @@
       font-family: var(--font-display);
       font-weight: 800;
       text-align: left;
-      padding: 6px 12px;
-      border: 1px solid var(--border-card);
-      font-size: 10.5pt;
+      padding: 6px 10px;
+      border: 1.5px solid var(--border-card);
+      font-size: 18pt;
     }
 
     .data-table td {
-      padding: 5.5px 12px;
-      border: 1px solid var(--border-card);
+      padding: 5.5px 10px;
+      border: 1.5px solid var(--border-card);
       color: var(--text-main);
     }
 
-    .data-table td.code-cell {
+    .data-table .mono {
       font-family: var(--font-mono);
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 16pt;
+      color: var(--accent-blue);
     }
 
     .data-table tr:nth-child(even) {
-      background: #F8FAFC;
+      background: var(--tint-bg);
     }
 
-    /* ==========================================================================
-       CENTERPIECE 7-BLOCK FLOWCHART
-       ========================================================================== */
-    .flow-tree {
-      display: flex;
-      flex-direction: column;
-      gap: 3.5mm;
+    /* Spec Grid */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5mm;
+      margin: 1.5mm 0;
     }
 
-    .flow-node {
-      background: #FFFFFF;
-      border: 2px solid var(--border-card);
-      border-left: 7px solid var(--accent-blue);
-      border-radius: 8px;
-      padding: 5mm 6mm;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
-      position: relative;
+    .spec-box {
+      background: var(--tint-bg);
+      border: 1.5px solid var(--border-light);
+      border-radius: 6px;
+      padding: 3mm 4mm;
     }
 
-    .flow-node.teal { border-left-color: var(--accent-teal); }
-    .flow-node.cyan { border-left-color: var(--accent-cyan); }
-    .flow-node.indigo { border-left-color: var(--accent-indigo); }
-    .flow-node.amber { border-left-color: var(--accent-amber); }
-
-    .node-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2mm;
-    }
-
-    .node-title-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .node-badge {
-      background: #EFF6FF;
-      color: var(--accent-blue);
+    .spec-label {
       font-family: var(--font-mono);
-      font-size: 8.5pt;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 4px;
-      border: 1px solid #BFDBFE;
-    }
-
-    .node-title {
-      font-family: var(--font-display);
       font-size: 13pt;
       font-weight: 800;
-      color: var(--text-hero);
-    }
-
-    .node-meta {
-      font-family: var(--font-mono);
-      font-size: 8pt;
-      font-weight: 700;
-      background: #F1F5F9;
       color: var(--text-muted);
-      padding: 2px 8px;
-      border-radius: 4px;
-      border: 1px solid #CBD5E1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 1.5px;
     }
 
-    .node-desc {
-      font-size: 9.9pt;
-      color: var(--text-main);
-      line-height: 1.5;
+    .spec-val {
+      font-family: var(--font-display);
+      font-size: 19pt;
+      font-weight: 800;
+      color: var(--text-hero);
+      line-height: 1.22;
     }
 
-    .flow-junction {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: -2.5mm 0;
-      color: var(--accent-blue);
-    }
-
-    .flow-junction svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    /* Digital Twin 5 Mandates List */
+    /* Mandates */
     .mandate-row {
       display: flex;
-      gap: 12px;
-      margin-bottom: 3.5mm;
+      gap: 10px;
+      margin-bottom: 2.5mm;
       align-items: flex-start;
     }
 
@@ -579,510 +877,1636 @@
       background: #EFF6FF;
       color: var(--accent-blue);
       font-family: var(--font-mono);
-      font-size: 9pt;
+      font-size: 15pt;
       font-weight: 800;
       padding: 3px 8px;
-      border-radius: 4px;
+      border-radius: 5px;
       border: 1.5px solid #BFDBFE;
       margin-top: 2px;
       flex-shrink: 0;
     }
 
     .mandate-text {
-      font-size: 10pt;
+      font-size: 18.5pt;
       color: var(--text-main);
-      line-height: 1.45;
+      line-height: 1.38;
     }
 
     .mandate-text strong {
       color: var(--text-hero);
-      font-weight: 700;
+      font-weight: 800;
     }
 
-    /* Metric Counters */
-    .kpi-row {
+    /* KPI Grid */
+    .kpi-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4mm;
-      margin: 4mm 0;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2.5mm;
+      margin: 1.5mm 0;
     }
 
     .kpi-box {
-      background: #F8FAFC;
-      border: 1.5px solid var(--border-card);
+      background: var(--tint-bg);
+      border: 2px solid var(--border-card);
       border-radius: 8px;
-      padding: 4mm;
+      padding: 3.5mm;
       text-align: center;
     }
 
-    .kpi-number {
+    .kpi-val {
       font-family: var(--font-display);
-      font-size: 22pt;
+      font-size: 38pt;
       font-weight: 900;
       color: var(--accent-blue);
-      line-height: 1.1;
+      line-height: 1.05;
     }
 
     .kpi-label {
-      font-size: 8.5pt;
-      font-weight: 700;
+      font-size: 13pt;
+      font-weight: 800;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-top: 2px;
     }
 
-    /* Callout Card */
-    .callout-box {
-      background: #EFF6FF;
-      border: 1.5px solid #BFDBFE;
-      border-radius: 8px;
-      padding: 4.5mm 5mm;
-      margin-top: 3.5mm;
-    }
-
-    .callout-title {
-      font-family: var(--font-display);
-      font-size: 11pt;
-      font-weight: 800;
-      color: var(--accent-blue);
-      margin-bottom: 2px;
-    }
-
-    .callout-text {
-      font-size: 9.4pt;
-      color: #1E3A8A;
-      line-height: 1.48;
-    }
-
-    /* Footer Metadata */
-    .poster-footer {
-      border-top: 2.5px solid var(--border-card);
-      margin-top: 8mm;
-      padding-top: 4.5mm;
+    /* ── 3. VERTICAL FLOWCHART BACKBONE (Center Column, Top-to-Bottom - Differentiated Light Blueprint Theme) ── */
+    .pipeline-vertical-col {
+      background-color: #EDF4FE;
+      background-image: radial-gradient(#BFDBFE 1.2px, transparent 1.2px);
+      background-size: 16px 16px;
+      border-radius: 14px;
+      padding: 5.5mm 6.5mm;
+      border: 3px solid #60A5FA;
       display: flex;
+      flex-direction: column;
       justify-content: space-between;
-      align-items: center;
-      font-size: 9pt;
-      color: var(--text-muted);
+      height: 100%;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      min-height: 0;
+      box-sizing: border-box;
+      box-shadow: 0 8px 30px rgba(37, 99, 235, 0.12), inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .p-vert-header {
+      background: #FFFFFF;
+      border-radius: 10px;
+      padding: 3.5mm 5mm;
+      margin-bottom: 2.5mm;
+      text-align: center;
+      border: 2px solid #BFDBFE;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
+    }
+
+    .p-vert-badge {
+      display: inline-block;
+      background: #1D4ED8;
+      color: #FFFFFF;
       font-family: var(--font-mono);
+      font-size: 18pt;
+      font-weight: 800;
+      padding: 4px 16px;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.5mm;
+    }
+
+    .p-vert-title {
+      font-family: var(--font-display);
+      font-size: 34pt;
+      font-weight: 900;
+      color: #0F172A;
+      letter-spacing: -0.02em;
+    }
+
+    .p-vert-sub {
+      font-size: 20pt;
+      color: #1D4ED8;
+      font-weight: 700;
+      margin-top: 1mm;
+    }
+
+    .vert-stages-list {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+      gap: 0; /* Zero gap so dynamic arrows directly touch the cards */
+    }
+
+    .v-stage-card {
+      background: #FFFFFF;
+      border: 2px solid #BFDBFE;
+      border-left: 7px solid #2563EB; /* Prominent pipeline left accent stripe */
+      border-radius: 10px;
+      padding: 2.8mm 4.5mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      box-shadow: 0 4px 12px rgba(30, 58, 138, 0.06);
+      transition: all 0.15s;
+    }
+
+    .v-stage-card:hover {
+      border-color: #3B82F6;
+      border-left-color: #1D4ED8;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .v-stage-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 7.5mm;
+      margin-bottom: 2mm;
+      flex-shrink: 0;
+    }
+
+    .v-stage-top-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .v-stage-step {
+      font-family: var(--font-mono);
+      font-size: 15.5pt;
+      font-weight: 800;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #BFDBFE;
+      letter-spacing: 0.06em;
+    }
+
+    .v-stage-tag {
+      font-family: var(--font-mono);
+      font-size: 13.5pt;
+      font-weight: 700;
+      background: #F0FDF4;
+      color: #047857;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #A7F3D0;
+    }
+
+    .v-stage-title {
+      font-family: var(--font-display);
+      font-size: 23pt;
+      font-weight: 900;
+      color: #0F172A;
+      margin-bottom: 2.4mm;
+      line-height: 1.18;
+      flex-shrink: 0;
+    }
+
+    .v-stage-desc {
+      font-size: 18.5pt;
+      color: #334155;
+      line-height: 1.42;
+      margin-bottom: 1.2mm;
+      flex-shrink: 0;
+    }
+
+    .v-stage-card .img-slot-wrapper {
+      margin-top: 2.5mm;
+    }
+
+    .v-stage-card .img-slot {
+      margin-top: 0;
+    }
+
+    /* ── DEDICATED BALANCED SPACING & LARGER FONTS FOR FLOWCHART STAGES 3, 4, 5, 6 ── */
+    #v-stage-3, #v-stage-5 {
+      padding: 5.2mm 6mm 5.2mm 6mm;
+    }
+
+    #v-stage-3 .v-stage-top, #v-stage-5 .v-stage-top {
+      margin-bottom: 4.2mm;
+    }
+
+    #v-stage-3 .v-stage-step, #v-stage-5 .v-stage-step {
+      font-size: 16.5pt;
+      padding: 3px 10px;
+    }
+
+    #v-stage-3 .v-stage-tag, #v-stage-5 .v-stage-tag {
+      font-size: 15pt;
+      padding: 3px 10px;
+    }
+
+    #v-stage-3 .v-stage-title, #v-stage-5 .v-stage-title {
+      font-size: 26pt;
+      margin-bottom: 4.6mm;
+      line-height: 1.24;
+    }
+
+    #v-stage-3 .v-stage-desc, #v-stage-5 .v-stage-desc {
+      font-size: 21pt;
+      line-height: 1.52;
+      margin-bottom: 3.2mm;
+    }
+
+    #v-stage-4, #v-stage-6 {
+      padding: 4.2mm 5.5mm 4.2mm 5.5mm;
+    }
+
+    #v-stage-4 .v-stage-top, #v-stage-6 .v-stage-top {
+      margin-bottom: 3.6mm;
+    }
+
+    #v-stage-4 .v-stage-step, #v-stage-6 .v-stage-step {
+      font-size: 16pt;
+      padding: 2.5px 9px;
+    }
+
+    #v-stage-4 .v-stage-tag, #v-stage-6 .v-stage-tag {
+      font-size: 14.5pt;
+      padding: 2.5px 9px;
+    }
+
+    #v-stage-4 .v-stage-title, #v-stage-6 .v-stage-title {
+      font-size: 24.5pt;
+      margin-bottom: 4mm;
+      line-height: 1.20;
+    }
+
+    #v-stage-4 .v-stage-desc, #v-stage-6 .v-stage-desc {
+      font-size: 20pt;
+      line-height: 1.48;
+      margin-bottom: 3.5mm;
+    }
+
+    #v-stage-4 .img-slot-wrapper, #v-stage-6 .img-slot-wrapper {
+      margin-top: 3mm;
+    }
+
+    .v-stage-desc strong {
+      color: #0F172A;
+      font-weight: 800;
+    }
+
+    .v-stage-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 1.5mm 0 2.5mm 0;
+    }
+
+    .v-stage-bullets li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 19pt;
+      color: #334155;
+      line-height: 1.36;
+      margin-bottom: 1.5mm;
+    }
+
+    .v-stage-bullets li::before {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 9px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2563EB;
+    }
+
+    .v-stage-bullets strong {
+      color: #0F172A;
+      font-weight: 800;
+    }
+
+    /* Dynamic Stretchy Connectors Touching Cards Flush */
+    .v-arrow-sep {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      flex: 1; /* Stretches dynamically to span any distance between cards */
+      min-height: 18px;
+      margin: 0;
+      padding: 0;
+      position: relative;
+      z-index: 5;
+      border: none;
+      outline: none;
+    }
+
+    .v-arrow-shaft {
+      width: 6px; /* Thick, high-visibility conduit stem */
+      flex: 1; /* Dynamically stretches if card sizes change */
+      min-height: 4px;
+      background: linear-gradient(180deg, #60A5FA 0%, #2563EB 50%, #1D4ED8 100%);
+      border-radius: 2px 2px 0 0;
+      border: none;
+      outline: none;
+      box-shadow: none;
+    }
+
+    .v-arrow-head {
+      width: 28px;
+      height: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      line-height: 0;
+      margin-bottom: -1px; /* Touches top border of card below flush */
+      border: none;
+      outline: none;
+    }
+
+    .v-arrow-head svg {
+      width: 28px;
+      height: 16px;
+      display: block;
+      border: none;
+      outline: none;
+      filter: none;
+    }
+
+    /* ── DYNAMIC RESIZABLE & REMOVABLE IMAGE SLOTS ── */
+    .img-slot-wrapper {
+      position: relative;
+      margin-top: 3mm;
+      flex-shrink: 0;
+    }
+
+    .img-slot-wrapper.hidden {
+      display: none !important;
+    }
+
+    .img-slot {
+      width: 100%;
+      height: 75mm;
+      min-height: 35mm;
+      max-height: 200mm;
+      border: 2.5px dashed #94A3B8;
+      border-radius: 8px;
+      background: var(--tint-bg);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .pipeline-vertical-col .img-slot {
+      height: 24mm;
+      background: #F8FAFC;
+      border: 2px dashed #CBD5E1;
+      margin-top: 2mm;
+    }
+
+    .img-slot:hover {
+      border-color: var(--accent-electric);
+      background: #EFF6FF;
+    }
+
+    .pipeline-vertical-col .img-slot:hover {
+      border-color: #2563EB;
+      background: #EFF6FF;
+    }
+
+    .img-slot.active {
+      border-style: solid;
+      border-color: var(--border-card);
+      background: #F8FAFC;
+    }
+
+    .img-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center center;
+      display: none;
+    }
+
+    .pipeline-vertical-col .img-slot img {
+      object-fit: contain;
+      background: #F8FAFC;
+    }
+
+    .img-slot.active img {
+      display: block;
+    }
+
+    .slot-empty-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      pointer-events: none;
+      text-align: center;
+      padding: 0 12px;
+    }
+
+    .img-slot.active .slot-empty-view {
+      display: none;
+    }
+
+    .slot-empty-view svg {
+      width: 38px;
+      height: 38px;
+      stroke: var(--accent-blue);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .pipeline-vertical-col .slot-empty-view svg {
+      width: 26px;
+      height: 26px;
+      stroke: #2563EB;
+    }
+
+    .slot-title {
+      font-family: var(--font-display);
+      font-size: 18pt;
+      font-weight: 800;
+      color: var(--text-hero);
+    }
+
+    .pipeline-vertical-col .slot-title {
+      font-size: 14pt;
+      color: #0F172A;
+    }
+
+    .slot-sub {
+      font-family: var(--font-mono);
+      font-size: 13pt;
+      color: var(--text-muted);
       font-weight: 600;
+    }
+
+    .pipeline-vertical-col .slot-sub {
+      font-size: 11pt;
+      color: #64748B;
+    }
+
+    .slot-controls {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      padding: 3px 6px;
+      border-radius: 5px;
+      z-index: 10;
+      border: 1px solid rgba(255,255,255,0.15);
+      opacity: 0.15;
+      transition: opacity 0.2s;
+    }
+
+    .img-slot-wrapper:hover .slot-controls {
+      opacity: 1;
+    }
+
+    .slot-ctrl-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+      font-size: 11pt;
+      font-weight: 700;
+      padding: 2.5px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .slot-ctrl-btn:hover {
+      background: #2563EB;
+      border-color: #3B82F6;
+    }
+
+    .slot-ctrl-btn.btn-del {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #FCA5A5;
+    }
+
+    .slot-ctrl-btn.btn-del:hover {
+      background: #DC2626;
+      color: #FFFFFF;
+    }
+
+    .slot-resize-handle {
+      width: 100%;
+      height: 10px;
+      background: transparent;
+      cursor: ns-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+
+    .slot-resize-handle::after {
+      content: '';
+      width: 36px;
+      height: 3.5px;
+      background: #94A3B8;
+      border-radius: 2px;
+      transition: background 0.15s, width 0.15s;
+    }
+
+    .slot-resize-handle:hover::after, .slot-resize-handle.resizing::after {
+      background: #2563EB;
+      width: 60px;
+    }
+
+    .card-add-btn {
+      align-self: center;
+      margin-top: 2.5mm;
+      background: #EFF6FF;
+      border: 1.5px dashed #93C5FD;
+      color: #1D4ED8;
+      font-family: var(--font-mono);
+      font-size: 14pt;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-block;
+    }
+
+    .card-add-btn:hover {
+      background: #DBEAFE;
+      border-color: #2563EB;
+    }
+
+    /* ── CARD RESIZE & HEIGHT CONTROLS ── */
+    .card-ctrl-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      opacity: 0.65;
+      transition: opacity 0.15s;
+    }
+
+    .card:hover .card-ctrl-bar,
+    .v-stage-card:hover .card-ctrl-bar,
+    .card-ctrl-bar:hover {
+      opacity: 1;
+    }
+
+    .card-ctrl-btn {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #334155;
+      font-family: var(--font-mono);
+      font-size: 11pt;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .card-ctrl-btn:hover {
+      background: #2563EB;
+      border-color: #1D4ED8;
+      color: #FFFFFF;
+    }
+
+    .card-resize-handle {
+      width: 100%;
+      height: 12px;
+      background: transparent;
+      cursor: ns-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 3px;
+      border-radius: 4px;
+      transition: background 0.15s;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .card-resize-handle::after {
+      content: '';
+      width: 48px;
+      height: 4px;
+      background: #CBD5E1;
+      border-radius: 2px;
+      transition: background 0.15s, width 0.15s;
+    }
+
+    .card-resize-handle:hover::after, .card-resize-handle.resizing::after {
+      background: #2563EB;
+      width: 80px;
+    }
+
+    .raw-input {
+      display: none;
     }
   </style>
 </head>
 <body>
 
-  <!-- Floating Print Toolbar -->
-  <div class="screen-nav">
-    <span>A0 Research Poster • Exact Dimensions: 841 x 1189 mm</span>
-    <button class="btn-action-primary" onclick="window.print()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-      Print / Export A0 PDF
-    </button>
-    <button class="btn-action-secondary" onclick="resetImages()">Clear Custom Photos</button>
-  </div>
+  <!-- ── DOCKED SIDEBAR CONTROLS (Left Side) ── -->
+  <aside class="sidebar-dock">
+    <div class="dock-header">
+      <div class="dock-title">A0 Poster Controls</div>
+      <div class="dock-sub">ISO A0 (841 x 1189 mm) @ 300 DPI</div>
+    </div>
 
-  <!-- Physical A0 Sheet -->
-  <div class="poster-sheet" id="posterRoot">
-
-    <!-- Header Section -->
-    <header class="poster-header">
-      <div>
-        <div class="badge-pill-row">
-          <span class="badge-pill blue">CAPSTONE ENGINEERING PROJECT 2026</span>
-          <span class="badge-pill slate">Department of Electronics & Computer Engineering</span>
-          <span class="badge-pill slate">Autonomous Cyber-Physical Systems</span>
-        </div>
-        <h1 class="hero-title">
-          Vision-Guided Autonomous 6-DOF Robotic Arm Using Imitation Learning & Cyber-Physical Digital Twin
-        </h1>
-        <div class="hero-subtitle">
-          Real-Time Behavior Cloning with Overhead OpenCV Perception and Offline WebGL Simulation
-        </div>
-        <div class="author-row">
-          <strong>Soham Bhavsar</strong> <span>•</span>
-          <strong>Divyansh Dewangan</strong> <span>•</span>
-          <strong>Toshal Kumbhar</strong>
-        </div>
+    <!-- Zoom Presets -->
+    <div>
+      <div class="dock-section-title">Magnification Preset</div>
+      <div class="zoom-grid">
+        <button class="zoom-btn" onclick="setZoom(0.35)">35%</button>
+        <button class="zoom-btn" onclick="setZoom(0.42)">42%</button>
+        <button class="zoom-btn active" onclick="setZoom(0.50)">50%</button>
+        <button class="zoom-btn" onclick="setZoom(0.60)">60%</button>
+        <button class="zoom-btn" onclick="setZoom(0.75)">75%</button>
+        <button class="zoom-btn" onclick="setZoom(0.85)">85%</button>
+        <button class="zoom-btn" onclick="setZoom(1.00)">100%</button>
+        <button class="zoom-btn" onclick="setZoom(1.15)">115%</button>
+        <button class="zoom-btn" onclick="setZoom(1.25)">125%</button>
       </div>
 
-      <div class="header-qr-card">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-        <div class="qr-label">PROJECT REPO</div>
-        <div style="font-size: 7.5pt; color: #64748B;">Live Code & Pipeline</div>
+      <div class="zoom-fit-row">
+        <button class="zoom-btn" onclick="fitWidth()">Fit Width</button>
+        <button class="zoom-btn" onclick="fitWindow()">Fit Window</button>
+      </div>
+
+      <div class="zoom-slider-box">
+        <input type="range" id="zoomSlider" min="0.25" max="1.50" step="0.02" value="0.50" oninput="setZoom(parseFloat(this.value))">
+        <span class="zoom-val-label" id="zoomValLabel">50%</span>
+      </div>
+    </div>
+
+    <!-- Image Aspect / Fit Modes -->
+    <div>
+      <div class="dock-section-title">Global Image Fit</div>
+      <div class="zoom-fit-row">
+        <button class="btn-dock-secondary" onclick="setGlobalFit('cover')">Fill (Cover)</button>
+        <button class="btn-dock-secondary" onclick="setGlobalFit('contain')">Fit Entire (Contain)</button>
+      </div>
+      <div style="margin-top: 6px;">
+        <button class="btn-dock-secondary" style="width: 100%; font-size: 11pt; padding: 6px 4px;" onclick="autoFitAllSlots()" title="Snap all slot heights to match their image proportions">Auto-Fit All Slots to Photos</button>
+      </div>
+    </div>
+
+    <!-- Image Vertical Alignment -->
+    <div>
+      <div class="dock-section-title">Global Alignment</div>
+      <div class="zoom-fit-row">
+        <button class="btn-dock-secondary" onclick="setGlobalPos('center center')">Center</button>
+        <button class="btn-dock-secondary" onclick="setGlobalPos('center top')">Top</button>
+        <button class="btn-dock-secondary" onclick="setGlobalPos('center bottom')">Bottom</button>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="dock-actions">
+      <button class="btn-dock-save" onclick="saveAllPosterData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        Save All Changes
+      </button>
+      <div id="saveToast" class="save-toast">Saved all cards, slots &amp; images!</div>
+      <button class="btn-dock-primary" onclick="triggerPrint()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Print / Export A0 PDF
+      </button>
+      <button class="btn-dock-secondary" onclick="resetSlotsLayout()">Reset Slot Sizes</button>
+      <button class="btn-dock-secondary" onclick="resetAllCardSizes()">Reset Card Sizes</button>
+      <button class="btn-dock-secondary" onclick="resetImages()">Clear All Images</button>
+    </div>
+
+    <div class="dock-tips">
+      <strong>Pro Controls:</strong><br>
+      • Click <strong>Save All Changes</strong> to permanently store all images and layout sizing.<br>
+      • In print preview: set Margins to <strong>None</strong> and Paper to <strong>ISO A0</strong>.<br>
+      • Center column has the complete vertical pipeline.<br>
+      • Drag bottom handle of any card or stage to customize height.<br>
+      • Use <strong>[-H]</strong>, <strong>[+H]</strong>, <strong>[Auto]</strong> on card headers to adjust.<br>
+      • Use <strong>[+ Add Image Window]</strong> on any card to create new image slots.<br>
+      • Drag bottom handle of any slot to resize height.<br>
+      • Use <strong>[Auto]</strong> on slots or <strong>Auto-Fit All Slots</strong> in dock to snap heights to image aspect ratio (eliminates all cropping).<br>
+      • Use <strong>[Fit/Fill]</strong> and <strong>[Pos]</strong> on each slot for framing.
+    </div>
+  </aside>
+
+  <!-- ── PHYSICAL A0 POSTER SHEET ── -->
+  <main class="poster-sheet" id="posterRoot">
+
+    <!-- ============================================================
+         HEADER: Full Bleed Dark Navy
+         ============================================================ -->
+    <header class="poster-header">
+      <div class="header-main-content">
+        <div class="badge-row">
+          <span class="badge-pill secondary">Department of Electrical and Electronics Engineering</span>
+        </div>
+        <h1 class="hero-title">
+          Vision-Guided Autonomous 6-DOF Robotic Arm
+        </h1>
+        <div class="hero-subtitle">
+          Overhead OpenCV Perception &amp; Edge Intelligence on Raspberry Pi 5
+        </div>
+        <div class="author-row">
+          <strong>Soham Bhavsar</strong><span class="sep">//</span>
+          <strong>Toshal Kumbhar</strong><span class="sep">//</span>
+          <strong>Divyansh Dewangan</strong>
+        </div>
+      </div>
+      <div class="header-logo-container">
+        <div class="logo-slot-wrapper" id="wrap-slot-logo">
+          <div class="logo-img-slot" id="slot-logo" onclick="triggerUpload('input-logo')" title="Click or drop college logo here">
+            <input type="file" id="input-logo" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-logo')">
+            <img src="" alt="College Logo" id="img-slot-logo">
+            <div class="logo-empty-view">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <div class="logo-empty-text">
+                <div class="logo-slot-title">+ College Logo</div>
+                <div class="logo-slot-sub">Upload Horizontal Logo / Seal</div>
+              </div>
+            </div>
+          </div>
+          <button class="logo-clear-btn" onclick="event.stopPropagation(); clearLogoImage()" title="Remove logo">✕</button>
+        </div>
       </div>
     </header>
 
-    <!-- 3-Column Layout -->
-    <div class="columns-wrapper">
+    <!-- ============================================================
+         NEW 3-COLUMN LAYOUT: Left Foundations | Center Vertical Flowchart | Right Validation
+         ============================================================ -->
+    <div class="poster-body-grid">
 
-      <!-- =================================================================
-           COLUMN 1: ABSTRACT & PHYSICAL ROBOTIC HARDWARE
-           ================================================================= -->
-      <div class="col">
+      <!-- ── LEFT COLUMN: Foundations & Physical Setup ── -->
+      <div class="col-stack">
 
-        <!-- Card 1: Abstract -->
-        <section class="card-panel">
-          <div class="panel-header">
-            <span class="panel-num">1</span>
-            <h2 class="panel-title">Abstract & Motivation</h2>
-          </div>
-          <p class="body-copy">
-            Autonomous pick-and-place manipulation in unstructured environments presents a dilemma: classical Inverse Kinematics (IK) requires brittle geometric hard-coding that fails under real-world target shifts, whereas pure end-to-end Deep Reinforcement Learning demands millions of physical trials that destroy affordable hobbyist servo motors.
-          </p>
-          <p class="body-copy">
-            <strong>The Solution:</strong> We implement a hybrid cyber-physical pipeline integrating:
-          </p>
-          <ul style="font-size: 10.2pt; padding-left: 20px; line-height: 1.6; color: var(--text-main); margin-bottom: 4mm;">
-            <li><strong>Lighting-Invariant OpenCV Perception:</strong> ArUco homography extracts spatial coordinates without neural network training overhead.</li>
-            <li><strong>Imitation Learning (Behavior Cloning):</strong> Trains a continuous motion policy from 75 human teleoperation demonstrations.</li>
-            <li><strong>WebGL Cyber-Physical Digital Twin:</strong> Enforces workspace geofencing and real-time tracking error validation.</li>
-          </ul>
-
-          <!-- Image Slot 1: Physical Robotic Arm -->
-          <div class="image-box" id="slot-robot" onclick="triggerUpload('input-robot')">
-            <input type="file" id="input-robot" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-robot')">
-            <img src="" alt="Physical 6-DOF Robotic Arm Setup" id="img-slot-robot">
-            <div class="image-slot-empty">
-              <svg class="empty-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-              <div class="empty-title">Drop Image: Physical 6-DOF Robotic Arm</div>
-              <div class="empty-sub">Mounted on 25cm x 30cm Calibrated Grid Table</div>
+        <!-- Card 1: Problem & Decoupled Innovation -->
+        <section class="card" id="card-problem">
+          <div class="card-head">
+            <div class="card-head-left">
+              <span class="card-num">1</span>
+              <h2 class="card-title">Problem &amp; Innovation</h2>
             </div>
-            <div class="slot-overlay">Click / Drop to Change Photo</div>
+            <div class="card-ctrl-bar">
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-problem', -30)" title="Decrease Height">-H</button>
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-problem', 30)" title="Increase Height">+H</button>
+              <button class="card-ctrl-btn" onclick="resetCardH('card-problem')" title="Reset to Auto Height">Auto</button>
+            </div>
           </div>
+          <div class="card-body-flow" id="body-problem">
+            <div>
+              <p class="body-p">
+                <strong>Core Manipulation Dilemma:</strong> Traditional fixed automation fails when target objects shift unpredictably, while complex neural vision models introduce high latency and require heavy GPUs incompatible with standalone microcontrollers.
+              </p>
+              <ul class="body-list">
+                <li><strong>Decoupled Perception:</strong> ArUco planar homography extracts physical coordinates in centimeters at 30 FPS without GPU overhead.</li>
+                <li><strong>Autonomous Motion Control:</strong> Cosine S-Curve velocity profiling and coordinated joint trajectory synthesis guarantee smooth, zero-jerk positioning without mechanical shock.</li>
+                <li><strong>Digital Twin &amp; Teleoperation:</strong> WebGL 3D simulation enforces workspace geofencing and zero-collision safety; PS5 controller enables precise manual teleoperation.</li>
+              </ul>
+            </div>
+
+            <!-- Resizable Image Slot: Physical Arm -->
+            <div class="img-slot-wrapper" id="wrap-slot-robot">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('slot-robot')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('slot-robot')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('slot-robot')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-robot', -20)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-robot', 20)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-slot-robot')">✕ Del</button>
+              </div>
+              <div class="img-slot" id="slot-robot" onclick="triggerUpload('input-robot')">
+                <input type="file" id="input-robot" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-robot')">
+                <img src="" alt="Physical 6-DOF Robotic Arm" id="img-slot-robot">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  <div class="slot-title">Drop Image: Physical 6-DOF Arm</div>
+                  <div class="slot-sub">3D-Printed Manipulator on 25x30cm Grid</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-robot')"></div>
+            </div>
+          </div>
+          <button class="card-add-btn" onclick="addNewImageWindow('body-problem')">+ Add Image Window</button>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-problem')" title="Drag to resize card height"></div>
         </section>
 
-        <!-- Card 2: Hardware Architecture -->
-        <section class="card-panel">
-          <div class="panel-header">
-            <span class="panel-num">2</span>
-            <h2 class="panel-title">Hardware & Kinematics</h2>
+        <!-- Card 2: Hardware Architecture & Actuation -->
+        <section class="card" id="card-hardware">
+          <div class="card-head">
+            <div class="card-head-left">
+              <span class="card-num">2</span>
+              <h2 class="card-title">Hardware Architecture &amp; Actuation</h2>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-hardware', -30)" title="Decrease Height">-H</button>
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-hardware', 30)" title="Increase Height">+H</button>
+              <button class="card-ctrl-btn" onclick="resetCardH('card-hardware')" title="Reset to Auto Height">Auto</button>
+            </div>
           </div>
-          <p class="body-copy">
-            The manipulator links are 3D-printed from CAD geometries in <code>Robotic_Arm_3D_Model.STEP</code>, powered by an isolated 6V 5Ah SLA battery rail with an emergency hardware kill-switch.
-          </p>
+          <div class="card-body-flow" id="body-hardware">
+            <div>
+              <p class="body-p">
+                <strong>Manipulator Specs:</strong> 3D-printed links powered by an isolated 6V 5Ah battery rail with emergency cut-off. Arm reach: 35.0 cm.
+              </p>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Link / Joint</th>
-                <th>Actuator</th>
-                <th>Dimension / Role</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>theta1 • Base Yaw</strong></td>
-                <td class="code-cell">MG996R (Ch 0)</td>
-                <td>Turntable Pivot • L1 = 9.5 cm</td>
-              </tr>
-              <tr>
-                <td><strong>theta2 • Shoulder</strong></td>
-                <td class="code-cell">MG996R (Ch 2)</td>
-                <td>Upper Arm Pitch • L2 = 12.0 cm</td>
-              </tr>
-              <tr>
-                <td><strong>theta3 • Elbow</strong></td>
-                <td class="code-cell">MG996R (Ch 4)</td>
-                <td>Forearm Pitch • L3 = 10.0 cm</td>
-              </tr>
-              <tr>
-                <td><strong>theta4 • Wrist Roll</strong></td>
-                <td class="code-cell">MG90S (Ch 6)</td>
-                <td>Continuous Axial Roll</td>
-              </tr>
-              <tr>
-                <td><strong>theta5 • Wrist Pitch</strong></td>
-                <td class="code-cell">MG90S (Ch 8)</td>
-                <td>Vertical Claw Pitch</td>
-              </tr>
-              <tr>
-                <td><strong>theta6 • Gripper Claw</strong></td>
-                <td class="code-cell">MG90S (Ch 10)</td>
-                <td>Dual-Gear Claw • L4 = 14.0 cm</td>
-              </tr>
-            </tbody>
-          </table>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Joint / Link</th>
+                    <th>Actuator</th>
+                    <th>Role / Dimension</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Base Yaw</strong></td>
+                    <td class="mono">MG996R (Ch 0)</td>
+                    <td>Turntable Pivot - L1 = 9.5 cm</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Shoulder</strong></td>
+                    <td class="mono">MG996R (Ch 1)</td>
+                    <td>Upper Arm - L2 = 12.0 cm</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Elbow</strong></td>
+                    <td class="mono">MG996R (Ch 2)</td>
+                    <td>Forearm - L3 = 9.0 cm</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Wrist Roll/Pitch</strong></td>
+                    <td class="mono">MG90S (Ch 3,4)</td>
+                    <td>Continuous Roll &amp; Pitch</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Gripper</strong></td>
+                    <td class="mono">MG90S (Ch 5)</td>
+                    <td>Dual-Gear Claw - L4 = 14.0 cm</td>
+                  </tr>
+                </tbody>
+              </table>
 
-          <p class="body-copy" style="font-size: 9.8pt; color: var(--text-muted); margin-top: 3mm;">
-            <strong>Control Circuitry:</strong> Arduino Uno Rev3 operating as an asynchronous serial bridge (115200 baud, 6-byte packets at 30Hz) driving a PCA9685 16-channel 12-bit PWM generator with a 500ms safety watchdog timer.
-          </p>
+              <p class="body-p" style="margin-top: 2.5mm;">
+                <strong>Control:</strong> Arduino Uno serial bridge (115200 baud, 0xFF binary packets at 30Hz) driving PCA9685 via 400kHz Fast I2C. 500ms watchdog auto-home timer.
+              </p>
+            </div>
+          </div>
+          <button class="card-add-btn" onclick="addNewImageWindow('body-hardware')">+ Add Image Window</button>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-hardware')" title="Drag to resize card height"></div>
         </section>
 
-      </div>
-
-      <!-- =================================================================
-           COLUMN 2: 7-BLOCK SYSTEM FLOWCHART (CENTERPIECE)
-           ================================================================= -->
-      <div class="col">
-
-        <section class="card-panel tinted" style="flex: 1;">
-          <div class="panel-header">
-            <span class="panel-num">3</span>
-            <h2 class="panel-title">End-to-End System Pipeline</h2>
+        <!-- Card 3: Complete Physical Setup & Workcell Rig -->
+        <section class="card" id="card-setup">
+          <div class="card-head">
+            <div class="card-head-left">
+              <span class="card-num">3</span>
+              <h2 class="card-title">Complete Physical Setup</h2>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-setup', -30)" title="Decrease Height">-H</button>
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-setup', 30)" title="Increase Height">+H</button>
+              <button class="card-ctrl-btn" onclick="resetCardH('card-setup')" title="Reset to Auto Height">Auto</button>
+            </div>
           </div>
-          <p class="body-copy" style="margin-bottom: 4mm;">
-            The cyber-physical architecture executes a closed-loop sensing, validation, and actuation cycle across seven interconnected stages:
-          </p>
-
-          <div class="flow-tree">
-
-            <!-- Block 1 -->
-            <div class="flow-node">
-              <div class="node-header">
-                <div class="node-title-group">
-                  <span class="node-badge">01</span>
-                  <span class="node-title">Overhead Vision Perception</span>
+          <div class="card-body-flow" id="body-setup">
+            <div>
+              <div class="spec-grid">
+                <div class="spec-box">
+                  <div class="spec-label">Baseplate Rig</div>
+                  <div class="spec-val">40 x 40 cm Rigid Frame</div>
                 </div>
-                <span class="node-meta">Hardware Sensor</span>
-              </div>
-              <p class="node-desc">
-                Logitech C270 camera mounted on a rigid vertical pole streams 30 FPS video frames (640x480) over USB covering the 25cm x 30cm workspace pad.
-              </p>
-            </div>
-
-            <div class="flow-junction">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            </div>
-
-            <!-- Block 2 -->
-            <div class="flow-node teal">
-              <div class="node-header">
-                <div class="node-title-group">
-                  <span class="node-badge" style="color: var(--accent-teal); border-color: #99F6E4; background: #F0FDFA;">02</span>
-                  <span class="node-title">OpenCV Perception Engine</span>
+                <div class="spec-box">
+                  <div class="spec-label">Camera Tower</div>
+                  <div class="spec-val">50 cm Overhead Mast</div>
                 </div>
-                <span class="node-meta">vision_manager.py</span>
-              </div>
-              <p class="node-desc">
-                Detects 4x4 ArUco markers with sub-pixel corner refinement. Marker ID 2 sets the static World Origin (0,0); Marker ID 0 tracks the target pick cube (u0, v0, theta0).
-              </p>
-            </div>
-
-            <div class="flow-junction">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            </div>
-
-            <!-- Block 3 -->
-            <div class="flow-node">
-              <div class="node-header">
-                <div class="node-title-group">
-                  <span class="node-badge">03</span>
-                  <span class="node-title">Calibrated Coordinate Mapping</span>
+                <div class="spec-box">
+                  <div class="spec-label">Table Surface</div>
+                  <div class="spec-val">25 x 30 cm Calibrated Pad</div>
                 </div>
-                <span class="node-meta">Metric Homography</span>
-              </div>
-              <p class="node-desc">
-                Converts optical image pixels (u, v) into metric centimeters (X_cm, Y_cm) relative to the arm base, eliminating camera altitude and tilt drift.
-              </p>
-            </div>
-
-            <!-- Image Slot 2: OpenCV Camera View -->
-            <div class="image-box" style="height: 42mm;" id="slot-vision" onclick="triggerUpload('input-vision')">
-              <input type="file" id="input-vision" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-vision')">
-              <img src="" alt="OpenCV Camera Stream with ArUco Coordinates" id="img-slot-vision">
-              <div class="image-slot-empty">
-                <svg class="empty-icon" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                <div class="empty-title">Drop Image: Camera 1 OpenCV Perception Stream</div>
-                <div class="empty-sub">Showing ArUco Bounding Boxes, Vector Line & Origin (0,0)</div>
-              </div>
-              <div class="slot-overlay">Click / Drop to Change Photo</div>
-            </div>
-
-            <div class="flow-junction">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            </div>
-
-            <!-- Block 4 -->
-            <div class="flow-node indigo">
-              <div class="node-header">
-                <div class="node-title-group">
-                  <span class="node-badge" style="color: var(--accent-indigo); border-color: #C7D2FE; background: #EEF2FF;">04</span>
-                  <span class="node-title">Behavior Cloning Policy / Teleoperation</span>
+                <div class="spec-box">
+                  <div class="spec-label">Power Delivery</div>
+                  <div class="spec-val">Dual-Rail Isolated + Cutoff</div>
                 </div>
-                <span class="node-meta">PyTorch / Direct Rate</span>
               </div>
-              <p class="node-desc">
-                Learned policy predicts 6-DOF joint trajectories from target pose vector, pre-trained on 75 PS5 human demonstrations recorded at 30Hz with EMA filtering.
-              </p>
+
+              <ul class="body-list" style="margin-top: 2.5mm;">
+                <li><strong>Rigid Baseplate:</strong> Anchored 40x40 cm frame absorbs dynamic reaction torques during rapid multi-axis manipulator motions.</li>
+                <li><strong>Overhead Camera Mast:</strong> 50 cm orthogonal mount secures the RGB camera for unoccluded top-down perception across pickup sectors.</li>
+                <li><strong>Calibrated Surface:</strong> 25x30 cm pad establishes precise homography coordinate bounds, staging zones, and drop bins.</li>
+                <li><strong>Isolated Dual-Rail Power:</strong> 6V 5A battery rail absorbs servo current surges, 5V rail powers logic circuits, with an emergency cutoff toggle.</li>
+              </ul>
             </div>
 
-            <div class="flow-junction">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            </div>
-
-            <!-- Block 5-6 -->
-            <div class="flow-node cyan">
-              <div class="node-header">
-                <div class="node-title-group">
-                  <span class="node-badge" style="color: var(--accent-cyan); border-color: #BAE6FD; background: #F0F9FF;">05-06</span>
-                  <span class="node-title">Arduino Uno Driver & 6-DOF Manipulator</span>
+            <!-- Resizable Image Slot: Complete Physical Setup -->
+            <div class="img-slot-wrapper" id="wrap-slot-setup">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('slot-setup')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('slot-setup')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('slot-setup')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-setup', -20)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-setup', 20)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-slot-setup')">✕ Del</button>
+              </div>
+              <div class="img-slot" id="slot-setup" onclick="triggerUpload('input-setup')">
+                <input type="file" id="input-setup" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-setup')">
+                <img src="" alt="Complete Physical Setup" id="img-slot-setup">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  <div class="slot-title">Drop Image: Complete Physical Setup</div>
+                  <div class="slot-sub">Robotic Arm, Camera Mast, Baseplate &amp; Workcell Rig</div>
                 </div>
-                <span class="node-meta">115200 Baud I2C</span>
               </div>
-              <p class="node-desc">
-                Arduino unpacks 6 raw bytes [0..180 deg] to drive PCA9685 PWM registers. The arm executes the pick-and-place task on 4cm sponge cubes without servo stall.
-              </p>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-setup')"></div>
             </div>
-
-            <div class="flow-junction">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-            </div>
-
-            <!-- Block 7 -->
-            <div class="flow-node">
-              <div class="node-header">
-                <div class="node-title-group">
-                  <span class="node-badge">07</span>
-                  <span class="node-title">WebGL Cyber-Physical Digital Twin</span>
-                </div>
-                <span class="node-meta">Three.js 60 FPS</span>
-              </div>
-              <p class="node-desc">
-                Bidirectional synchronization: calculates real-time tracking error, acts as a virtual collision barrier, and validates policy trajectories in shadow simulation.
-              </p>
-            </div>
-
           </div>
+          <button class="card-add-btn" onclick="addNewImageWindow('body-setup')">+ Add Image Window</button>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-setup')" title="Drag to resize card height"></div>
         </section>
 
       </div>
 
-      <!-- =================================================================
-           COLUMN 3: DIGITAL TWIN SIGNIFICANCE & EXPERIMENTAL METRICS
-           ================================================================= -->
-      <div class="col">
+      <!-- ── CENTER COLUMN: FULL VERTICAL FLOWCHART BACKBONE (Top to Bottom) ── -->
+      <section class="pipeline-vertical-col" id="col-flowchart">
+        <div class="p-vert-header">
+          <span class="p-vert-badge">SYSTEM ARCHITECTURE</span>
+          <h2 class="p-vert-title">End-to-End System Pipeline</h2>
+          <div class="p-vert-sub">7-Stage Closed-Loop Cyber-Physical Workflow</div>
+        </div>
 
-        <!-- Card 4: Digital Twin Roles -->
-        <section class="card-panel">
-          <div class="panel-header">
-            <span class="panel-num">4</span>
-            <h2 class="panel-title">Cyber-Physical Digital Twin</h2>
+        <div class="vert-stages-list">
+
+          <!-- Stage 1 -->
+          <div class="v-stage-card" id="v-stage-1">
+            <div class="v-stage-top">
+              <div class="v-stage-top-left">
+                <span class="v-stage-step">STAGE 01</span>
+                <span class="v-stage-tag">Logitech C270 USB • 30 FPS</span>
+              </div>
+              <div class="card-ctrl-bar">
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-1', -20)" title="Decrease Height">-H</button>
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-1', 20)" title="Increase Height">+H</button>
+                <button class="card-ctrl-btn" onclick="resetCardH('v-stage-1')" title="Reset to Auto Height">Auto</button>
+              </div>
+            </div>
+            <div class="v-stage-title">Overhead Vision Capture &amp; Frame Acquisition</div>
+            <div class="v-stage-desc">
+              Rigid 50 cm overhead mount acquires 640x480 MJPEG video at 30 FPS with fixed exposure, capturing the full 25x30 cm table workspace without perspective occlusion or illumination flicker.
+            </div>
+            <div class="img-slot-wrapper" id="wrap-fb-slot-1">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('fb-slot-1')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('fb-slot-1')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('fb-slot-1')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-1', -15)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-1', 15)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-fb-slot-1')">✕</button>
+              </div>
+              <div class="img-slot" id="fb-slot-1" onclick="triggerUpload('fb-input-1')">
+                <input type="file" id="fb-input-1" class="raw-input" accept="image/*" onchange="processUpload(event,'fb-slot-1')">
+                <img src="" id="img-fb-slot-1" alt="Overhead Camera">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                  <div class="slot-title">Drop Camera Feed</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'fb-slot-1')"></div>
+            </div>
+            <div class="card-resize-handle" onmousedown="initCardResize(event, 'v-stage-1')" title="Drag to resize stage height"></div>
           </div>
-          <p class="body-copy">
-            Rather than a cosmetic visualizer, our WebGL Digital Twin serves five mathematical and safety functions:
-          </p>
 
-          <div class="mandate-row">
-            <span class="mandate-num">01</span>
-            <div class="mandate-text">
-              <strong>Sim-to-Real Discrepancy & Stall Detection:</strong> Continuously computes tracking error between Forward Kinematics and camera vision to catch motor stalls.
+          <div class="v-arrow-sep">
+            <div class="v-arrow-shaft"></div>
+            <div class="v-arrow-head">
+              <svg viewBox="0 0 28 16" width="28" height="16" preserveAspectRatio="none">
+                <polygon points="0,0 28,0 14,16" fill="#1D4ED8" />
+              </svg>
             </div>
           </div>
 
-          <div class="mandate-row">
-            <span class="mandate-num">02</span>
-            <div class="mandate-text">
-              <strong>Virtual Workspace Geofencing:</strong> Enforces bounding barriers preventing link collisions with the camera mount or table surface (Y <= 0).
+          <!-- Stage 2 -->
+          <div class="v-stage-card" id="v-stage-2">
+            <div class="v-stage-top">
+              <div class="v-stage-top-left">
+                <span class="v-stage-step">STAGE 02</span>
+                <span class="v-stage-tag">OpenCV 5.0 • Sub-Pixel Tracking</span>
+              </div>
+              <div class="card-ctrl-bar">
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-2', -20)" title="Decrease Height">-H</button>
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-2', 20)" title="Increase Height">+H</button>
+                <button class="card-ctrl-btn" onclick="resetCardH('v-stage-2')" title="Reset to Auto Height">Auto</button>
+              </div>
+            </div>
+            <div class="v-stage-title">ArUco Marker Perception &amp; Detection</div>
+            <div class="v-stage-desc">
+              Real-time binary fiducial tracking isolates base origin (Tag 2) and pick block (Tag 0) in &lt; 12 ms; sub-pixel corner refinement ensures sub-millimeter centroid and heading accuracy.
+            </div>
+            <div class="img-slot-wrapper" id="wrap-fb-slot-2">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('fb-slot-2')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('fb-slot-2')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('fb-slot-2')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-2', -15)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-2', 15)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-fb-slot-2')">✕</button>
+              </div>
+              <div class="img-slot" id="fb-slot-2" onclick="triggerUpload('fb-input-2')">
+                <input type="file" id="fb-input-2" class="raw-input" accept="image/*" onchange="processUpload(event,'fb-slot-2')">
+                <img src="" id="img-fb-slot-2" alt="ArUco Tracking">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 9 9 15 15 15"></polyline></svg>
+                  <div class="slot-title">Drop ArUco Tracking</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'fb-slot-2')"></div>
+            </div>
+            <div class="card-resize-handle" onmousedown="initCardResize(event, 'v-stage-2')" title="Drag to resize stage height"></div>
+          </div>
+
+          <div class="v-arrow-sep">
+            <div class="v-arrow-shaft"></div>
+            <div class="v-arrow-head">
+              <svg viewBox="0 0 28 16" width="28" height="16" preserveAspectRatio="none">
+                <polygon points="0,0 28,0 14,16" fill="#1D4ED8" />
+              </svg>
             </div>
           </div>
 
-          <div class="mandate-row">
-            <span class="mandate-num">03</span>
-            <div class="mandate-text">
-              <strong>Demonstration Quality Filter:</strong> Real-time Jacobian conditioning checks automatically reject jerky or singular human teleoperation demonstrations.
+          <!-- Stage 3 -->
+          <div class="v-stage-card" id="v-stage-3">
+            <div class="v-stage-top">
+              <div class="v-stage-top-left">
+                <span class="v-stage-step">STAGE 03</span>
+                <span class="v-stage-tag">Planar Matrix H • Perspective Projection</span>
+              </div>
+              <div class="card-ctrl-bar">
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-3', -20)" title="Decrease Height">-H</button>
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-3', 20)" title="Increase Height">+H</button>
+                <button class="card-ctrl-btn" onclick="resetCardH('v-stage-3')" title="Reset to Auto Height">Auto</button>
+              </div>
+            </div>
+            <div class="v-stage-title">Metric Real-World Homography Mapping</div>
+            <div class="v-stage-desc">
+              Calibrated 3x3 homography matrix H maps 2D camera pixels [u, v, 1]ᵀ directly to real-world table coordinates [X_w, Y_w, 1]ᵀ in centimeters with &lt; 0.5 mm spatial precision.
+            </div>
+            <div class="card-resize-handle" onmousedown="initCardResize(event, 'v-stage-3')" title="Drag to resize stage height"></div>
+          </div>
+
+          <div class="v-arrow-sep">
+            <div class="v-arrow-shaft"></div>
+            <div class="v-arrow-head">
+              <svg viewBox="0 0 28 16" width="28" height="16" preserveAspectRatio="none">
+                <polygon points="0,0 28,0 14,16" fill="#1D4ED8" />
+              </svg>
             </div>
           </div>
 
-          <div class="mandate-row">
-            <span class="mandate-num">04</span>
-            <div class="mandate-text">
-              <strong>Camera Extrinsic Drift Monitoring:</strong> Tracks fixed Marker 2 coordinates to alert operators when camera mounting poles flex or drift.
+          <!-- Stage 4 -->
+          <div class="v-stage-card" id="v-stage-4">
+            <div class="v-stage-top">
+              <div class="v-stage-top-left">
+                <span class="v-stage-step">STAGE 04</span>
+                <span class="v-stage-tag">Coordinated Joint Profile • Zero-Jerk</span>
+              </div>
+              <div class="card-ctrl-bar">
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-4', -20)" title="Decrease Height">-H</button>
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-4', 20)" title="Increase Height">+H</button>
+                <button class="card-ctrl-btn" onclick="resetCardH('v-stage-4')" title="Reset to Auto Height">Auto</button>
+              </div>
+            </div>
+            <div class="v-stage-title">Autonomous Motion Synthesis &amp; Trajectory Generation</div>
+            <div class="v-stage-desc">
+              Synthesizes smooth joint-space waypoints using Cosine S-Curve velocity profiling, ensuring zero-jerk transitions, eliminating mechanical shock, and avoiding gear backlash.
+            </div>
+            <div class="img-slot-wrapper" id="wrap-fb-slot-4">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('fb-slot-4')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('fb-slot-4')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('fb-slot-4')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-4', -15)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-4', 15)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-fb-slot-4')">✕</button>
+              </div>
+              <div class="img-slot" id="fb-slot-4" onclick="triggerUpload('fb-input-4')">
+                <input type="file" id="fb-input-4" class="raw-input" accept="image/*" onchange="processUpload(event,'fb-slot-4')">
+                <img src="" id="img-fb-slot-4" alt="Motion Trajectory">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
+                  <div class="slot-title">Drop Motion Trajectory</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'fb-slot-4')"></div>
+            </div>
+            <div class="card-resize-handle" onmousedown="initCardResize(event, 'v-stage-4')" title="Drag to resize stage height"></div>
+          </div>
+
+          <div class="v-arrow-sep">
+            <div class="v-arrow-shaft"></div>
+            <div class="v-arrow-head">
+              <svg viewBox="0 0 28 16" width="28" height="16" preserveAspectRatio="none">
+                <polygon points="0,0 28,0 14,16" fill="#1D4ED8" />
+              </svg>
             </div>
           </div>
 
-          <div class="mandate-row">
-            <span class="mandate-num">05</span>
-            <div class="mandate-text">
-              <strong>Policy Shadow Mode:</strong> New policy checkpoints execute inside the 3D twin first; only verified collision-free paths stream to physical motors.
+          <!-- Stage 5 -->
+          <div class="v-stage-card" id="v-stage-5">
+            <div class="v-stage-top">
+              <div class="v-stage-top-left">
+                <span class="v-stage-step">STAGE 05</span>
+                <span class="v-stage-tag">115200 Baud • 400kHz Fast I2C</span>
+              </div>
+              <div class="card-ctrl-bar">
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-5', -20)" title="Decrease Height">-H</button>
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-5', 20)" title="Increase Height">+H</button>
+                <button class="card-ctrl-btn" onclick="resetCardH('v-stage-5')" title="Reset to Auto Height">Auto</button>
+              </div>
+            </div>
+            <div class="v-stage-title">Binary Serial Protocol &amp; Low-Level Driver</div>
+            <div class="v-stage-desc">
+              Streams compact 6-byte binary angle frames at 30 Hz with 0xFF sync header framing to Arduino Uno, commanding PCA9685 12-bit PWM servos over 400kHz Fast I2C.
+            </div>
+            <div class="card-resize-handle" onmousedown="initCardResize(event, 'v-stage-5')" title="Drag to resize stage height"></div>
+          </div>
+
+          <div class="v-arrow-sep">
+            <div class="v-arrow-shaft"></div>
+            <div class="v-arrow-head">
+              <svg viewBox="0 0 28 16" width="28" height="16" preserveAspectRatio="none">
+                <polygon points="0,0 28,0 14,16" fill="#1D4ED8" />
+              </svg>
             </div>
           </div>
 
-          <!-- Image Slot 3: Three.js Digital Twin -->
-          <div class="image-box" id="slot-twin" onclick="triggerUpload('input-twin')">
-            <input type="file" id="input-twin" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-twin')">
-            <img src="" alt="Three.js 3D Digital Twin Viewport" id="img-slot-twin">
-            <div class="image-slot-empty">
-              <svg class="empty-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-              <div class="empty-title">Drop Image: Three.js Digital Twin Viewport</div>
-              <div class="empty-sub">3D CAD Mesh, 25cm x 30cm Workspace Pad & Target Block</div>
+          <!-- Stage 6 -->
+          <div class="v-stage-card" id="v-stage-6">
+            <div class="v-stage-top">
+              <div class="v-stage-top-left">
+                <span class="v-stage-step">STAGE 06</span>
+                <span class="v-stage-tag">MG996R &amp; MG90S • Dual-Rail Power</span>
+              </div>
+              <div class="card-ctrl-bar">
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-6', -20)" title="Decrease Height">-H</button>
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-6', 20)" title="Increase Height">+H</button>
+                <button class="card-ctrl-btn" onclick="resetCardH('v-stage-6')" title="Reset to Auto Height">Auto</button>
+              </div>
             </div>
-            <div class="slot-overlay">Click / Drop to Change Photo</div>
+            <div class="v-stage-title">6-DOF Manipulator Actuation &amp; Grasp Execution</div>
+            <div class="v-stage-desc">
+              Multi-axis servo actuation executes approach, descent, clamping, lift, and placement powered by an isolated 6V 5A battery rail with an active 500ms safety watchdog.
+            </div>
+            <div class="img-slot-wrapper" id="wrap-fb-slot-6">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('fb-slot-6')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('fb-slot-6')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('fb-slot-6')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-6', -15)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-6', 15)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-fb-slot-6')">✕</button>
+              </div>
+              <div class="img-slot" id="fb-slot-6" onclick="triggerUpload('fb-input-6')">
+                <input type="file" id="fb-input-6" class="raw-input" accept="image/*" onchange="processUpload(event,'fb-slot-6')">
+                <img src="" id="img-fb-slot-6" alt="Manipulator Execution">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon></svg>
+                  <div class="slot-title">Drop Physical Pick Action</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'fb-slot-6')"></div>
+            </div>
+            <div class="card-resize-handle" onmousedown="initCardResize(event, 'v-stage-6')" title="Drag to resize stage height"></div>
           </div>
+
+          <div class="v-arrow-sep">
+            <div class="v-arrow-shaft"></div>
+            <div class="v-arrow-head">
+              <svg viewBox="0 0 28 16" width="28" height="16" preserveAspectRatio="none">
+                <polygon points="0,0 28,0 14,16" fill="#1D4ED8" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Stage 7 -->
+          <div class="v-stage-card" id="v-stage-7">
+            <div class="v-stage-top">
+              <div class="v-stage-top-left">
+                <span class="v-stage-step">STAGE 07</span>
+                <span class="v-stage-tag">WebGL Three.js • 60 FPS Shadow</span>
+              </div>
+              <div class="card-ctrl-bar">
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-7', -20)" title="Decrease Height">-H</button>
+                <button class="card-ctrl-btn" onclick="adjustCardH('v-stage-7', 20)" title="Increase Height">+H</button>
+                <button class="card-ctrl-btn" onclick="resetCardH('v-stage-7')" title="Reset to Auto Height">Auto</button>
+              </div>
+            </div>
+            <div class="v-stage-title">Digital Twin Shadow Validation &amp; Safety Geofence</div>
+            <div class="v-stage-desc">
+              60 FPS Three.js 3D simulation mirrors manipulator poses in Shadow Mode, enforcing virtual workspace geofencing and verifying collision-free trajectories before physical actuation.
+            </div>
+            <div class="img-slot-wrapper" id="wrap-fb-slot-7">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('fb-slot-7')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('fb-slot-7')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('fb-slot-7')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-7', -15)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('fb-slot-7', 15)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-fb-slot-7')">✕</button>
+              </div>
+              <div class="img-slot" id="fb-slot-7" onclick="triggerUpload('fb-input-7')">
+                <input type="file" id="fb-input-7" class="raw-input" accept="image/*" onchange="processUpload(event,'fb-slot-7')">
+                <img src="" id="img-fb-slot-7" alt="Digital Twin Shadow">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                  <div class="slot-title">Drop Digital Twin Simulation</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'fb-slot-7')"></div>
+            </div>
+            <div class="card-resize-handle" onmousedown="initCardResize(event, 'v-stage-7')" title="Drag to resize stage height"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ── RIGHT COLUMN: Perception, Digital Twin, Benchmarks & Edge Intelligence ── -->
+      <div class="col-stack">
+
+        <!-- Card 4: Perception & Dual Teleoperation -->
+        <section class="card" id="card-perception">
+          <div class="card-head">
+            <div class="card-head-left">
+              <span class="card-num">4</span>
+              <h2 class="card-title">Perception &amp; Teleop</h2>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-perception', -30)" title="Decrease Height">-H</button>
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-perception', 30)" title="Increase Height">+H</button>
+              <button class="card-ctrl-btn" onclick="resetCardH('card-perception')" title="Reset to Auto Height">Auto</button>
+            </div>
+          </div>
+          <div class="card-body-flow" id="body-perception">
+            <div>
+              <ul class="body-list">
+                <li><strong>OpenCV 5.0 Perception:</strong> 30 FPS MJPEG. Marker ID 2 sets base origin (0,0); Marker ID 0 tracks cube.</li>
+                <li><strong>Calibrated Metric Space:</strong> Homography matrix H maps pixels directly to centimeters: Xmax = 30cm, Ymax = 25cm.</li>
+                <li><strong>Controller Teleoperation:</strong> Teleoperation is conducted using a handheld PS5 DualSense controller in Direct Joint Jogging mode with Exponential Moving Average (EMA) filtering (&alpha;=0.25) for smooth demonstration collection and real-time manual override.</li>
+              </ul>
+            </div>
+
+            <!-- Resizable Image Slot: Vision Stream -->
+            <div class="img-slot-wrapper" id="wrap-slot-vision">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('slot-vision')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('slot-vision')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('slot-vision')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-vision', -20)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-vision', 20)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-slot-vision')">✕ Del</button>
+              </div>
+              <div class="img-slot" id="slot-vision" onclick="triggerUpload('input-vision')">
+                <input type="file" id="input-vision" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-vision')">
+                <img src="" alt="OpenCV Camera Stream" id="img-slot-vision">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                  <div class="slot-title">Drop Image: OpenCV Stream</div>
+                  <div class="slot-sub">ArUco Bounding Boxes &amp; Metric HUD</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-vision')"></div>
+            </div>
+          </div>
+          <button class="card-add-btn" onclick="addNewImageWindow('body-perception')">+ Add Image Window</button>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-perception')" title="Drag to resize card height"></div>
         </section>
 
-        <!-- Card 5: Experimental Results -->
-        <section class="card-panel">
-          <div class="panel-header">
-            <span class="panel-num">5</span>
-            <h2 class="panel-title">Experimental Benchmarks</h2>
+        <!-- Card 5: Cyber-Physical Digital Twin (Mandates) -->
+        <section class="card" id="card-twin">
+          <div class="card-head">
+            <div class="card-head-left">
+              <span class="card-num">5</span>
+              <h2 class="card-title">Digital Twin Simulation</h2>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-twin', -30)" title="Decrease Height">-H</button>
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-twin', 30)" title="Increase Height">+H</button>
+              <button class="card-ctrl-btn" onclick="resetCardH('card-twin')" title="Reset to Auto Height">Auto</button>
+            </div>
           </div>
-          <p class="body-copy">
-            Evaluated on real-world multi-cell pick-and-place tasks across the calibrated 25cm x 30cm physical workspace:
-          </p>
+          <div class="card-body-flow" id="body-twin">
+            <div>
+              <div class="mandate-row">
+                <span class="mandate-num">01</span>
+                <div class="mandate-text">
+                  <strong>Sim-to-Real Discrepancy:</strong> Compares servo joint telemetry against camera vision to detect motor stalls.
+                </div>
+              </div>
 
-          <div class="kpi-row">
-            <div class="kpi-box">
-              <div class="kpi-number">&lt; 15 ms</div>
-              <div class="kpi-label">Perception Latency</div>
-            </div>
-            <div class="kpi-box">
-              <div class="kpi-number">75 Demos</div>
-              <div class="kpi-label">Sample Efficiency</div>
-            </div>
-            <div class="kpi-box">
-              <div class="kpi-number">&lt; 0.8 cm</div>
-              <div class="kpi-label">Repeatability Error</div>
-            </div>
-            <div class="kpi-box">
-              <div class="kpi-number">60 FPS</div>
-              <div class="kpi-label">Twin Telemetry Sync</div>
-            </div>
-          </div>
+              <div class="mandate-row">
+                <span class="mandate-num">02</span>
+                <div class="mandate-text">
+                  <strong>Workspace Geofencing:</strong> Virtual barrier prevents link collisions with camera mount or table.
+                </div>
+              </div>
 
-          <div class="callout-box">
-            <div class="callout-title">Core Engineering Takeaway</div>
-            <div class="callout-text">
-              Decoupling visual feature extraction (OpenCV) from motor policy generation (Behavior Cloning) reduces training sample requirements by over 99% compared to end-to-end vision models, allowing practical autonomous policy deployment on affordable edge hardware.
+              <div class="mandate-row">
+                <span class="mandate-num">03</span>
+                <div class="mandate-text">
+                  <strong>Policy Shadow Mode:</strong> New policy checkpoints execute inside the 3D twin first; only collision-free paths actuate motors.
+                </div>
+              </div>
+            </div>
+
+            <!-- Resizable Image Slot: Digital Twin -->
+            <div class="img-slot-wrapper" id="wrap-slot-twin">
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="toggleSlotFit('slot-twin')">Fit/Fill</button>
+                <button class="slot-ctrl-btn" onclick="toggleSlotPos('slot-twin')" title="Align: Center / Top / Bottom">Pos</button>
+                <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('slot-twin')" title="Auto-fit slot height to image ratio">Auto</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-twin', -20)">-H</button>
+                <button class="slot-ctrl-btn" onclick="adjustSlotH('slot-twin', 20)">+H</button>
+                <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('wrap-slot-twin')">✕ Del</button>
+              </div>
+              <div class="img-slot" id="slot-twin" onclick="triggerUpload('input-twin')">
+                <input type="file" id="input-twin" class="raw-input" accept="image/*" onchange="processUpload(event, 'slot-twin')">
+                <img src="" alt="Three.js Digital Twin" id="img-slot-twin">
+                <div class="slot-empty-view">
+                  <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                  <div class="slot-title">Drop Image: 3D Twin Viewport</div>
+                  <div class="slot-sub">STL Mesh Rendering &amp; 25x30cm Pad</div>
+                </div>
+              </div>
+              <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-twin')"></div>
             </div>
           </div>
+          <button class="card-add-btn" onclick="addNewImageWindow('body-twin')">+ Add Image Window</button>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-twin')" title="Drag to resize card height"></div>
+        </section>
+
+        <!-- Card 6: Performance Metrics & KPI Benchmarks -->
+        <section class="card tinted" id="card-metrics">
+          <div class="card-head">
+            <div class="card-head-left">
+              <span class="card-num">6</span>
+              <h2 class="card-title">Performance Metrics</h2>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-metrics', -30)" title="Decrease Height">-H</button>
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-metrics', 30)" title="Increase Height">+H</button>
+              <button class="card-ctrl-btn" onclick="resetCardH('card-metrics')" title="Reset to Auto Height">Auto</button>
+            </div>
+          </div>
+          <div class="card-body-flow" id="body-metrics">
+            <div>
+              <div class="kpi-grid">
+                <div class="kpi-box">
+                  <div class="kpi-val">&lt; 15 ms</div>
+                  <div class="kpi-label">Perception Latency</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val">30 Hz</div>
+                  <div class="kpi-label">Control Loop Rate</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val">60 FPS</div>
+                  <div class="kpi-label">Twin Sync Rate</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val">&lt; 0.8 cm</div>
+                  <div class="kpi-label">Repeatability Error</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val">17,824</div>
+                  <div class="kpi-label">Training State Pairs</div>
+                </div>
+                <div class="kpi-box">
+                  <div class="kpi-val">5.9 s</div>
+                  <div class="kpi-label">Policy Train Time</div>
+                </div>
+              </div>
+
+              <p class="body-p" style="margin-top: 2.5mm;">
+                <strong>Accuracy:</strong> Angular MSE of <strong>0.4038 degrees</strong> across all 30 workspace cells. Zero-Jerk S-Curve smoothing reduced motor acceleration spikes by <strong>87%</strong>.
+              </p>
+            </div>
+          </div>
+          <button class="card-add-btn" onclick="addNewImageWindow('body-metrics')">+ Add Image Window</button>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-metrics')" title="Drag to resize card height"></div>
+        </section>
+
+        <!-- Card 7: Standalone Edge Intelligence on Raspberry Pi 5 -->
+        <section class="card tinted" id="card-edge">
+          <div class="card-head">
+            <div class="card-head-left">
+              <span class="card-num">7</span>
+              <h2 class="card-title">Standalone Edge Intelligence</h2>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-edge', -30)" title="Decrease Height">-H</button>
+              <button class="card-ctrl-btn" onclick="adjustCardH('card-edge', 30)" title="Increase Height">+H</button>
+              <button class="card-ctrl-btn" onclick="resetCardH('card-edge')" title="Reset to Auto Height">Auto</button>
+            </div>
+          </div>
+          <div class="card-body-flow" id="body-edge">
+            <div>
+              <p class="body-p">
+                <strong>Autonomous Raspberry Pi 5 Deployment:</strong> The entire system runs directly on a <strong>Raspberry Pi 5 (4GB RAM)</strong> as a 100% self-contained cyber-physical robotic cell.
+              </p>
+              <ul class="body-list">
+                <li><strong>On-Device Loop:</strong> OpenCV 5.0 vision at 30 FPS; PyTorch BC policy executes in <strong>&lt; 5 ms</strong>.</li>
+                <li><strong>Zero Cloud Dependency:</strong> Completely air-gapped without external network or latency.</li>
+                <li><strong>Dual-Rail Battery Isolation:</strong> 6V 5Ah SLA battery for servos; 5V 5A PD rail for Pi 5 with a 500ms safety watchdog auto-home timer.</li>
+              </ul>
+            </div>
+          </div>
+          <button class="card-add-btn" onclick="addNewImageWindow('body-edge')">+ Add Image Window</button>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-edge')" title="Drag to resize card height"></div>
         </section>
 
       </div>
 
     </div>
 
-    <!-- Poster Footer -->
-    <footer class="poster-footer">
-      <div>Project Repository: https://github.com/SohamBhavsar24/vision-autonomous-robotic-arm.git</div>
-      <div>Standard ISO A0 Dimensions (841 x 1189 mm) • Formatted for 300 DPI Vector PDF Print</div>
-      <div>Academic Capstone 2026</div>
-    </footer>
+  </main>
 
-  </div>
-
-  <!-- Interactive Image Persistence & Drag-and-Drop Script -->
+  <!-- ── JAVASCRIPT: IMAGE PERSISTENCE, RESIZING, ASPECT RATIO, DYNAMIC SLOTS & CONTROLS ── -->
   <script>
-    const STORAGE_KEY = 'capstone_poster_img_';
+    const STORAGE_PREFIX = 'capstone_poster_';
+    let baseSlots = ['slot-logo', 'slot-robot', 'slot-setup', 'slot-vision', 'slot-twin', 'fb-slot-1', 'fb-slot-2', 'fb-slot-4', 'fb-slot-6', 'fb-slot-7'];
+    let dynamicSlots = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'dynamic_slots') || '[]');
+    let currentGlobalFit = localStorage.getItem(STORAGE_PREFIX + 'global_fit') || 'contain';
 
+    function getAllSlots() {
+      return [...baseSlots, ...dynamicSlots];
+    }
+
+    /* ── IndexedDB Storage Engine (Unlimited Quota Persistence) ── */
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('CapstonePosterDB', 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('poster_store')) {
+            db.createObjectStore('poster_store');
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async function dbSet(key, val) {
+      try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('poster_store', 'readwrite');
+          const store = tx.objectStore('poster_store');
+          store.put(val, key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.warn('IndexedDB set failed for key:', key, err);
+        return false;
+      }
+    }
+
+    async function dbGet(key) {
+      try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('poster_store', 'readonly');
+          const store = tx.objectStore('poster_store');
+          const req = store.get(key);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.warn('IndexedDB get failed for key:', key, err);
+        return null;
+      }
+    }
+
+    async function dbRemove(key) {
+      try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction('poster_store', 'readwrite');
+          const store = tx.objectStore('poster_store');
+          store.delete(key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.warn('IndexedDB delete failed for key:', key, err);
+        return false;
+      }
+    }
+
+    /* ── Image Optimization Canvas (Downscales Large Photos for Fast Saves) ── */
+    function optimizeImage(dataUrl, maxDim = 1600, quality = 0.90) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          if (w <= maxDim && h <= maxDim && dataUrl.length < 500000) {
+            return resolve(dataUrl);
+          }
+          let scale = 1;
+          if (w > maxDim || h > maxDim) {
+            scale = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * scale);
+            h = Math.round(h * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          try {
+            const optUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(optUrl);
+          } catch (e) {
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
+
+    /* ── Zoom Controls ── */
+    function setZoom(val) {
+      const sheet = document.getElementById('posterRoot');
+      if (!sheet) return;
+      sheet.style.zoom = val;
+      
+      const slider = document.getElementById('zoomSlider');
+      if (slider) slider.value = val;
+      
+      const lbl = document.getElementById('zoomValLabel');
+      if (lbl) lbl.innerText = Math.round(val * 100) + '%';
+
+      document.querySelectorAll('.zoom-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText.trim() === Math.round(val * 100) + '%') {
+          btn.classList.add('active');
+        }
+      });
+    }
+
+    function fitWidth() {
+      const availW = window.innerWidth - 320;
+      const posterW_px = 841 * 3.7795;
+      const ratio = Math.max(0.25, Math.min(1.5, availW / posterW_px));
+      setZoom(parseFloat(ratio.toFixed(2)));
+    }
+
+    function fitWindow() {
+      const availH = window.innerHeight - 60;
+      const posterH_px = 1189 * 3.7795;
+      const ratio = Math.max(0.25, Math.min(1.5, availH / posterH_px));
+      setZoom(parseFloat(ratio.toFixed(2)));
+    }
+
+    /* ── Image Upload & Storage ── */
     function triggerUpload(inputId) {
-      const input = document.getElementById(inputId);
-      if (input) input.click();
+      const inp = document.getElementById(inputId);
+      if (inp) inp.click();
     }
 
     function processUpload(event, slotId) {
-      const file = event.target.files[0];
+      const file = event.target.files ? event.target.files[0] : null;
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(e) {
-        const b64 = e.target.result;
-        displaySlotImage(slotId, b64);
+      reader.onload = async function(e) {
+        const rawB64 = e.target.result;
+        const optB64 = await optimizeImage(rawB64);
+        displaySlotImage(slotId, optB64);
+        
+        // Persist to IndexedDB (unlimited) and localStorage (fallback)
+        await dbSet(STORAGE_PREFIX + 'img_' + slotId, optB64);
         try {
-          localStorage.setItem(STORAGE_KEY + slotId, b64);
+          localStorage.setItem(STORAGE_PREFIX + 'img_' + slotId, optB64);
         } catch (err) {
-          console.warn('Storage limit reached, image displayed for current session only.');
+          console.warn('localStorage quota reached, saved to IndexedDB.');
         }
+        showSaveToast('Image saved permanently');
       };
       reader.readAsDataURL(file);
     }
@@ -1093,72 +2517,699 @@
       if (slot && img) {
         img.src = url;
         slot.classList.add('active');
+        const savedFit = localStorage.getItem(STORAGE_PREFIX + 'fit_' + slotId) || (slotId === 'slot-logo' ? 'contain' : currentGlobalFit);
+        const savedPos = localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId) || 'center center';
+        img.style.setProperty('object-fit', savedFit, 'important');
+        img.style.setProperty('object-position', (slotId === 'slot-logo') ? 'center center' : savedPos, 'important');
+
+        // Auto-fit slot height on initial upload if user has not set a custom height yet
+        if (slotId !== 'slot-logo' && !localStorage.getItem(STORAGE_PREFIX + 'h_' + slotId) && (!slot.style.height || slot.style.height === '')) {
+          img.onload = () => {
+            autoFitSlotHeight(slotId);
+          };
+        }
       }
     }
 
-    function loadCachedImages() {
-      // 1. Check local storage first
-      ['slot-robot', 'slot-vision', 'slot-twin'].forEach(slotId => {
-        try {
-          const cached = localStorage.getItem(STORAGE_KEY + slotId);
-          if (cached) {
-            displaySlotImage(slotId, cached);
-          }
-        } catch (e) {}
-      });
-    }
+    /* ── Save All Poster Data (Permanent Storage) ── */
+    async function saveAllPosterData() {
+      const allSlots = getAllSlots();
 
-    function resetImages() {
-      if (confirm('Clear uploaded images from poster?')) {
-        ['slot-robot', 'slot-vision', 'slot-twin'].forEach(slotId => {
-          localStorage.removeItem(STORAGE_KEY + slotId);
-          const slot = document.getElementById(slotId);
-          const img = document.getElementById('img-' + slotId);
-          if (slot && img) {
-            img.src = '';
-            slot.classList.remove('active');
-          }
-        });
+      // 1. Dynamic slots configuration
+      localStorage.setItem(STORAGE_PREFIX + 'dynamic_slots', JSON.stringify(dynamicSlots));
+      await dbSet(STORAGE_PREFIX + 'dynamic_slots', JSON.stringify(dynamicSlots));
+
+      for (const dynId of dynamicSlots) {
+        const target = localStorage.getItem(STORAGE_PREFIX + 'dyn_target_' + dynId);
+        if (target) {
+          await dbSet(STORAGE_PREFIX + 'dyn_target_' + dynId, target);
+        }
       }
-    }
 
-    // Set up drag-and-drop on all slots
-    document.addEventListener('DOMContentLoaded', () => {
-      loadCachedImages();
-
-      ['slot-robot', 'slot-vision', 'slot-twin'].forEach(slotId => {
+      // 2. Slot heights, fits, positions, and images
+      for (const slotId of allSlots) {
         const slot = document.getElementById(slotId);
-        if (!slot) return;
+        const img = document.getElementById('img-' + slotId);
 
-        ['dragenter', 'dragover'].forEach(evt => {
-          slot.addEventListener(evt, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            slot.style.borderColor = '#2563EB';
-            slot.style.backgroundColor = '#EFF6FF';
-          });
-        });
+        if (slot && slot.style.height) {
+          localStorage.setItem(STORAGE_PREFIX + 'h_' + slotId, slot.style.height);
+          await dbSet(STORAGE_PREFIX + 'h_' + slotId, slot.style.height);
+        }
 
-        ['dragleave', 'drop'].forEach(evt => {
-          slot.addEventListener(evt, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            slot.style.borderColor = '';
-            slot.style.backgroundColor = '';
-          });
-        });
-
-        slot.addEventListener('drop', (e) => {
-          const files = e.dataTransfer.files;
-          if (files && files.length > 0) {
-            const input = slot.querySelector('input[type="file"]');
-            if (input) {
-              input.files = files;
-              processUpload({ target: input }, slotId);
-            }
+        if (img) {
+          const fitVal = img.style.objectFit || localStorage.getItem(STORAGE_PREFIX + 'fit_' + slotId) || currentGlobalFit;
+          const posVal = img.style.objectPosition || localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId) || 'center center';
+          if (fitVal) {
+            localStorage.setItem(STORAGE_PREFIX + 'fit_' + slotId, fitVal);
+            await dbSet(STORAGE_PREFIX + 'fit_' + slotId, fitVal);
           }
+          if (posVal) {
+            localStorage.setItem(STORAGE_PREFIX + 'pos_' + slotId, posVal);
+            await dbSet(STORAGE_PREFIX + 'pos_' + slotId, posVal);
+          }
+          if (img.src && img.src.startsWith('data:')) {
+            try {
+              localStorage.setItem(STORAGE_PREFIX + 'img_' + slotId, img.src);
+            } catch (e) {}
+            await dbSet(STORAGE_PREFIX + 'img_' + slotId, img.src);
+          }
+        }
+      }
+
+      // 3. Hidden slot wrappers
+      document.querySelectorAll('.img-slot-wrapper').forEach(wrap => {
+        if (wrap.classList.contains('hidden')) {
+          localStorage.setItem(STORAGE_PREFIX + 'hide_' + wrap.id, 'true');
+          dbSet(STORAGE_PREFIX + 'hide_' + wrap.id, 'true');
+        } else {
+          localStorage.removeItem(STORAGE_PREFIX + 'hide_' + wrap.id);
+          dbRemove(STORAGE_PREFIX + 'hide_' + wrap.id);
+        }
+      });
+
+      // 4. Card and stage heights
+      for (const cardId of ALL_RESIZABLE_CARDS) {
+        const card = document.getElementById(cardId);
+        if (card && card.style.height) {
+          localStorage.setItem(STORAGE_PREFIX + 'card_h_' + cardId, card.style.height);
+          await dbSet(STORAGE_PREFIX + 'card_h_' + cardId, card.style.height);
+        }
+      }
+
+      showSaveToast('Saved all cards, slots & images!');
+    }
+
+    let toastTimer = null;
+    function showSaveToast(msg = 'Saved all cards, slots & images!') {
+      const toast = document.getElementById('saveToast');
+      if (!toast) return;
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2600);
+    }
+
+    /* ── Slot Aspect Ratio / Fit Toggle ── */
+    function toggleSlotFit(slotId) {
+      const img = document.getElementById('img-' + slotId);
+      if (!img) return;
+      const currentFit = img.style.objectFit || localStorage.getItem(STORAGE_PREFIX + 'fit_' + slotId) || currentGlobalFit;
+      const nextFit = (currentFit === 'contain') ? 'cover' : 'contain';
+      const savedPos = localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId) || 'center center';
+      img.style.setProperty('object-fit', nextFit, 'important');
+      img.style.setProperty('object-position', (slotId === 'slot-logo') ? 'center center' : savedPos, 'important');
+      localStorage.setItem(STORAGE_PREFIX + 'fit_' + slotId, nextFit);
+      dbSet(STORAGE_PREFIX + 'fit_' + slotId, nextFit);
+      showSaveToast('Image fit set to: ' + nextFit.toUpperCase());
+    }
+
+    /* ── Slot Alignment Toggle (Center / Top / Bottom) ── */
+    function toggleSlotPos(slotId) {
+      const img = document.getElementById('img-' + slotId);
+      if (!img) return;
+      const currentPos = localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId) || img.style.objectPosition || 'center center';
+      let nextPos = 'center center';
+      let label = 'Center';
+      if (currentPos.includes('top')) {
+        nextPos = 'center bottom';
+        label = 'Bottom';
+      } else if (currentPos.includes('bottom')) {
+        nextPos = 'center center';
+        label = 'Center';
+      } else {
+        nextPos = 'center top';
+        label = 'Top';
+      }
+      img.style.setProperty('object-position', nextPos, 'important');
+      localStorage.setItem(STORAGE_PREFIX + 'pos_' + slotId, nextPos);
+      dbSet(STORAGE_PREFIX + 'pos_' + slotId, nextPos);
+      showSaveToast('Image aligned: ' + label);
+    }
+
+    function setGlobalFit(mode) {
+      currentGlobalFit = mode;
+      localStorage.setItem(STORAGE_PREFIX + 'global_fit', mode);
+      dbSet(STORAGE_PREFIX + 'global_fit', mode);
+      getAllSlots().forEach(slotId => {
+        if (slotId === 'slot-logo') return;
+        const img = document.getElementById('img-' + slotId);
+        if (img) {
+          const savedPos = localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId) || 'center center';
+          img.style.setProperty('object-fit', mode, 'important');
+          img.style.setProperty('object-position', savedPos, 'important');
+        }
+        localStorage.setItem(STORAGE_PREFIX + 'fit_' + slotId, mode);
+        dbSet(STORAGE_PREFIX + 'fit_' + slotId, mode);
+      });
+      document.querySelectorAll('.img-slot img').forEach(img => {
+        if (img.id === 'img-slot-logo') return;
+        const slot = img.closest('.img-slot');
+        const slotId = slot ? slot.id : '';
+        const savedPos = slotId ? (localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId) || 'center center') : 'center center';
+        img.style.setProperty('object-fit', mode, 'important');
+        img.style.setProperty('object-position', savedPos, 'important');
+      });
+      showSaveToast('All images set to: ' + mode.toUpperCase());
+    }
+
+    function setGlobalPos(pos) {
+      getAllSlots().forEach(slotId => {
+        if (slotId === 'slot-logo') return;
+        const img = document.getElementById('img-' + slotId);
+        if (img) {
+          img.style.setProperty('object-position', pos, 'important');
+        }
+        localStorage.setItem(STORAGE_PREFIX + 'pos_' + slotId, pos);
+        dbSet(STORAGE_PREFIX + 'pos_' + slotId, pos);
+      });
+      document.querySelectorAll('.img-slot img').forEach(img => {
+        if (img.id === 'img-slot-logo') return;
+        img.style.setProperty('object-position', pos, 'important');
+      });
+      const label = pos.includes('top') ? 'TOP' : (pos.includes('bottom') ? 'BOTTOM' : 'CENTER');
+      showSaveToast('All image alignment: ' + label);
+    }
+
+    function getTrueHeight(el) {
+      if (!el) return 0;
+      const cs = window.getComputedStyle(el);
+      const h = parseFloat(cs.height);
+      if (!isNaN(h) && h > 0) return h;
+      const sheet = document.getElementById('posterRoot');
+      const zoom = (sheet && sheet.style.zoom) ? (parseFloat(sheet.style.zoom) || 1) : 1;
+      return (el.offsetHeight || 0) / zoom;
+    }
+
+    function getTrueWidth(el) {
+      if (!el) return 0;
+      const cs = window.getComputedStyle(el);
+      const w = parseFloat(cs.width);
+      if (!isNaN(w) && w > 0) return w;
+      const sheet = document.getElementById('posterRoot');
+      const zoom = (sheet && sheet.style.zoom) ? (parseFloat(sheet.style.zoom) || 1) : 1;
+      return (el.offsetWidth || 0) / zoom;
+    }
+
+    /* ── Slot Aspect-Ratio Auto-Fit ── */
+    function autoFitSlotHeight(slotId) {
+      const slot = document.getElementById(slotId);
+      const img = document.getElementById('img-' + slotId);
+      if (!slot || !img) return;
+
+      if (!img.naturalWidth || !img.naturalHeight) {
+        showSaveToast('Please upload an image into this slot first');
+        return;
+      }
+
+      const trueW = getTrueWidth(slot);
+      if (!trueW || trueW <= 0) return;
+
+      const targetH = Math.round(trueW * (img.naturalHeight / img.naturalWidth));
+      const clampedH = Math.max(50, Math.min(1200, targetH));
+
+      slot.style.height = clampedH + 'px';
+      img.style.setProperty('object-fit', 'contain', 'important');
+      img.style.setProperty('object-position', 'center center', 'important');
+
+      localStorage.setItem(STORAGE_PREFIX + 'h_' + slotId, clampedH + 'px');
+      localStorage.setItem(STORAGE_PREFIX + 'fit_' + slotId, 'contain');
+      localStorage.setItem(STORAGE_PREFIX + 'pos_' + slotId, 'center center');
+      dbSet(STORAGE_PREFIX + 'h_' + slotId, clampedH + 'px');
+      dbSet(STORAGE_PREFIX + 'fit_' + slotId, 'contain');
+      dbSet(STORAGE_PREFIX + 'pos_' + slotId, 'center center');
+
+      showSaveToast('Slot fitted to image aspect ratio (' + clampedH + 'px)');
+    }
+
+    function autoFitAllSlots() {
+      let count = 0;
+      getAllSlots().forEach(slotId => {
+        if (slotId === 'slot-logo') return;
+        const img = document.getElementById('img-' + slotId);
+        if (img && img.naturalWidth && img.naturalHeight && img.src && !img.src.endsWith('#')) {
+          autoFitSlotHeight(slotId);
+          count++;
+        }
+      });
+      if (count > 0) {
+        showSaveToast('Auto-fitted ' + count + ' slots to image aspect ratio');
+      } else {
+        showSaveToast('No images loaded yet to auto-fit');
+      }
+    }
+
+    /* ── Slot Height Resizing (Buttons & Drag Handle) ── */
+    function adjustSlotH(slotId, delta) {
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      const curH = getTrueHeight(slot);
+      const newH = Math.max(60, Math.min(1200, Math.round(curH + delta)));
+      slot.style.height = newH + 'px';
+      localStorage.setItem(STORAGE_PREFIX + 'h_' + slotId, newH + 'px');
+      dbSet(STORAGE_PREFIX + 'h_' + slotId, newH + 'px');
+    }
+
+    let activeResizeSlot = null;
+    let startY = 0;
+    let startH = 0;
+
+    function initSlotResize(e, slotId) {
+      e.preventDefault();
+      e.stopPropagation();
+      activeResizeSlot = document.getElementById(slotId);
+      if (!activeResizeSlot) return;
+      startY = e.clientY;
+      startH = getTrueHeight(activeResizeSlot);
+      
+      const handle = e.target;
+      handle.classList.add('resizing');
+
+      const sheet = document.getElementById('posterRoot');
+      const zoom = (sheet && sheet.style.zoom) ? (parseFloat(sheet.style.zoom) || 1) : 1;
+
+      function onMouseMove(ev) {
+        if (!activeResizeSlot) return;
+        const dy = (ev.clientY - startY) / zoom;
+        const newH = Math.max(60, Math.min(1200, Math.round(startH + dy)));
+        activeResizeSlot.style.height = newH + 'px';
+      }
+
+      function onMouseUp() {
+        if (activeResizeSlot) {
+          const finalH = activeResizeSlot.style.height;
+          localStorage.setItem(STORAGE_PREFIX + 'h_' + slotId, finalH);
+          dbSet(STORAGE_PREFIX + 'h_' + slotId, finalH);
+          activeResizeSlot = null;
+        }
+        handle.classList.remove('resizing');
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    /* ── Card & Stage Resizing Logic ── */
+    const ALL_RESIZABLE_CARDS = [
+      'card-problem', 'card-hardware', 'card-setup',
+      'v-stage-1', 'v-stage-2', 'v-stage-3', 'v-stage-4', 'v-stage-5', 'v-stage-6', 'v-stage-7',
+      'card-perception', 'card-twin', 'card-metrics', 'card-edge'
+    ];
+
+    function adjustCardH(cardId, delta) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const curH = getTrueHeight(card);
+      const isStage = cardId.startsWith('v-stage');
+      const minH = isStage ? 60 : 120;
+      const maxH = isStage ? 900 : 2500;
+      const newH = Math.max(minH, Math.min(maxH, Math.round(curH + delta)));
+      card.style.flex = '0 0 ' + newH + 'px';
+      card.style.height = newH + 'px';
+      localStorage.setItem(STORAGE_PREFIX + 'card_h_' + cardId, newH + 'px');
+      dbSet(STORAGE_PREFIX + 'card_h_' + cardId, newH + 'px');
+    }
+
+    function resetCardH(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      card.style.flex = '';
+      card.style.height = '';
+      localStorage.removeItem(STORAGE_PREFIX + 'card_h_' + cardId);
+      dbRemove(STORAGE_PREFIX + 'card_h_' + cardId);
+    }
+
+    async function resetAllCardSizes() {
+      if (!confirm('Reset all card and stage sizes to default automatic layout?')) return;
+      for (const id of ALL_RESIZABLE_CARDS) {
+        resetCardH(id);
+      }
+      showSaveToast('All card sizes reset to default.');
+    }
+
+    let activeResizeCard = null;
+    let cardStartY = 0;
+    let cardStartH = 0;
+
+    function initCardResize(e, cardId) {
+      e.preventDefault();
+      e.stopPropagation();
+      activeResizeCard = document.getElementById(cardId);
+      if (!activeResizeCard) return;
+      cardStartY = e.clientY;
+      cardStartH = getTrueHeight(activeResizeCard);
+
+      const handle = e.target;
+      handle.classList.add('resizing');
+      document.body.style.cursor = 'ns-resize';
+
+      const sheet = document.getElementById('posterRoot');
+      const zoom = (sheet && sheet.style.zoom) ? (parseFloat(sheet.style.zoom) || 1) : 1;
+      const isStage = cardId.startsWith('v-stage');
+      const minH = isStage ? 60 : 120;
+      const maxH = isStage ? 900 : 2500;
+
+      function onMouseMove(ev) {
+        if (!activeResizeCard) return;
+        const dy = (ev.clientY - cardStartY) / zoom;
+        const newH = Math.max(minH, Math.min(maxH, Math.round(cardStartH + dy)));
+        activeResizeCard.style.flex = '0 0 ' + newH + 'px';
+        activeResizeCard.style.height = newH + 'px';
+      }
+
+      function onMouseUp() {
+        if (activeResizeCard) {
+          const finalH = activeResizeCard.style.height;
+          localStorage.setItem(STORAGE_PREFIX + 'card_h_' + cardId, finalH);
+          dbSet(STORAGE_PREFIX + 'card_h_' + cardId, finalH);
+          activeResizeCard = null;
+        }
+        handle.classList.remove('resizing');
+        document.body.style.cursor = '';
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    /* ── Precise Print & A0 Export Handler ── */
+    function syncImageFitsForPrint() {
+      document.querySelectorAll('.img-slot img').forEach(img => {
+        if (img.id === 'img-slot-logo') {
+          img.style.setProperty('object-fit', 'contain', 'important');
+          img.style.setProperty('object-position', 'center center', 'important');
+          return;
+        }
+        // STRICT LIVE DOM STATE FIRST: Mirror the exact live view the user has on the webpage
+        const liveFit = img.style.objectFit || window.getComputedStyle(img).objectFit || 'contain';
+        const livePos = img.style.objectPosition || window.getComputedStyle(img).objectPosition || 'center center';
+        img.style.setProperty('object-fit', liveFit, 'important');
+        img.style.setProperty('object-position', livePos, 'important');
+      });
+    }
+
+    function triggerPrint() {
+      syncImageFitsForPrint();
+      const sheet = document.getElementById('posterRoot');
+      const prevZoom = sheet ? (sheet.style.zoom || '0.5') : '0.5';
+      const prevScrollY = window.scrollY;
+
+      if (sheet) sheet.dataset.preZoom = prevZoom;
+      window.scrollTo(0, 0);
+      if (sheet) sheet.style.zoom = '1';
+
+      // Allow DOM layout engine to settle unzoomed at top coordinate
+      setTimeout(() => {
+        window.print();
+        if (sheet) sheet.style.zoom = prevZoom;
+        window.scrollTo(0, prevScrollY);
+      }, 100);
+    }
+
+    window.addEventListener('beforeprint', () => {
+      syncImageFitsForPrint();
+      const sheet = document.getElementById('posterRoot');
+      if (sheet) {
+        if (!sheet.dataset.preZoom) sheet.dataset.preZoom = sheet.style.zoom || '0.5';
+        sheet.style.zoom = '1';
+      }
+    });
+
+    window.addEventListener('afterprint', () => {
+      const sheet = document.getElementById('posterRoot');
+      if (sheet && sheet.dataset.preZoom) {
+        sheet.style.zoom = sheet.dataset.preZoom;
+        delete sheet.dataset.preZoom;
+      }
+    });
+
+    /* ── Delete / Hide & Add / Restore Image Slot ── */
+    async function deleteSlot(wrapperId) {
+      const wrap = document.getElementById(wrapperId);
+      if (!wrap) return;
+
+      if (wrapperId.startsWith('wrap-dyn-slot-')) {
+        const slotId = wrapperId.replace('wrap-', '');
+        wrap.remove();
+        dynamicSlots = dynamicSlots.filter(s => s !== slotId);
+        localStorage.setItem(STORAGE_PREFIX + 'dynamic_slots', JSON.stringify(dynamicSlots));
+        await dbSet(STORAGE_PREFIX + 'dynamic_slots', JSON.stringify(dynamicSlots));
+        localStorage.removeItem(STORAGE_PREFIX + 'img_' + slotId);
+        localStorage.removeItem(STORAGE_PREFIX + 'h_' + slotId);
+        localStorage.removeItem(STORAGE_PREFIX + 'fit_' + slotId);
+        localStorage.removeItem(STORAGE_PREFIX + 'pos_' + slotId);
+        localStorage.removeItem(STORAGE_PREFIX + 'dyn_target_' + slotId);
+        await dbRemove(STORAGE_PREFIX + 'img_' + slotId);
+        await dbRemove(STORAGE_PREFIX + 'h_' + slotId);
+        await dbRemove(STORAGE_PREFIX + 'fit_' + slotId);
+        await dbRemove(STORAGE_PREFIX + 'pos_' + slotId);
+        await dbRemove(STORAGE_PREFIX + 'dyn_target_' + slotId);
+      } else {
+        wrap.classList.add('hidden');
+        localStorage.setItem(STORAGE_PREFIX + 'hide_' + wrapperId, 'true');
+        await dbSet(STORAGE_PREFIX + 'hide_' + wrapperId, 'true');
+      }
+    }
+
+    /* ── DYNAMICALLY ADD NEW IMAGE WINDOW TO ANY CARD ── */
+    async function addNewImageWindow(targetContainerId, slotIdToRestore = null) {
+      const container = document.getElementById(targetContainerId);
+      if (!container) return;
+
+      const slotId = slotIdToRestore || ('dyn-slot-' + Date.now());
+      const wrapperId = 'wrap-' + slotId;
+      const inputId = 'input-' + slotId;
+
+      if (!slotIdToRestore && !dynamicSlots.includes(slotId)) {
+        dynamicSlots.push(slotId);
+        localStorage.setItem(STORAGE_PREFIX + 'dynamic_slots', JSON.stringify(dynamicSlots));
+        localStorage.setItem(STORAGE_PREFIX + 'dyn_target_' + slotId, targetContainerId);
+        await dbSet(STORAGE_PREFIX + 'dynamic_slots', JSON.stringify(dynamicSlots));
+        await dbSet(STORAGE_PREFIX + 'dyn_target_' + slotId, targetContainerId);
+      }
+
+      const wrap = document.createElement('div');
+      wrap.className = 'img-slot-wrapper';
+      wrap.id = wrapperId;
+      wrap.innerHTML = `
+        <div class="slot-controls">
+          <button class="slot-ctrl-btn" onclick="toggleSlotFit('${slotId}')">Fit/Fill</button>
+          <button class="slot-ctrl-btn" onclick="toggleSlotPos('${slotId}')" title="Align: Center / Top / Bottom">Pos</button>
+          <button class="slot-ctrl-btn" onclick="autoFitSlotHeight('${slotId}')" title="Auto-fit slot height to image ratio">Auto</button>
+          <button class="slot-ctrl-btn" onclick="adjustSlotH('${slotId}', -20)">-H</button>
+          <button class="slot-ctrl-btn" onclick="adjustSlotH('${slotId}', 20)">+H</button>
+          <button class="slot-ctrl-btn btn-del" onclick="deleteSlot('${wrapperId}')">✕ Del</button>
+        </div>
+        <div class="img-slot" id="${slotId}" onclick="triggerUpload('${inputId}')">
+          <input type="file" id="${inputId}" class="raw-input" accept="image/*" onchange="processUpload(event, '${slotId}')">
+          <img src="" alt="Custom Upload Image" id="img-${slotId}">
+          <div class="slot-empty-view">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <div class="slot-title">Drop Custom Image</div>
+            <div class="slot-sub">Click or drag image file here</div>
+          </div>
+        </div>
+        <div class="slot-resize-handle" onmousedown="initSlotResize(event, '${slotId}')"></div>
+      `;
+
+      container.appendChild(wrap);
+      setupSlotEvents(slotId);
+
+      // Restore cached height or image if available
+      try {
+        let cachedImg = localStorage.getItem(STORAGE_PREFIX + 'img_' + slotId);
+        if (!cachedImg) cachedImg = await dbGet(STORAGE_PREFIX + 'img_' + slotId);
+        if (cachedImg) displaySlotImage(slotId, cachedImg);
+
+        let cachedH = localStorage.getItem(STORAGE_PREFIX + 'h_' + slotId);
+        if (!cachedH) cachedH = await dbGet(STORAGE_PREFIX + 'h_' + slotId);
+        const slotEl = document.getElementById(slotId);
+        if (slotEl && cachedH) slotEl.style.height = cachedH;
+
+        let cachedFit = localStorage.getItem(STORAGE_PREFIX + 'fit_' + slotId);
+        if (!cachedFit) cachedFit = await dbGet(STORAGE_PREFIX + 'fit_' + slotId);
+        let cachedPos = localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId);
+        if (!cachedPos) cachedPos = await dbGet(STORAGE_PREFIX + 'pos_' + slotId);
+        const imgEl = document.getElementById('img-' + slotId);
+        if (imgEl) {
+          const fitMode = (cachedFit === 'cover') ? 'cover' : ((cachedFit === 'contain') ? 'contain' : currentGlobalFit);
+          const posMode = cachedPos || 'center center';
+          imgEl.style.setProperty('object-fit', fitMode, 'important');
+          imgEl.style.setProperty('object-position', posMode, 'important');
+        }
+      } catch (e) {}
+    }
+
+    async function resetSlotsLayout() {
+      if (!confirm('Reset all image slots to default heights and restore hidden slots?')) return;
+      for (const slotId of getAllSlots()) {
+        const slot = document.getElementById(slotId);
+        if (slot) {
+          slot.style.height = '';
+          localStorage.removeItem(STORAGE_PREFIX + 'h_' + slotId);
+          await dbRemove(STORAGE_PREFIX + 'h_' + slotId);
+        }
+        const img = document.getElementById('img-' + slotId);
+        if (img) {
+          img.style.setProperty('object-fit', 'contain', 'important');
+          img.style.setProperty('object-position', 'center center', 'important');
+          localStorage.removeItem(STORAGE_PREFIX + 'fit_' + slotId);
+          localStorage.removeItem(STORAGE_PREFIX + 'pos_' + slotId);
+          await dbRemove(STORAGE_PREFIX + 'fit_' + slotId);
+          await dbRemove(STORAGE_PREFIX + 'pos_' + slotId);
+        }
+      }
+      document.querySelectorAll('.img-slot-wrapper').forEach(wrap => {
+        wrap.classList.remove('hidden');
+        localStorage.removeItem(STORAGE_PREFIX + 'hide_' + wrap.id);
+        dbRemove(STORAGE_PREFIX + 'hide_' + wrap.id);
+      });
+      showSaveToast('Slot sizes reset to default.');
+    }
+
+    async function resetImages() {
+      if (!confirm('Clear all uploaded images from the poster?')) return;
+      for (const slotId of getAllSlots()) {
+        localStorage.removeItem(STORAGE_PREFIX + 'img_' + slotId);
+        await dbRemove(STORAGE_PREFIX + 'img_' + slotId);
+        const slot = document.getElementById(slotId);
+        const img = document.getElementById('img-' + slotId);
+        if (slot && img) {
+          img.src = '';
+          slot.classList.remove('active');
+        }
+      }
+      showSaveToast('All images cleared.');
+    }
+
+    async function clearLogoImage() {
+      localStorage.removeItem(STORAGE_PREFIX + 'img_slot-logo');
+      await dbRemove(STORAGE_PREFIX + 'img_slot-logo');
+      const slot = document.getElementById('slot-logo');
+      const img = document.getElementById('img-slot-logo');
+      if (slot && img) {
+        img.src = '';
+        slot.classList.remove('active');
+      }
+      showSaveToast('Logo cleared.');
+    }
+
+    function setupSlotEvents(slotId) {
+      const slotEl = document.getElementById(slotId);
+      if (!slotEl) return;
+
+      ['dragenter', 'dragover'].forEach(ev => {
+        slotEl.addEventListener(ev, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          slotEl.style.borderColor = '#2563EB';
         });
       });
+
+      ['dragleave', 'drop'].forEach(ev => {
+        slotEl.addEventListener(ev, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          slotEl.style.borderColor = '';
+        });
+      });
+
+      slotEl.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          const input = slotEl.querySelector('input[type="file"]');
+          if (input) {
+            input.files = files;
+            processUpload({ target: input }, slotId);
+          }
+        }
+      });
+    }
+
+    /* ── Load Saved Preferences & Dynamic Slots on Startup ── */
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Re-create saved dynamic slots from localStorage or IndexedDB
+      let dynList = [];
+      try {
+        dynList = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'dynamic_slots') || '[]');
+      } catch (e) {}
+      if (!dynList || dynList.length === 0) {
+        const dbDyn = await dbGet(STORAGE_PREFIX + 'dynamic_slots');
+        if (dbDyn) {
+          try { dynList = JSON.parse(dbDyn); } catch (e) {}
+        }
+      }
+      if (Array.isArray(dynList)) {
+        dynamicSlots = dynList;
+        for (const dynId of dynamicSlots) {
+          let targetContainer = localStorage.getItem(STORAGE_PREFIX + 'dyn_target_' + dynId);
+          if (!targetContainer) {
+            targetContainer = await dbGet(STORAGE_PREFIX + 'dyn_target_' + dynId);
+          }
+          await addNewImageWindow(targetContainer || 'body-problem', dynId);
+        }
+      }
+
+      // Restore hidden states
+      document.querySelectorAll('.img-slot-wrapper').forEach(async (wrap) => {
+        let isHidden = localStorage.getItem(STORAGE_PREFIX + 'hide_' + wrap.id) === 'true';
+        if (!isHidden) {
+          isHidden = (await dbGet(STORAGE_PREFIX + 'hide_' + wrap.id)) === 'true';
+        }
+        if (isHidden) {
+          wrap.classList.add('hidden');
+        }
+      });
+
+      // Restore images, heights, fits
+      const allSlots = getAllSlots();
+      for (const slotId of allSlots) {
+        // Height
+        let cachedH = localStorage.getItem(STORAGE_PREFIX + 'h_' + slotId);
+        if (!cachedH) cachedH = await dbGet(STORAGE_PREFIX + 'h_' + slotId);
+        const slot = document.getElementById(slotId);
+        if (slot && cachedH) slot.style.height = cachedH;
+
+        // Fit & Position
+        let cachedFit = localStorage.getItem(STORAGE_PREFIX + 'fit_' + slotId);
+        if (!cachedFit) cachedFit = await dbGet(STORAGE_PREFIX + 'fit_' + slotId);
+        let cachedPos = localStorage.getItem(STORAGE_PREFIX + 'pos_' + slotId);
+        if (!cachedPos) cachedPos = await dbGet(STORAGE_PREFIX + 'pos_' + slotId);
+        const img = document.getElementById('img-' + slotId);
+        if (img) {
+          const fitMode = (slotId === 'slot-logo') ? 'contain' : ((cachedFit === 'cover') ? 'cover' : ((cachedFit === 'contain') ? 'contain' : currentGlobalFit));
+          const posMode = (slotId === 'slot-logo') ? 'center center' : (cachedPos || 'center center');
+          img.style.setProperty('object-fit', fitMode, 'important');
+          img.style.setProperty('object-position', posMode, 'important');
+        }
+
+        // Image data
+        let cachedImg = localStorage.getItem(STORAGE_PREFIX + 'img_' + slotId);
+        if (!cachedImg) {
+          cachedImg = await dbGet(STORAGE_PREFIX + 'img_' + slotId);
+        }
+        if (cachedImg) {
+          displaySlotImage(slotId, cachedImg);
+        }
+
+        setupSlotEvents(slotId);
+      }
+
+      // Restore saved card and stage heights
+      for (const cardId of ALL_RESIZABLE_CARDS) {
+        let cachedH = localStorage.getItem(STORAGE_PREFIX + 'card_h_' + cardId);
+        if (!cachedH) cachedH = await dbGet(STORAGE_PREFIX + 'card_h_' + cardId);
+        const card = document.getElementById(cardId);
+        if (card && cachedH) {
+          card.style.flex = '0 0 ' + cachedH;
+          card.style.height = cachedH;
+        }
+      }
     });
   </script>
 </body>

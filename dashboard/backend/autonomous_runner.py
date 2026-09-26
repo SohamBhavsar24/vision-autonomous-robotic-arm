@@ -38,6 +38,13 @@ class AutonomousRunner:
         
         self.is_running = False
         self.is_aborted = False
+        self.is_loop_active = False
+        self.loop_state = "idle" # "idle", "standby", "stabilizing", "executing"
+        self.loop_model_id = "v1"
+        self.stability_start_time: Optional[float] = None
+        self.stability_countdown: float = 1.0
+        self.last_stable_pose: Optional[Dict[str, float]] = None
+        self.loop_task: Optional[asyncio.Task] = None
         
         self.current_model_id: Optional[str] = "v1"
         self.current_step = 0
@@ -108,27 +115,37 @@ class AutonomousRunner:
         return True, f"Model '{model_id}' deleted successfully."
 
     def get_status(self) -> Dict[str, Any]:
-        """Returns live execution status and telemetry."""
+        """Returns live execution status, loop state, and telemetry."""
         return {
             "is_running": self.is_running,
             "is_aborted": self.is_aborted,
-            "model_id": self.current_model_id,
+            "is_loop_active": self.is_loop_active,
+            "loop_state": self.loop_state,
+            "model_id": self.loop_model_id or self.current_model_id,
             "current_step": self.current_step,
             "total_steps": self.total_steps,
             "progress_pct": round(self.progress_pct, 1),
             "phase": self.current_phase,
             "current_angles": self.current_angles,
-            "target_block_pose": self.target_block_pose
+            "target_block_pose": self.target_block_pose,
+            "stability_countdown": round(self.stability_countdown, 1),
+            "stability_progress": round(min(1.0, max(0.0, 1.0 - self.stability_countdown)), 2)
         }
 
     def abort(self) -> Tuple[bool, str]:
-        """Immediately aborts any active autonomous policy execution."""
-        if not self.is_running:
-            return False, "No autonomous execution is active."
-            
+        """Immediately aborts any active autonomous policy execution and loop."""
         self.is_aborted = True
+        self.is_loop_active = False
         self.is_running = False
-        self.current_phase = "Aborted"
+        self.loop_state = "idle"
+        self.current_phase = "Aborted by user"
+        self.stability_start_time = None
+        self.stability_countdown = 1.0
+        self.last_stable_pose = None
+        
+        if self.loop_task and not self.loop_task.done():
+            self.loop_task.cancel()
+            
         logger.warning("Autonomous execution aborted by user.")
         
         # Trigger smooth home transition
@@ -138,6 +155,10 @@ class AutonomousRunner:
             pass
             
         return True, "Autonomous execution aborted."
+
+    def stop_autonomous_loop(self) -> Tuple[bool, str]:
+        """Stops the continuous autonomous loop and safely returns arm to Home."""
+        return self.abort()
 
     def find_k_nearest_demonstrations(self, target_bx: float, target_by: float, k: int = 3):
         """
@@ -249,34 +270,17 @@ class AutonomousRunner:
         anchor_summary = f"Demos {[ep.get('number', i+1) for ep, _ in neighbors]} (w={[round(w, 2) for w in weights]})"
         return synthesized_trajectory, anchor_summary, round(best_dist, 1)
 
-    async def run_autonomous_policy(self, model_id: str = "v1", broadcast_callback=None) -> Tuple[bool, str]:
+    async def _execute_trajectory(self, target_bx: float, target_by: float, target_bth: float, model_id: str = "v1", broadcast_callback=None) -> Tuple[bool, str]:
         """
-        Primary autonomous execution routine:
-        1. Queries live vision status to capture target block pose.
-        2. Synthesizes policy trajectory via Tri-Anchor Joint-Space Blending.
-        3. Aligns arm to start pose.
-        4. Streams trajectory commands at 30Hz.
-        5. Returns to Home.
+        Executes synthesized trajectory on physical arm:
+        1. Loads policy weights and synthesizes trajectory.
+        2. Aligns arm to start pose.
+        3. Streams trajectory at 30Hz.
+        4. Returns arm safely to Home position.
         """
-        if self.is_running:
-            return False, "Autonomous execution already in progress."
-
-        # 1. Perception Check
-        vision_pose = self.vision_manager.latest_block_pose
-        if not vision_pose or not vision_pose.get("valid", False):
-            return False, "Target Block (ArUco ID 0) or World Origin (ArUco ID 2) not detected by Camera 1. Ensure markers are visible."
-            
-        target_bx = float(vision_pose["x_cm"])
-        target_by = float(vision_pose["y_cm"])
-        target_bth = float(vision_pose["theta_deg"])
-        
-        # Workspace bounds validation (X: 30cm, Y: 25cm with margin)
-        if not (-2.0 <= target_bx <= 32.0 and -2.0 <= target_by <= 28.0):
-            return False, f"Target block pose ({target_bx}cm, {target_by}cm) is outside safe workspace bounds (0-30cm x 0-25cm)."
-            
         self.target_block_pose = {"x_cm": target_bx, "y_cm": target_by, "theta_deg": target_bth}
         
-        # 2. Load Deep Multi-Layer Perceptron (MLP) Policy Model & Synthesize Trajectory
+        # Load Deep Multi-Layer Perceptron (MLP) Policy Model & Synthesize Trajectory
         model_weights = self.load_model_weights(model_id)
         if model_weights:
             logger.info(f"Loaded Deep MLP Behavior Cloning Model '{model_id}' (Loss: {model_weights.get('best_loss', 0.5):.4f}, Transitions: {model_weights.get('num_transitions', 17824)})")
@@ -284,16 +288,16 @@ class AutonomousRunner:
         try:
             trajectory, anchor_demo_num, dist = self.generate_policy_trajectory(target_bx, target_by, target_bth, model_id)
         except Exception as e:
+            logger.error(f"Failed to synthesize trajectory: {e}")
             return False, f"Failed to synthesize autonomous policy trajectory: {e}"
             
         self.is_running = True
-        self.is_aborted = False
         self.current_model_id = model_id
         self.total_steps = len(trajectory)
         self.current_step = 0
         self.progress_pct = 0.0
         
-        logger.info(f"Starting autonomous policy execution (Model: {model_id}, Target: X={target_bx}cm, Y={target_by}cm, θ={target_bth}°, Anchors: {anchor_demo_num} d={dist}cm)")
+        logger.info(f"Starting autonomous trajectory execution (Model: {model_id}, Target: X={target_bx}cm, Y={target_by}cm, theta={target_bth} deg, Anchors: {anchor_demo_num} d={dist}cm)")
 
         open_angle = max(148, getattr(self.serial_manager, "gripper_open", 140))
         close_angle = getattr(self.serial_manager, "gripper_closed", 85)
@@ -315,7 +319,7 @@ class AutonomousRunner:
             # Phase 2: Autonomous 30Hz closed-loop execution
             dt = 0.033 # 33ms step rate (~30Hz)
             for idx, frame in enumerate(trajectory):
-                if self.is_aborted or not self.is_running:
+                if self.is_aborted or (not self.is_running and not self.is_loop_active):
                     logger.warning("Autonomous policy execution aborted mid-trajectory.")
                     return False, "Execution aborted."
                     
@@ -356,7 +360,7 @@ class AutonomousRunner:
             home_angles = [90, 90, 90, 90, 90, open_angle]
             await self.serial_manager.smooth_transition_to_angles(home_angles, duration_sec=1.2, broadcast_callback=broadcast_callback)
             
-            self.current_phase = "Completed Successfully"
+            self.current_phase = "Pick & Place Completed"
             logger.info("Autonomous policy pick-and-place sequence finished successfully.")
             return True, "Autonomous pick-and-place sequence completed successfully."
 
@@ -368,3 +372,186 @@ class AutonomousRunner:
             self.is_running = False
             if broadcast_callback:
                 await broadcast_callback()
+
+    async def run_autonomous_policy(self, model_id: str = "v1", broadcast_callback=None) -> Tuple[bool, str]:
+        """
+        Single-shot autonomous execution routine:
+        1. Queries live vision status to capture target block pose.
+        2. Synthesizes policy trajectory.
+        3. Executes pick-and-place sequence.
+        """
+        if self.is_running or self.is_loop_active:
+            return False, "Autonomous execution already in progress."
+
+        # Perception Check
+        vision_pose = self.vision_manager.latest_block_pose
+        if not vision_pose or not vision_pose.get("valid", False):
+            return False, "Target Block (ArUco ID 0) or World Origin (ArUco ID 2) not detected by Camera 1. Ensure markers are visible."
+            
+        target_bx = float(vision_pose["x_cm"])
+        target_by = float(vision_pose["y_cm"])
+        target_bth = float(vision_pose["theta_deg"])
+        
+        # Safe workspace bounds validation (0-30cm x 0-25cm with margin)
+        if not (-2.0 <= target_bx <= 32.0 and -2.0 <= target_by <= 28.0):
+            return False, f"Target block pose ({target_bx}cm, {target_by}cm) is outside safe workspace bounds (0-30cm x 0-25cm)."
+            
+        self.is_aborted = False
+        return await self._execute_trajectory(target_bx, target_by, target_bth, model_id, broadcast_callback)
+
+    def start_autonomous_loop(self, model_id: str = "v1", broadcast_callback=None) -> Tuple[bool, str]:
+        """
+        Starts continuous autonomous loop in Standby mode:
+        The arm rests at Home, continuously monitors camera vision,
+        verifies 1.0s stationary stability when a block appears,
+        runs pick-and-place, returns Home, and immediately re-enters Standby.
+        """
+        if self.is_loop_active:
+            return False, "Autonomous loop is already active."
+        if self.is_running:
+            return False, "Single execution already in progress."
+            
+        self.is_loop_active = True
+        self.is_aborted = False
+        self.loop_model_id = model_id
+        self.current_model_id = model_id
+        self.loop_state = "standby"
+        self.current_phase = "Standby - Initializing Home Pose"
+        self.stability_start_time = None
+        self.stability_countdown = 1.0
+        self.last_stable_pose = None
+        
+        self.loop_task = asyncio.create_task(self._autonomous_loop_worker(broadcast_callback))
+        return True, "Autonomous continuous loop started in Standby mode."
+
+    async def _autonomous_loop_worker(self, broadcast_callback=None):
+        """
+        Autonomous continuous loop worker task:
+        1. Safely moves arm to Home position.
+        2. Monitors Camera 1 perception in Standby mode.
+        3. Verifies stability: block stationary within delta thresholds for 1.0 full second.
+        4. Executes autonomous pick and place trajectory using chosen model.
+        5. Safely returns to Home position and immediately re-enters Standby mode.
+        6. Repeats indefinitely until stopped or aborted.
+        """
+        logger.info(f"Autonomous continuous loop worker started with Model '{self.loop_model_id}'.")
+        
+        open_angle = max(148, getattr(self.serial_manager, "gripper_open", 140))
+        home_angles = [90, 90, 90, 90, 90, open_angle]
+        
+        try:
+            # Step 1: Initial transition to Home pose
+            self.loop_state = "standby"
+            self.current_phase = "Moving to Standby Home Position"
+            if broadcast_callback:
+                await broadcast_callback()
+            await self.serial_manager.smooth_transition_to_angles(home_angles, duration_sec=1.0, broadcast_callback=broadcast_callback)
+            
+            self.current_phase = "Standby - Waiting for Block in Workspace"
+            if broadcast_callback:
+                await broadcast_callback()
+                
+            while self.is_loop_active and not self.is_aborted:
+                # Query perception
+                vision_pose = self.vision_manager.latest_block_pose
+                is_valid = bool(vision_pose and vision_pose.get("valid", False))
+                
+                if is_valid:
+                    bx = float(vision_pose["x_cm"])
+                    by = float(vision_pose["y_cm"])
+                    bth = float(vision_pose.get("theta_deg", 0.0))
+                    
+                    # Workspace bounds check (0-30cm x 0-25cm with margin)
+                    if (-2.0 <= bx <= 32.0 and -2.0 <= by <= 28.0):
+                        now = time.time()
+                        if self.last_stable_pose is None:
+                            # First detection in workspace
+                            self.last_stable_pose = {"x_cm": bx, "y_cm": by, "theta_deg": bth}
+                            self.stability_start_time = now
+                            self.stability_countdown = 1.0
+                            self.loop_state = "stabilizing"
+                            self.current_phase = "Verifying Block Stability (1.0s)..."
+                        else:
+                            # Displacement & rotation jitter check
+                            dx = abs(bx - self.last_stable_pose["x_cm"])
+                            dy = abs(by - self.last_stable_pose["y_cm"])
+                            dth = abs(bth - self.last_stable_pose["theta_deg"])
+                            
+                            # Threshold: max 0.8 cm displacement, 15 deg theta jitter
+                            if dx > 0.8 or dy > 0.8 or dth > 15.0:
+                                # Movement detected: reset 1.0s stability countdown
+                                self.last_stable_pose = {"x_cm": bx, "y_cm": by, "theta_deg": bth}
+                                self.stability_start_time = now
+                                self.stability_countdown = 1.0
+                                self.loop_state = "stabilizing"
+                                self.current_phase = "Block Moved - Stabilizing (1.0s)..."
+                            else:
+                                elapsed = now - self.stability_start_time
+                                self.stability_countdown = max(0.0, 1.0 - elapsed)
+                                
+                                if self.stability_countdown <= 0.0:
+                                    # Block confirmed stationary for 1.0s! Trigger execution
+                                    logger.info(f"Block stability confirmed at X={bx:.1f}cm, Y={by:.1f}cm, theta={bth:.1f} deg. Starting pick & place.")
+                                    self.loop_state = "executing"
+                                    self.current_phase = f"Executing Pick & Place ({self.loop_model_id})"
+                                    if broadcast_callback:
+                                        await broadcast_callback()
+                                        
+                                    success, msg = await self._execute_trajectory(
+                                        target_bx=bx,
+                                        target_by=by,
+                                        target_bth=bth,
+                                        model_id=self.loop_model_id,
+                                        broadcast_callback=broadcast_callback
+                                    )
+                                    
+                                    if not self.is_loop_active or self.is_aborted:
+                                        break
+                                        
+                                    # Arm has smoothly returned to Home. Reset stability state for next block.
+                                    self.loop_state = "standby"
+                                    self.current_phase = "Standby - Waiting for Block in Workspace"
+                                    self.stability_start_time = None
+                                    self.stability_countdown = 1.0
+                                    self.last_stable_pose = None
+                                    
+                                    if broadcast_callback:
+                                        await broadcast_callback()
+                                        
+                                    # 1.0s settle delay to ensure physical arm rest and clear scene view
+                                    await asyncio.sleep(1.0)
+                                    continue
+                    else:
+                        # Block detected but outside manipulation workspace
+                        if self.loop_state != "standby":
+                            self.loop_state = "standby"
+                            self.current_phase = "Standby - Block Outside Workspace Bounds"
+                            self.stability_start_time = None
+                            self.stability_countdown = 1.0
+                            self.last_stable_pose = None
+                else:
+                    # No block detected
+                    if self.loop_state != "standby":
+                        self.loop_state = "standby"
+                        self.current_phase = "Standby - Waiting for Block in Workspace"
+                        self.stability_start_time = None
+                        self.stability_countdown = 1.0
+                        self.last_stable_pose = None
+                        
+                if broadcast_callback and self.loop_state == "stabilizing":
+                    await broadcast_callback()
+                    
+                await asyncio.sleep(0.05)
+                
+        except asyncio.CancelledError:
+            logger.info("Autonomous loop worker task cancelled.")
+        except Exception as e:
+            logger.error(f"Unexpected error in autonomous loop worker: {e}")
+        finally:
+            self.is_loop_active = False
+            self.loop_state = "idle"
+            if not self.is_aborted:
+                self.current_phase = "Idle"
+            if broadcast_callback:
+                await broadcast_callback()
+            logger.info("Autonomous continuous loop stopped.")

@@ -154,6 +154,7 @@ class DatasetEpisodesRequest(BaseModel):
 
 class AutonomousStartRequest(BaseModel):
     model_id: str = "v1"
+    continuous: bool = True
 
 class TrainModelRequest(BaseModel):
     version_id: str = "v1"
@@ -446,22 +447,32 @@ async def get_autonomous_status():
 @app.post("/api/autonomous/start")
 async def start_autonomous_execution(req: AutonomousStartRequest):
     """Starts autonomous pick-and-place execution using the selected model."""
-    if autonomous_runner.is_running:
+    if autonomous_runner.is_running or autonomous_runner.is_loop_active:
         raise HTTPException(status_code=400, detail="Autonomous execution is already active.")
     
-    asyncio.create_task(autonomous_runner.run_autonomous_policy(
-        model_id=req.model_id,
-        broadcast_callback=broadcast_status
-    ))
-    return {"status": "started", "model_id": req.model_id}
+    if req.continuous:
+        success, msg = autonomous_runner.start_autonomous_loop(
+            model_id=req.model_id,
+            broadcast_callback=broadcast_status
+        )
+        if not success:
+            raise HTTPException(status_code=400, detail=msg)
+        await broadcast_status()
+        return {"status": "started", "mode": "continuous", "model_id": req.model_id}
+    else:
+        asyncio.create_task(autonomous_runner.run_autonomous_policy(
+            model_id=req.model_id,
+            broadcast_callback=broadcast_status
+        ))
+        return {"status": "started", "mode": "single", "model_id": req.model_id}
 
 
 @app.post("/api/autonomous/stop")
 async def stop_autonomous_execution():
-    """Aborts the active autonomous execution."""
-    success, msg = autonomous_runner.abort()
+    """Aborts or stops the active autonomous execution."""
+    success, msg = autonomous_runner.stop_autonomous_loop()
     await broadcast_status()
-    return {"status": "aborted" if success else "failed", "message": msg}
+    return {"status": "stopped" if success else "failed", "message": msg}
 
 
 # WebSocket Handler for Real-Time Telemetry & Slider Control
@@ -523,14 +534,23 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 elif action_type == "run_autonomous":
                     m_id = data.get("model_id", "v1")
-                    if not autonomous_runner.is_running:
-                        asyncio.create_task(autonomous_runner.run_autonomous_policy(
-                            model_id=m_id,
-                            broadcast_callback=broadcast_status
-                        ))
+                    continuous = data.get("continuous", True)
+                    if continuous:
+                        if not autonomous_runner.is_loop_active and not autonomous_runner.is_running:
+                            autonomous_runner.start_autonomous_loop(
+                                model_id=m_id,
+                                broadcast_callback=broadcast_status
+                            )
+                            await broadcast_status()
+                    else:
+                        if not autonomous_runner.is_running and not autonomous_runner.is_loop_active:
+                            asyncio.create_task(autonomous_runner.run_autonomous_policy(
+                                model_id=m_id,
+                                broadcast_callback=broadcast_status
+                            ))
 
                 elif action_type == "stop_autonomous":
-                    autonomous_runner.abort()
+                    autonomous_runner.stop_autonomous_loop()
                     await broadcast_status()
 
             except json.JSONDecodeError:
