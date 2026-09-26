@@ -146,20 +146,70 @@
       font-weight: 600;
     }
 
-    .delete-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 1.1rem;
+    .entry-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .edit-btn {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: none;
+      border: 1px solid var(--border-subtle, #ccc);
+      border-radius: 4px;
+      padding: 2px 8px;
       cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: color 0.15s ease, background 0.15s ease;
+      color: var(--accent-primary, #c4784a);
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .edit-btn:hover, .edit-btn:active {
+      color: #9c582f;
+      background: rgba(196, 120, 74, 0.1);
+      border-color: var(--accent-primary, #c4784a);
+    }
+
+    .delete-btn {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: none;
+      border: 1px solid var(--border-subtle, #ccc);
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      color: #e53935;
+      font-weight: 600;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
     }
 
     .delete-btn:hover, .delete-btn:active {
       color: var(--accent-danger);
       background: #FDF2F2;
+      border-color: var(--accent-danger);
+    }
+
+    .btn-read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      background: #F4EFE6;
+      border: 1px solid var(--border-card);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-read-more:hover {
+      background: #EFE6D8;
+      border-color: var(--accent-primary);
     }
 
     mark.search-highlight {
@@ -384,7 +434,9 @@
 
     @media print {
       body { background: white; padding: 0; }
-      .header-btns, .search-box, .fab-btn, .modal-overlay, .delete-btn { display: none !important; }
+      .header-btns, .search-box, .fab-btn, .modal-overlay, .delete-btn, .edit-btn, .btn-read-more { display: none !important; }
+      .entry-content-full { display: block !important; }
+      .entry-content-preview { display: none !important; }
       .journal-entry { border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; }
     }
   </style>
@@ -414,15 +466,17 @@
   <!-- Floating iPhone + Button -->
   <button class="fab-btn" id="btnOpenModal" title="Add Journal Entry">+</button>
 
-  <!-- Add Entry Modal -->
+  <!-- Add / Edit Entry Modal -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal-card">
-      <h2 class="modal-title">New Journal Entry</h2>
+      <h2 class="modal-title" id="modalTitle">New Journal Entry</h2>
       
       <form id="journalForm">
+        <input type="hidden" id="editEntryId" value="">
+
         <div class="form-group">
-          <label class="form-label">Auto-Detected Live Date</label>
-          <input type="text" class="form-input" id="inputDate" readonly style="font-family: var(--font-mono); color: var(--accent-primary); font-weight: 600;">
+          <label class="form-label">Date</label>
+          <input type="text" class="form-input" id="inputDate" style="font-family: var(--font-mono); color: var(--accent-primary); font-weight: 600;">
         </div>
 
         <div class="form-group">
@@ -437,13 +491,14 @@
 
         <div class="form-group">
           <label class="form-label">Attach PDF, Word Doc, Photo, or Video (Optional)</label>
+          <div id="currentAttachmentInfo" style="font-size: 0.82rem; color: var(--accent-primary); margin-bottom: 6px; display: none; font-family: var(--font-mono); font-weight: 600;"></div>
           <input type="file" class="form-input" id="inputFile" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov,.webm">
           <div id="fileUploadStatus" style="font-size: 0.82rem; color: var(--accent-primary); margin-top: 6px; display: none;"></div>
         </div>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="btnCloseModal">Cancel</button>
-          <button type="submit" class="btn">Submit Entry</button>
+          <button type="submit" class="btn" id="btnSubmitForm">Submit Entry</button>
         </div>
       </form>
     </div>
@@ -873,6 +928,50 @@
       return text.replace(regex, '<mark class="search-highlight">$1</mark>');
     }
 
+    function countTotalWords(paragraphs) {
+      if (!Array.isArray(paragraphs)) return 0;
+      return paragraphs.reduce((sum, p) => sum + (p ? p.trim().split(/\s+/).filter(Boolean).length : 0), 0);
+    }
+
+    function create100WordPreview(paragraphs) {
+      let wordsNeeded = 100;
+      const previewParas = [];
+      for (const p of paragraphs) {
+        const words = p.trim().split(/\s+/).filter(Boolean);
+        if (words.length <= wordsNeeded) {
+          previewParas.push(words.join(' '));
+          wordsNeeded -= words.length;
+          if (wordsNeeded <= 0) break;
+        } else {
+          previewParas.push(words.slice(0, wordsNeeded).join(' ') + '...');
+          wordsNeeded = 0;
+          break;
+        }
+      }
+      return previewParas;
+    }
+
+    const expandedEntryIds = new Set();
+
+    function toggleEntryExpand(id) {
+      if (expandedEntryIds.has(id)) {
+        expandedEntryIds.delete(id);
+      } else {
+        expandedEntryIds.add(id);
+      }
+      const preview = document.getElementById(`preview-${id}`);
+      const full = document.getElementById(`full-${id}`);
+      const btn = document.getElementById(`btnExpand-${id}`);
+      const isExp = expandedEntryIds.has(id);
+      if (preview && full) {
+        preview.style.display = isExp ? 'none' : 'block';
+        full.style.display = isExp ? 'block' : 'none';
+      }
+      if (btn) {
+        btn.innerHTML = isExp ? 'Read Less &#9652;' : 'Read More &#9662;';
+      }
+    }
+
     function renderJournal() {
       const container = document.getElementById('journalContainer');
       const entries = getStoredEntries();
@@ -893,19 +992,56 @@
         return;
       }
 
-      container.innerHTML = filtered.map(item => `
-        <article class="journal-entry">
-          <div class="entry-header-row">
-            <div class="entry-date">${highlightText(item.date, query)}</div>
-            <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry" style="font-size: 0.78rem; background: none; border: 1px solid var(--border-subtle, #ccc); border-radius: 4px; padding: 2px 6px; cursor: pointer; color: #e53935;">Delete</button>
-          </div>
-          <h2 class="entry-title">${highlightText(item.title, query)}</h2>
-          <div class="entry-content">
-            ${item.paragraphs.map(p => `<p>${highlightText(p, query)}</p>`).join('')}
-          </div>
-          ${renderAttachment(item.attachment, item.id)}
-        </article>
-      `).join('');
+      container.innerHTML = filtered.map(item => {
+        const totalWords = countTotalWords(item.paragraphs);
+        const isLong = totalWords > 100;
+        
+        // Auto-expand if search query matches full content
+        if (queryLower && item.paragraphs.some(p => p.toLowerCase().includes(queryLower))) {
+          expandedEntryIds.add(item.id);
+        }
+        
+        const isExpanded = expandedEntryIds.has(item.id);
+
+        let contentBlock = '';
+        if (!isLong) {
+          contentBlock = `
+            <div class="entry-content">
+              ${item.paragraphs.map(p => `<p>${highlightText(p, query)}</p>`).join('')}
+            </div>
+          `;
+        } else {
+          const previewParas = create100WordPreview(item.paragraphs);
+          contentBlock = `
+            <div class="entry-content">
+              <div class="entry-content-preview" id="preview-${item.id}" style="display: ${isExpanded ? 'none' : 'block'};">
+                ${previewParas.map(p => `<p>${highlightText(p, query)}</p>`).join('')}
+              </div>
+              <div class="entry-content-full" id="full-${item.id}" style="display: ${isExpanded ? 'block' : 'none'};">
+                ${item.paragraphs.map(p => `<p>${highlightText(p, query)}</p>`).join('')}
+              </div>
+              <button type="button" class="btn-read-more" id="btnExpand-${item.id}" onclick="toggleEntryExpand('${item.id}')">
+                ${isExpanded ? 'Read Less &#9652;' : 'Read More &#9662;'}
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <article class="journal-entry" id="card-${item.id}">
+            <div class="entry-header-row">
+              <div class="entry-date">${highlightText(item.date, query)}</div>
+              <div class="entry-actions">
+                <button class="edit-btn" onclick="openEditModal('${item.id}')" title="Edit Entry">Edit</button>
+                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">Delete</button>
+              </div>
+            </div>
+            <h2 class="entry-title">${highlightText(item.title, query)}</h2>
+            ${contentBlock}
+            ${renderAttachment(item.attachment, item.id)}
+          </article>
+        `;
+      }).join('');
     }
 
     // Live Search Event Listener
@@ -918,10 +1054,64 @@
     const inputDate = document.getElementById('inputDate');
     const journalForm = document.getElementById('journalForm');
 
+    function openEditModal(id) {
+      const entries = getStoredEntries();
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      document.getElementById('editEntryId').value = entry.id;
+      const modalTitle = document.getElementById('modalTitle');
+      if (modalTitle) modalTitle.textContent = 'Edit Journal Entry';
+
+      inputDate.value = entry.date || formatExactDate();
+      document.getElementById('inputTitle').value = entry.title || '';
+      document.getElementById('inputText').value = (entry.paragraphs || []).join('\n\n');
+
+      const submitBtn = document.getElementById('btnSubmitForm') || journalForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Save Changes';
+
+      const attInfo = document.getElementById('currentAttachmentInfo');
+      if (attInfo) {
+        if (entry.attachment && entry.attachment.name) {
+          attInfo.style.display = 'block';
+          attInfo.textContent = `Attached: ${entry.attachment.name} (upload below to replace)`;
+        } else {
+          attInfo.style.display = 'none';
+          attInfo.textContent = '';
+        }
+      }
+
+      const fileInput = document.getElementById('inputFile');
+      if (fileInput) fileInput.value = '';
+      const statusDiv = document.getElementById('fileUploadStatus');
+      if (statusDiv) statusDiv.style.display = 'none';
+
+      modalOverlay.style.display = 'flex';
+    }
+
     btnOpenModal.addEventListener('click', () => {
+      document.getElementById('editEntryId').value = '';
+      const modalTitle = document.getElementById('modalTitle');
+      if (modalTitle) modalTitle.textContent = 'New Journal Entry';
+
       inputDate.value = formatExactDate();
       document.getElementById('inputTitle').value = '';
       document.getElementById('inputText').value = '';
+
+      const submitBtn = document.getElementById('btnSubmitForm') || journalForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Submit Entry';
+
+      const attInfo = document.getElementById('currentAttachmentInfo');
+      if (attInfo) {
+        attInfo.style.display = 'none';
+        attInfo.textContent = '';
+      }
+
+      const fileInput = document.getElementById('inputFile');
+      if (fileInput) fileInput.value = '';
+      const statusDiv = document.getElementById('fileUploadStatus');
+      if (statusDiv) statusDiv.style.display = 'none';
+
       modalOverlay.style.display = 'flex';
     });
 
@@ -1034,11 +1224,12 @@
     // Handle Form Submit for Text & Media Log Entries (0.1s instant cloud sync)
     journalForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const date = inputDate.value;
+      const editingId = document.getElementById('editEntryId').value;
+      const date = inputDate.value.trim() || formatExactDate();
       let title = document.getElementById('inputTitle').value.trim();
       const rawText = document.getElementById('inputText').value.trim();
       const fileInput = document.getElementById('inputFile');
-      const submitBtn = journalForm.querySelector('button[type="submit"]');
+      const submitBtn = document.getElementById('btnSubmitForm') || journalForm.querySelector('button[type="submit"]');
 
       if (!title) {
         title = 'Engineering Progress & Decision Updates';
@@ -1048,10 +1239,17 @@
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving Entry & Uploading Media...';
+        submitBtn.textContent = editingId ? 'Saving Changes...' : 'Saving Entry & Uploading Media...';
       }
 
-      let attachment = null;
+      let existingAttachment = null;
+      if (editingId) {
+        const curEntries = getStoredEntries();
+        const found = curEntries.find(e => e.id === editingId);
+        if (found) existingAttachment = found.attachment || null;
+      }
+
+      let attachment = existingAttachment;
       if (fileInput && fileInput.files.length > 0) {
         let file = fileInput.files[0];
         
@@ -1109,38 +1307,78 @@
         }
       }
 
-      const newEntry = {
-        id: `entry-${Date.now()}`,
-        date,
-        title,
-        paragraphs,
-        attachment
-      };
+      let entries = getStoredEntries();
 
-      // Save single new entry directly to Supabase DB
-      try {
-        await fetch(`${SUPABASE_URL}/rest/v1/journal_entries`, {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'resolution=merge-duplicates'
-          },
-          body: JSON.stringify([{
-            id: newEntry.id,
-            date: newEntry.date,
-            title: newEntry.title,
-            paragraphs: newEntry.paragraphs,
-            attachment: newEntry.attachment || null
-          }])
-        });
-      } catch (e) {}
+      if (editingId) {
+        const idx = entries.findIndex(e => e.id === editingId);
+        const updatedEntry = {
+          id: editingId,
+          date,
+          title,
+          paragraphs,
+          attachment
+        };
 
-      const entries = getStoredEntries();
-      entries.unshift(newEntry);
+        if (idx !== -1) {
+          entries[idx] = updatedEntry;
+        } else {
+          entries.unshift(updatedEntry);
+        }
 
-      await saveEntries(entries);
+        // Upsert edited entry into Supabase DB
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/journal_entries`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify([{
+              id: updatedEntry.id,
+              date: updatedEntry.date,
+              title: updatedEntry.title,
+              paragraphs: updatedEntry.paragraphs,
+              attachment: updatedEntry.attachment || null
+            }])
+          });
+        } catch (e) {}
+
+        await saveEntries(entries);
+      } else {
+        const newEntry = {
+          id: `entry-${Date.now()}`,
+          date,
+          title,
+          paragraphs,
+          attachment
+        };
+
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/journal_entries`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify([{
+              id: newEntry.id,
+              date: newEntry.date,
+              title: newEntry.title,
+              paragraphs: newEntry.paragraphs,
+              attachment: newEntry.attachment || null
+            }])
+          });
+        } catch (e) {}
+
+        entries.unshift(newEntry);
+        await saveEntries(entries);
+      }
+
+      renderJournal();
       await syncBackendJournal();
 
       if (fileInput) fileInput.value = '';
@@ -1151,6 +1389,7 @@
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Entry';
       }
+      document.getElementById('editEntryId').value = '';
       modalOverlay.style.display = 'none';
     });
 
