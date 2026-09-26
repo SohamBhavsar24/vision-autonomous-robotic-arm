@@ -172,22 +172,23 @@
     }
 
     .delete-btn {
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
+      font-size: 0.85rem;
       background: none;
       border: 1px solid var(--border-subtle, #ccc);
       border-radius: 4px;
-      padding: 2px 8px;
+      padding: 2px 6px;
       cursor: pointer;
-      color: #e53935;
-      font-weight: 600;
-      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
 
     .delete-btn:hover, .delete-btn:active {
-      color: var(--accent-danger);
       background: #FDF2F2;
       border-color: var(--accent-danger);
+      transform: scale(1.05);
     }
 
     .btn-read-more {
@@ -1033,7 +1034,7 @@
               <div class="entry-date">${highlightText(item.date, query)}</div>
               <div class="entry-actions">
                 <button class="edit-btn" onclick="openEditModal('${item.id}')" title="Edit Entry">Edit</button>
-                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">Delete</button>
+                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">🗑️</button>
               </div>
             </div>
             <h2 class="entry-title">${highlightText(item.title, query)}</h2>
