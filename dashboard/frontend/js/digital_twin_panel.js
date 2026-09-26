@@ -25,7 +25,7 @@ const DigitalTwinPanel = {
   isLoading: true,
 
   // Geofencing & Table Penetration Protection (Zero Kinematics, Pure Three.js 3D Bounds)
-  geofenceEnabled: true,
+  geofenceEnabled: false,
   tableFloorLimitY: 8.0, // mm above ground plane (wood tabletop is at Y=0, pad surface is at Y=1.6)
   lastSafeAngles: null, // Initialized dynamically to [90, 90, 90, 90, 90, openAngle]
   isCollisionTriggered: false,
@@ -1619,9 +1619,13 @@ const DigitalTwinPanel = {
     try {
       const stored = localStorage.getItem('dt_geofence_enabled');
       if (stored !== null) {
-        this.geofenceEnabled = (stored !== 'false');
+        this.geofenceEnabled = (stored === 'true');
+      } else {
+        this.geofenceEnabled = false;
       }
-    } catch (e) {}
+    } catch (e) {
+      this.geofenceEnabled = false;
+    }
     this.updateGeofenceButtonUI();
     this.updateClearanceDisplay(this.currentClearanceMm, false);
   },

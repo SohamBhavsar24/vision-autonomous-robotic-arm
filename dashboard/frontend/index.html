@@ -326,8 +326,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (Orbit Controls: Drag to rotate • Scroll to zoom • Right-click to pan)</span>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <span id="dtClearanceMeter" style="font-family: var(--font-mono); font-size: 0.75rem; color: #00B048; background: rgba(0, 176, 72, 0.12); border: 1px solid rgba(0, 176, 72, 0.25); padding: 4px 10px; border-radius: 4px; font-weight: 600;">Clearance: -- mm</span>
-                <button class="btn btn-primary" id="btnDtToggleGeofence" style="font-size: 0.75rem; padding: 4px 12px; background: #00B048; border-color: #00B048; color: #fff; font-weight: 600; cursor: pointer;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGeofence()">Table Safety: ON</button>
+                <span id="dtClearanceMeter" style="font-family: var(--font-mono); font-size: 0.75rem; color: #888888; background: rgba(150, 150, 150, 0.12); border: 1px solid rgba(150, 150, 150, 0.25); padding: 4px 10px; border-radius: 4px; font-weight: 600;">Safety: BYPASSED</span>
+                <button class="btn btn-secondary" id="btnDtToggleGeofence" style="font-size: 0.75rem; padding: 4px 12px; background: #555555; border-color: #444444; color: #BBBBBB; font-weight: 600; cursor: pointer;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGeofence()">Table Safety: OFF</button>
                 <button class="btn btn-secondary" id="btnDtTune" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleTunerPanel()">Tune Claws</button>
                 <button class="btn btn-secondary" id="btnDtHome" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setHomePose()">Home Pose (90°)</button>
                 <button class="btn btn-secondary" id="btnDtToggleGrid" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGrid()">Toggle Grid</button>
@@ -909,10 +909,10 @@
 
   <!-- Dashboard JavaScript with Cache Busting -->
   <script src="js/app.js?v=1.0.56"></script>
-  <script src="js/servo_panel.js?v=1.0.58"></script>
-  <script src="js/teleop_panel.js?v=1.0.58"></script>
+  <script src="js/servo_panel.js?v=1.0.59"></script>
+  <script src="js/teleop_panel.js?v=1.0.59"></script>
   <script src="js/dataset_panel.js?v=1.0.56"></script>
-  <script src="js/autonomous_panel.js?v=1.0.58"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.58"></script>
+  <script src="js/autonomous_panel.js?v=1.0.59"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.59"></script>
 </body>
 </html>
