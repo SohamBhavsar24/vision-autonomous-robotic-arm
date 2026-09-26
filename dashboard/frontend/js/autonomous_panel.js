@@ -393,7 +393,7 @@ const AutonomousPanel = {
           if (!safety.isSafe) {
             this.stopAutonomousLoop();
             window.DigitalTwinPanel.triggerTableCollisionAlert(safety.lowestY);
-            const safe = window.DigitalTwinPanel.lastSafeAngles;
+            const safe = window.DigitalTwinPanel.lastSafeAngles || (window.DigitalTwinPanel.getHomeAngles ? window.DigitalTwinPanel.getHomeAngles() : [90, 90, 90, 90, 90, 140]);
             if (window.App && App.sendWS) {
               App.sendWS('set_angles', { angles: safe });
             }

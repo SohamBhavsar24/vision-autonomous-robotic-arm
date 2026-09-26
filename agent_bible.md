@@ -179,6 +179,7 @@
   - **Table Safety Toggle Button (`#btnDtToggleGeofence`):** Positioned in the `#panel-digital-twin` header. Allows user to toggle protection ON or OFF on the fly, with state saved to `localStorage`.
   - **Live Clearance Meter (`#dtClearanceMeter`):** Renders dynamic 60 FPS clearance readout ("Clearance: 42.5 mm", turning crimson "Clearance: 0.0 mm (BREACH)" when breached).
   - **Floating HUD Collision Banner (`#dtCollisionBanner`):** Displays red pulsing alert banner (`TABLE PENETRATION DETECTED: REVERTED TO SAFE POSE`) inside the WebGL viewport and highlights gripper claw meshes red with a 1.4-second auto-fade.
+- **Dynamic Gripper Open Angle Resolution:** Safe pose baseline and fallbacks dynamically retrieve the calibrated `openAngle` (`[90, 90, 90, 90, 90, openAngle]`) from UI inputs (`#angleGripperOpen`, `#inputGripperOpenCard`) or `localStorage`, eliminating hardcoded 140° gripper angles.
 - **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all modified JavaScript, HTML, CSS, and markdown files.
 
 ---

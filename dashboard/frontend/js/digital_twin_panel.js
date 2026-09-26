@@ -27,7 +27,7 @@ const DigitalTwinPanel = {
   // Geofencing & Table Penetration Protection (Zero Kinematics, Pure Three.js 3D Bounds)
   geofenceEnabled: true,
   tableFloorLimitY: 8.0, // mm above ground plane (wood tabletop is at Y=0, pad surface is at Y=1.6)
-  lastSafeAngles: [90, 90, 90, 90, 90, 140],
+  lastSafeAngles: null, // Initialized dynamically to [90, 90, 90, 90, 90, openAngle]
   isCollisionTriggered: false,
   collisionAlertTimer: null,
   collisionBanner: null,
@@ -162,6 +162,11 @@ const DigitalTwinPanel = {
     this.bindButtons();
     this.initGeofencing();
 
+    const home = this.getHomeAngles();
+    this.currentAngles = [...home];
+    this.targetAngles = [...home];
+    this.lastSafeAngles = [...home];
+
     this.animate = this.animate.bind(this);
     requestAnimationFrame(this.animate);
   },
@@ -257,7 +262,7 @@ const DigitalTwinPanel = {
       <div>θ3: <span id="dtVal2" style="color: var(--accent-primary); font-weight: 600;">90°</span></div>
       <div>θ4: <span id="dtVal3" style="color: var(--accent-primary); font-weight: 600;">90°</span></div>
       <div>θ5: <span id="dtVal4" style="color: var(--accent-primary); font-weight: 600;">90°</span></div>
-      <div>Claw: <span id="dtVal5" style="color: var(--accent-primary); font-weight: 600;">140°</span></div>
+      <div>Claw: <span id="dtVal5" style="color: var(--accent-primary); font-weight: 600;">${this.getGripperOpenAngle()}°</span></div>
     `;
     this.container.appendChild(telemetryOverlay);
 
@@ -1595,8 +1600,22 @@ const DigitalTwinPanel = {
     }
   },
 
+  /* Dynamically retrieve calibrated Gripper Open Angle */
+  getGripperOpenAngle() {
+    const el = document.getElementById('angleGripperOpen') || document.getElementById('inputGripperOpenCard');
+    const stored = localStorage.getItem('gripper_open');
+    const val = parseInt(el ? el.value : (stored || 140), 10);
+    return (isNaN(val) || val <= 0) ? 140 : Math.max(0, Math.min(180, val));
+  },
+
+  /* Get Default Safe Home Pose dynamically utilizing openAngle */
+  getHomeAngles() {
+    return [90, 90, 90, 90, 90, this.getGripperOpenAngle()];
+  },
+
   /* Initialize Geofencing and Table Protection State */
   initGeofencing() {
+    this.lastSafeAngles = this.getHomeAngles();
     try {
       const stored = localStorage.getItem('dt_geofence_enabled');
       if (stored !== null) {
@@ -1830,9 +1849,9 @@ const DigitalTwinPanel = {
     }
   },
 
-  /* Move to Default Home Pose (90° All) */
+  /* Move to Default Home Pose (90° All with dynamic open angle) */
   setHomePose() {
-    this.updateAngles([90, 90, 90, 90, 90, 140]);
+    this.updateAngles(this.getHomeAngles());
   },
 
   setupResizeObserver() {

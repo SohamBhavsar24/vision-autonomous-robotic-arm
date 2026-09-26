@@ -227,7 +227,7 @@ const ServoPanel = {
         const safety = window.DigitalTwinPanel.evaluateAnglesSafety(candidateAngles);
         if (!safety.isSafe) {
           // Revert sliders and teleop to last safe angles
-          const safe = window.DigitalTwinPanel.lastSafeAngles;
+          const safe = window.DigitalTwinPanel.lastSafeAngles || (window.DigitalTwinPanel.getHomeAngles ? window.DigitalTwinPanel.getHomeAngles() : [90, 90, 90, 90, 90, 140]);
           this.setSlidersFromAngles(safe);
           if (window.TeleopPanel) {
             window.TeleopPanel.integratedAngles = [...safe];
