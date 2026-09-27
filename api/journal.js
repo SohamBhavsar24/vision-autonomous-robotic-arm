@@ -1,12 +1,12 @@
 // Vercel Serverless API Endpoint with Supabase PostgreSQL Persistence
 // Path: api/journal.js
 
-const SUPABASE_URL = 'https://pzewxynfhrylnqbkkeeq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_5OpuR0lsXoop77YXHtP01g_owDDLGe_';
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, apikey, Authorization');
 
   if (req.method === 'OPTIONS') {
@@ -16,6 +16,10 @@ export default async function handler(req, res) {
   const endpoint = `${SUPABASE_URL}/rest/v1/journal_entries`;
 
   if (req.method === 'GET') {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      return res.status(200).json([]);
+    }
+
     try {
       const response = await fetch(`${endpoint}?select=*&order=created_at.desc`, {
         headers: {
@@ -35,6 +39,33 @@ export default async function handler(req, res) {
     return res.status(200).json([]);
   }
 
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({ error: 'Missing entry id parameter' });
+    }
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      return res.status(500).json({ error: 'Supabase credentials not configured on server' });
+    }
+    try {
+      const response = await fetch(`${endpoint}?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      if (response.ok) {
+        return res.status(200).json({ status: 'deleted', id });
+      } else {
+        const errText = await response.text();
+        return res.status(500).json({ error: errText });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (req.method === 'POST' || req.method === 'PUT') {
     const bodyData = req.body;
     let payload = null;
@@ -49,6 +80,10 @@ export default async function handler(req, res) {
 
     if (!payload) {
       return res.status(400).json({ error: 'Missing or invalid entries payload' });
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      return res.status(500).json({ error: 'Supabase credentials not configured on server' });
     }
 
     try {

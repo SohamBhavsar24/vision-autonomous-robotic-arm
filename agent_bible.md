@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-09-27 (Session 17 — Decoupled Pick-Only Policy Architecture, Multi-Block Sequential Sorting & Drop Pose Persistence)
+> **Last Updated:** 2026-09-27 (Session 18 — Supabase Secrets Scrubbing & Server-Side API Proxy Architecture)
 
 ---
 
@@ -239,6 +239,15 @@
   - Matched Workspace Radar SVG to exact physical $30\text{ cm} \times 25\text{ cm}$ ($6 : 5$) aspect ratio with high-contrast white mat fill, terracotta border, and balanced 6/6 grid layout.
 - **Supabase Cloud Journal Sync (Entry 17):** Published Log Entry #17 (Decoupled Pick-Only Imitation Learning Architecture, Spatial Obstacle Clearing & Continuous Workspace Radar) directly to the live Supabase PostgreSQL database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`) and synchronized local backend JSON (`dashboard/backend/journal_entries.json`) and PWA seed entries.
 - **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all project files.
+
+### Session 18 (2026-09-27) — SUPABASE SECRETS SCRUBBING & SERVER-SIDE API PROXY ARCHITECTURE
+- **Context & Security Risk:** With Row Level Security (RLS) disabled on the cloud Supabase PostgreSQL instance, exposing the project URL and publishable key in frontend files (`project_journal.html` and `dashboard/frontend/project_journal.html`) left the database vulnerable to unauthorized client modifications on public repositories and deployments.
+- **Git Ignore Security Hardening:** Updated `.gitignore` to explicitly ignore `.env`, `*.env`, `.env.*`, and `.env.local`. Configured local `.env` file on user's machine containing `SUPABASE_URL` and `SUPABASE_KEY`.
+- **Backend & Serverless API Proxies:**
+  - `dashboard/backend/main.py`: Automatically loads credentials from local `.env` via a built-in parser into `os.environ`. `/api/journal` handles GET, POST, and DELETE with automatic background sync to Supabase. `/api/upload` safely forwards uploaded media to Supabase Cloud Storage without client credentials.
+  - `api/journal.js`: Vercel serverless function reading `process.env.SUPABASE_URL` and `process.env.SUPABASE_KEY`, supporting GET, POST, PUT, and DELETE methods.
+- **Frontend Key Scrubbing:** Removed all hardcoded `SUPABASE_URL` and `SUPABASE_KEY` references from `project_journal.html` and `dashboard/frontend/project_journal.html`. All journal queries, updates, and deletes route strictly through `/api/journal` proxies.
+- **Strict Zero-Emoji Enforcement:** Verified 0 emoji characters across all modified files.
 
 ---
 

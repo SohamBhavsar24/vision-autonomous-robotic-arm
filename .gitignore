@@ -50,3 +50,9 @@ firmware/**/build/
 
 # Private instruction notes
 TOSHAL_INSTRUCTION.md
+
+# Environment variables & secrets
+.env
+*.env
+.env.*
+.env.local

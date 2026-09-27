@@ -36,7 +36,7 @@ import asyncio
 import logging
 import urllib.request
 import urllib.error
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -61,8 +61,29 @@ app = FastAPI(
 UPLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/uploads"))
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
-SUPABASE_URL = "https://pzewxynfhrylnqbkkeeq.supabase.co"
-SUPABASE_KEY = "sb_publishable_5OpuR0lsXoop77YXHtP01g_owDDLGe_"
+def _load_env_file():
+    possible_paths = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.env")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), ".env")),
+        os.path.abspath(".env")
+    ]
+    for p in possible_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+                break
+            except Exception:
+                pass
+
+_load_env_file()
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
 @app.post("/api/upload")
 async def upload_media_file(file: UploadFile = File(...)):
@@ -76,20 +97,21 @@ async def upload_media_file(file: UploadFile = File(...)):
         
     public_url = f"/uploads/{clean_name}"
     
-    # Attempt background sync to Supabase Cloud Storage
-    try:
-        supa_url = f"{SUPABASE_URL}/storage/v1/object/journal-media/{clean_name}"
-        req = urllib.request.Request(supa_url, data=contents, method="POST")
-        req.add_header("apikey", SUPABASE_KEY)
-        req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
-        req.add_header("x-upsert", "true")
-        req.add_header("Content-Type", file.content_type or "application/octet-stream")
-        
-        with urllib.request.urlopen(req) as resp:
-            if resp.status in (200, 201):
-                public_url = f"{SUPABASE_URL}/storage/v1/object/public/journal-media/{clean_name}"
-    except Exception as e:
-        logger.warning(f"Cloud storage sync warning (using local URL): {e}")
+    # Attempt background sync to Supabase Cloud Storage if credentials exist
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            supa_url = f"{SUPABASE_URL}/storage/v1/object/journal-media/{clean_name}"
+            req = urllib.request.Request(supa_url, data=contents, method="POST")
+            req.add_header("apikey", SUPABASE_KEY)
+            req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+            req.add_header("x-upsert", "true")
+            req.add_header("Content-Type", file.content_type or "application/octet-stream")
+            
+            with urllib.request.urlopen(req) as resp:
+                if resp.status in (200, 201):
+                    public_url = f"{SUPABASE_URL}/storage/v1/object/public/journal-media/{clean_name}"
+        except Exception as e:
+            logger.warning(f"Cloud storage sync warning (using local URL): {e}")
 
     file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else ""
     return {
@@ -212,15 +234,79 @@ async def get_journal_entries():
                 return json.load(f)
         except Exception:
             pass
+
+    # Fallback to Supabase if local file does not exist but credentials do
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            endpoint = f"{SUPABASE_URL}/rest/v1/journal_entries?select=*&order=created_at.desc"
+            req = urllib.request.Request(endpoint)
+            req.add_header("apikey", SUPABASE_KEY)
+            req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if isinstance(data, list):
+                        return data
+        except Exception as e:
+            logger.warning(f"Supabase journal fetch warning: {e}")
+
     return []
 
 
 @app.post("/api/journal")
 async def save_journal_entries(req: JournalEntriesRequest):
-    """Saves shared master list of journal entries to backend file."""
+    """Saves shared master list of journal entries to backend file and syncs to Supabase."""
     with open(JOURNAL_PATH, "w") as f:
         json.dump(req.entries, f, indent=2)
+
+    # Sync to Supabase PostgreSQL table if credentials exist
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            endpoint = f"{SUPABASE_URL}/rest/v1/journal_entries"
+            data = json.dumps(req.entries).encode("utf-8")
+            sync_req = urllib.request.Request(endpoint, data=data, method="POST")
+            sync_req.add_header("apikey", SUPABASE_KEY)
+            sync_req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+            sync_req.add_header("Content-Type", "application/json")
+            sync_req.add_header("Prefer", "resolution=merge-duplicates,return=representation")
+            with urllib.request.urlopen(sync_req, timeout=5) as resp:
+                pass
+        except Exception as e:
+            logger.warning(f"Supabase journal sync warning: {e}")
+
     return {"status": "saved", "count": len(req.entries)}
+
+
+@app.delete("/api/journal")
+@app.delete("/api/journal/{entry_id}")
+async def delete_journal_entry(entry_id: Optional[str] = None, id: Optional[str] = None):
+    """Deletes an entry from local JSON and Supabase if configured."""
+    target_id = entry_id or id
+    if not target_id:
+        raise HTTPException(status_code=400, detail="Missing entry id")
+
+    if os.path.exists(JOURNAL_PATH):
+        try:
+            with open(JOURNAL_PATH, "r") as f:
+                entries = json.load(f)
+            entries = [e for e in entries if e.get("id") != target_id]
+            with open(JOURNAL_PATH, "w") as f:
+                json.dump(entries, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Local entry delete warning: {e}")
+
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            endpoint = f"{SUPABASE_URL}/rest/v1/journal_entries?id=eq.{target_id}"
+            del_req = urllib.request.Request(endpoint, method="DELETE")
+            del_req.add_header("apikey", SUPABASE_KEY)
+            del_req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+            with urllib.request.urlopen(del_req, timeout=5) as resp:
+                pass
+        except Exception as e:
+            logger.warning(f"Supabase entry delete warning: {e}")
+
+    return {"status": "deleted", "id": target_id}
 
 
 @app.get("/api/kinematics")
