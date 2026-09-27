@@ -540,10 +540,10 @@
           <!-- Right: 2D Spatial Workspace Radar (Span 5) -->
           <div class="card" style="grid-column: span 5; display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">25cm × 30cm Workspace Grid Radar</span>
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">25cm × 30cm Workspace Radar</span>
               <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196, 120, 74, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Top-Down Bird's-Eye</span>
             </div>
-            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">Platform coordinate frame: 30 cells (5cm × 5cm) • Zero-IK Joint Manifold</p>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">Continuous workspace ($X \in [0, 30]\text{ cm}$, $Y \in [0, 25]\text{ cm}$) • Zero-IK Joint Manifold</p>
 
             <div style="position: relative; width: 100%; height: 380px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
               <svg id="workspaceRadarSvg" viewBox="0 0 370 310" style="width: 100%; height: 100%; max-height: 360px; display: block;"></svg>
@@ -552,60 +552,51 @@
             <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted); display: flex; justify-content: space-between;">
               <span>Tag 2: Origin (0,0)</span>
               <span>Tag 0: Target Block</span>
-              <span>Cell Size: 5×5 cm</span>
+              <span>Platform: 30cm × 25cm</span>
             </div>
           </div>
 
-          <!-- Real-Time Spatial Telemetry Cards (5 Cards spanning 12 cols) -->
+          <!-- Real-Time Spatial Telemetry Cards (4 Cards spanning 12 cols) -->
           <div class="card" style="grid-column: span 12; padding: 18px 24px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
               <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin: 0;">Live Spatial Coordinate Telemetry</h4>
               <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Broadcast via WebSocket /ws (30Hz)</span>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
               <!-- X Lateral -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
                 <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #B53A2E; font-weight: 600; text-transform: uppercase;">X Lateral (+Right)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
                   <span id="percepValX">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
                 </div>
                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Range: 0 to 30.0 cm</div>
               </div>
 
               <!-- Y Reach -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
                 <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #2E7D32; font-weight: 600; text-transform: uppercase;">Y Reach (+Forward)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
                   <span id="percepValY">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
                 </div>
                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Range: 0 to 25.0 cm</div>
               </div>
 
               <!-- Orientation Theta -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
                 <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase;">Heading (θ)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
                   <span id="percepValTheta">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">°</span>
                 </div>
                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Block Rotation Angle</div>
               </div>
 
               <!-- Distance d -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
                 <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-main); font-weight: 600; text-transform: uppercase;">Vector Dist (d)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
                   <span id="percepValDist">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
                 </div>
                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">√(X² + Y²) from Origin</div>
-              </div>
-
-              <!-- Active Grid Cell -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
-                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase;">Active Sub-Cell</div>
-                <div style="font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  <span id="percepValCell">—</span>
-                </div>
-                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">30-Cell Demonstration Grid</div>
               </div>
             </div>
           </div>

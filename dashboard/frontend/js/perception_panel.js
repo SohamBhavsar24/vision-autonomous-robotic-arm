@@ -8,10 +8,10 @@
  * 
  * PURPOSE:
  *   Manages the unified Perception panel:
- *   - Real-time 2D SVG Workspace Radar (25cm x 30cm grid with 30 sub-cells)
+ *   - Continuous 2D SVG Workspace Radar (25cm x 30cm manipulation platform)
  *   - Dynamic Target Block (ArUco Tag 0) puck with orientation heading vector
  *   - World Origin (ArUco Tag 2) spatial calibration anchor at (0, 0)
- *   - Real-world coordinate telemetry cards (X, Y, Theta, Distance, Active Cell)
+ *   - Real-world coordinate telemetry cards (X, Y, Theta, Distance)
  *   - Workspace reachability safety guard (Inside Bounds vs Out of Reach)
  *   - Multi-target detection diagnostics
  * ==========================================================================
@@ -22,12 +22,9 @@
 
   class PerceptionPanelController {
     constructor() {
-      // Physical workspace boundaries
+      // Physical workspace boundaries (continuous 25cm x 30cm platform)
       this.WORKSPACE_WIDTH_CM = 30.0;  // Horizontal lateral width (+X)
       this.WORKSPACE_DEPTH_CM = 25.0;  // Forward reach depth (+Y)
-      this.CELL_SIZE_CM = 5.0;         // 5cm x 5cm sub-squares (6 cols x 5 rows = 30 cells)
-      this.NUM_COLS = 6;
-      this.NUM_ROWS = 5;
 
       // SVG Canvas coordinate mapping
       this.SVG_ORIGIN_X = 35;          // Margin left (px)
@@ -38,7 +35,6 @@
 
       // State
       this.currentPose = { x_cm: 0.0, y_cm: 0.0, theta_deg: 0.0, valid: false };
-      this.activeCellKey = null;
 
       // DOM elements cache
       this.dom = {};
@@ -56,7 +52,6 @@
       this.dom.valY = document.getElementById('percepValY');
       this.dom.valTheta = document.getElementById('percepValTheta');
       this.dom.valDist = document.getElementById('percepValDist');
-      this.dom.valCell = document.getElementById('percepValCell');
       this.dom.boundsPill = document.getElementById('perceptionBoundsPill');
       this.dom.boundsText = document.getElementById('perceptionBoundsText');
       this.dom.tag0Badge = document.getElementById('percepTag0Badge');
@@ -65,7 +60,7 @@
     }
 
     /**
-     * Builds the static 25cm x 30cm workspace grid, axes, and origin anchor in SVG.
+     * Builds the continuous 25cm x 30cm workspace canvas, axes, and origin anchor in SVG.
      */
     buildWorkspaceGridSvg() {
       if (!this.dom.radarSvg) return;
@@ -87,7 +82,7 @@
       `;
       svg.appendChild(defs);
 
-      // Background rect for the active 30cm x 25cm table workspace
+      // Background rect for the continuous 30cm x 25cm table workspace
       const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       bgRect.setAttribute('x', this.SVG_ORIGIN_X);
       bgRect.setAttribute('y', this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX);
@@ -98,44 +93,6 @@
       bgRect.setAttribute('stroke-width', '1.5');
       bgRect.setAttribute('rx', '4');
       svg.appendChild(bgRect);
-
-      // Group for the 30 grid sub-squares (6 cols x 5 rows)
-      const cellsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      cellsGroup.setAttribute('id', 'radarGridCells');
-
-      const rowLetters = ['5', '4', '3', '2', '1']; // Y rows from top (25cm) to bottom (0cm)
-      for (let r = 0; r < this.NUM_ROWS; r++) {
-        for (let c = 0; c < this.NUM_COLS; c++) {
-          const cellX = this.SVG_ORIGIN_X + c * (this.CELL_SIZE_CM * this.SCALE_PX_PER_CM);
-          const cellY = (this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX) + r * (this.CELL_SIZE_CM * this.SCALE_PX_PER_CM);
-          const cellW = this.CELL_SIZE_CM * this.SCALE_PX_PER_CM;
-          const cellH = this.CELL_SIZE_CM * this.SCALE_PX_PER_CM;
-          const cellId = `radarCell_${r}_${c}`;
-
-          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-          rect.setAttribute('id', cellId);
-          rect.setAttribute('x', cellX);
-          rect.setAttribute('y', cellY);
-          rect.setAttribute('width', cellW);
-          rect.setAttribute('height', cellH);
-          rect.setAttribute('fill', 'transparent');
-          rect.setAttribute('stroke', '#E0D6C8');
-          rect.setAttribute('stroke-width', '1');
-          rect.setAttribute('stroke-dasharray', '2 2');
-          cellsGroup.appendChild(rect);
-
-          // Subtle cell coordinate label
-          const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          label.setAttribute('x', cellX + 4);
-          label.setAttribute('y', cellY + 12);
-          label.setAttribute('fill', '#A89F94');
-          label.setAttribute('font-family', 'IBM Plex Mono, monospace');
-          label.setAttribute('font-size', '8px');
-          label.textContent = `C${c + 1}R${rowLetters[r]}`;
-          cellsGroup.appendChild(label);
-        }
-      }
-      svg.appendChild(cellsGroup);
 
       // Coordinate axes
       const axesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -183,7 +140,7 @@
       labelY.textContent = '+Y';
       axesGroup.appendChild(labelY);
 
-      // Ticks and labels along X axis
+      // Scale Ticks and numbers along X axis (every 5cm)
       for (let cm = 5; cm <= 30; cm += 5) {
         const tx = this.SVG_ORIGIN_X + cm * this.SCALE_PX_PER_CM;
         const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -205,7 +162,7 @@
         axesGroup.appendChild(txt);
       }
 
-      // Ticks and labels along Y axis
+      // Scale Ticks and numbers along Y axis (every 5cm)
       for (let cm = 5; cm <= 25; cm += 5) {
         const ty = this.SVG_ORIGIN_Y - cm * this.SCALE_PX_PER_CM;
         const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -391,23 +348,6 @@
       if (this.dom.valTheta) this.dom.valTheta.textContent = isValid ? `${theta.toFixed(1)}` : '0.0';
       if (this.dom.valDist) this.dom.valDist.textContent = isValid ? `${dist.toFixed(1)}` : '0.0';
 
-      // Determine active grid cell
-      let cellName = '—';
-      let activeRowIdx = -1;
-      let activeColIdx = -1;
-
-      if (isValid && isReachable) {
-        const col = Math.min(this.NUM_COLS - 1, Math.max(0, Math.floor(x / this.CELL_SIZE_CM)));
-        const rowFromBottom = Math.min(this.NUM_ROWS - 1, Math.max(0, Math.floor(y / this.CELL_SIZE_CM)));
-        const rowFromTop = (this.NUM_ROWS - 1) - rowFromBottom;
-
-        activeRowIdx = rowFromTop;
-        activeColIdx = col;
-        cellName = `Cell C${col + 1}R${rowFromBottom + 1}`;
-      }
-
-      if (this.dom.valCell) this.dom.valCell.textContent = cellName;
-
       // Update Reachability Status Badge
       if (this.dom.boundsPill && this.dom.boundsText) {
         if (!isValid) {
@@ -444,41 +384,19 @@
       }
 
       // Update SVG Visualizer
-      this.updateRadarSvg(isValid, x, y, theta, dist, activeRowIdx, activeColIdx);
+      this.updateRadarSvg(isValid, x, y, theta, dist);
     }
 
     /**
      * Updates the SVG elements of the 2D workspace radar.
      */
-    updateRadarSvg(isValid, x, y, theta, dist, activeRowIdx, activeColIdx) {
+    updateRadarSvg(isValid, x, y, theta, dist) {
       const blockPuck = document.getElementById('radarBlockPuck');
       const vectorLine = document.getElementById('radarVectorLine');
       const distBadge = document.getElementById('radarDistBadge');
       const standbyMsg = document.getElementById('radarStandbyMsg');
       const blockRect = document.getElementById('radarBlockRect');
       const headingLine = document.getElementById('radarHeadingLine');
-
-      // Highlight active grid cell
-      const newKey = (activeRowIdx >= 0 && activeColIdx >= 0) ? `${activeRowIdx}_${activeColIdx}` : null;
-      if (this.activeCellKey !== newKey) {
-        // Clear previous cell highlight
-        if (this.activeCellKey) {
-          const prev = document.getElementById(`radarCell_${this.activeCellKey}`);
-          if (prev) {
-            prev.setAttribute('fill', 'transparent');
-            prev.setAttribute('stroke', '#E0D6C8');
-          }
-        }
-        // Apply new cell highlight
-        if (newKey) {
-          const cur = document.getElementById(`radarCell_${newKey}`);
-          if (cur) {
-            cur.setAttribute('fill', 'rgba(196, 120, 74, 0.16)');
-            cur.setAttribute('stroke', 'var(--accent-primary, #C4784A)');
-          }
-        }
-        this.activeCellKey = newKey;
-      }
 
       if (!isValid) {
         if (blockPuck) blockPuck.setAttribute('display', 'none');
