@@ -26,12 +26,13 @@
       this.WORKSPACE_WIDTH_CM = 30.0;  // Horizontal lateral width (+X)
       this.WORKSPACE_DEPTH_CM = 25.0;  // Forward reach depth (+Y)
 
-      // SVG Canvas coordinate mapping
-      this.SVG_ORIGIN_X = 35;          // Margin left (px)
-      this.SVG_ORIGIN_Y = 275;         // Margin bottom / origin Y (px)
-      this.SCALE_PX_PER_CM = 10.0;     // 1 cm = 10 px
-      this.GRID_WIDTH_PX = this.WORKSPACE_WIDTH_CM * this.SCALE_PX_PER_CM;  // 300 px
-      this.GRID_HEIGHT_PX = this.WORKSPACE_DEPTH_CM * this.SCALE_PX_PER_CM; // 250 px
+      // SVG Canvas coordinate mapping (Wide Landscape Aspect Ratio)
+      this.SVG_ORIGIN_X = 42;          // Margin left (px)
+      this.SVG_ORIGIN_Y = 225;         // Margin bottom / origin Y (px)
+      this.SCALE_X_PX_PER_CM = 11.0;   // 30 cm * 11 = 330 px (+X: 42 to 372)
+      this.SCALE_Y_PX_PER_CM = 8.0;    // 25 cm * 8 = 200 px (+Y: 225 to 25)
+      this.GRID_WIDTH_PX = this.WORKSPACE_WIDTH_CM * this.SCALE_X_PX_PER_CM;  // 330 px
+      this.GRID_HEIGHT_PX = this.WORKSPACE_DEPTH_CM * this.SCALE_Y_PX_PER_CM; // 200 px
 
       // State
       this.currentPose = { x_cm: 0.0, y_cm: 0.0, theta_deg: 0.0, valid: false };
@@ -81,7 +82,7 @@
       `;
       svg.appendChild(defs);
 
-      // Background rect for the continuous 30cm x 25cm table workspace (6:5 aspect ratio)
+      // Background rect for the continuous 30cm x 25cm table workspace (Wide Landscape)
       const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       bgRect.setAttribute('x', this.SVG_ORIGIN_X);
       bgRect.setAttribute('y', this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX);
@@ -97,6 +98,32 @@
       const axesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       axesGroup.setAttribute('id', 'radarAxes');
 
+      // Subtle interior grid lines (5cm x 5cm cells) to clearly show 6 columns x 5 rows
+      for (let cm = 5; cm < 30; cm += 5) {
+        const gx = this.SVG_ORIGIN_X + cm * this.SCALE_X_PX_PER_CM;
+        const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gLine.setAttribute('x1', gx);
+        gLine.setAttribute('y1', this.SVG_ORIGIN_Y);
+        gLine.setAttribute('x2', gx);
+        gLine.setAttribute('y2', this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX);
+        gLine.setAttribute('stroke', '#EAE3D8');
+        gLine.setAttribute('stroke-width', '1');
+        gLine.setAttribute('stroke-dasharray', '3,3');
+        axesGroup.appendChild(gLine);
+      }
+      for (let cm = 5; cm < 25; cm += 5) {
+        const gy = this.SVG_ORIGIN_Y - cm * this.SCALE_Y_PX_PER_CM;
+        const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gLine.setAttribute('x1', this.SVG_ORIGIN_X);
+        gLine.setAttribute('y1', gy);
+        gLine.setAttribute('x2', this.SVG_ORIGIN_X + this.GRID_WIDTH_PX);
+        gLine.setAttribute('y2', gy);
+        gLine.setAttribute('stroke', '#EAE3D8');
+        gLine.setAttribute('stroke-width', '1');
+        gLine.setAttribute('stroke-dasharray', '3,3');
+        axesGroup.appendChild(gLine);
+      }
+
       // Platform dimension indicator in top right of workspace
       const dimBadge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       dimBadge.setAttribute('x', this.SVG_ORIGIN_X + this.GRID_WIDTH_PX - 8);
@@ -106,7 +133,7 @@
       dimBadge.setAttribute('font-family', 'IBM Plex Mono, monospace');
       dimBadge.setAttribute('font-size', '9px');
       dimBadge.setAttribute('font-weight', '600');
-      dimBadge.textContent = '30 cm × 25 cm (6:5)';
+      dimBadge.textContent = '30 cm × 25 cm (Landscape)';
       axesGroup.appendChild(dimBadge);
 
       // +X Axis (Horizontal Red)
@@ -154,7 +181,7 @@
 
       // Scale Ticks and numbers along X axis (every 5cm)
       for (let cm = 5; cm <= 30; cm += 5) {
-        const tx = this.SVG_ORIGIN_X + cm * this.SCALE_PX_PER_CM;
+        const tx = this.SVG_ORIGIN_X + cm * this.SCALE_X_PX_PER_CM;
         const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         tick.setAttribute('x1', tx);
         tick.setAttribute('y1', this.SVG_ORIGIN_Y);
@@ -176,7 +203,7 @@
 
       // Scale Ticks and numbers along Y axis (every 5cm)
       for (let cm = 5; cm <= 25; cm += 5) {
-        const ty = this.SVG_ORIGIN_Y - cm * this.SCALE_PX_PER_CM;
+        const ty = this.SVG_ORIGIN_Y - cm * this.SCALE_Y_PX_PER_CM;
         const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         tick.setAttribute('x1', this.SVG_ORIGIN_X - 4);
         tick.setAttribute('y1', ty);
@@ -393,8 +420,8 @@
       const clampedX = Math.min(32.0, Math.max(-2.0, x));
       const clampedY = Math.min(27.0, Math.max(-2.0, y));
 
-      const svgX = this.SVG_ORIGIN_X + clampedX * this.SCALE_PX_PER_CM;
-      const svgY = this.SVG_ORIGIN_Y - clampedY * this.SCALE_PX_PER_CM;
+      const svgX = this.SVG_ORIGIN_X + clampedX * this.SCALE_X_PX_PER_CM;
+      const svgY = this.SVG_ORIGIN_Y - clampedY * this.SCALE_Y_PX_PER_CM;
 
       // Update puck group position
       if (blockPuck) {

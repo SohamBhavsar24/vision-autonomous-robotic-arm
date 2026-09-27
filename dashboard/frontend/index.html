@@ -82,14 +82,6 @@
       <!-- Top Header -->
       <header class="top-header">
         <h2 class="header-title" id="page-title">Robot Servo Control & Assembly Helper</h2>
-        
-        <div class="header-status-group">
-          <!-- Connection Status Pill -->
-          <div class="status-pill" id="statusPill">
-            <span class="status-dot"></span>
-            <span id="statusText">Offline / Disconnected</span>
-          </div>
-        </div>
       </header>
 
       <!-- Panel 1: Servo Control & Assembly Helper -->
@@ -263,7 +255,6 @@
             
             <!-- Emergency Stop Section -->
             <h3 class="card-title" style="color: var(--accent-danger);">Safety Control</h3>
-            <p class="card-subtitle">Cuts software commands & forces home trajectory (Decision #5)</p>
             
             <button class="btn-estop-large" id="btnEstop">
               EMERGENCY STOP
@@ -274,13 +265,8 @@
 
             <!-- Serial Connection Controls -->
             <h3 class="card-title" style="margin-top: 28px;">Serial Connection</h3>
-            <p class="card-subtitle">Arduino CLI board list detection (Decision #15)</p>
-            
-            <div id="cliStatusBadge" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); background: var(--bg-page); border: 1px solid var(--border-subtle); padding: 6px 10px; border-radius: 6px; margin-bottom: 12px;">
-              Arduino CLI: Checking...
-            </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
               <select id="portSelect" class="btn btn-secondary" style="width: 100%; text-align: left; background: var(--bg-page);">
                 <option value="">Scanning for ports...</option>
               </select>
@@ -291,12 +277,9 @@
               </div>
             </div>
 
-            <!-- Activity Log -->
-            <h3 class="card-title" style="margin-top: 28px;">Activity Log</h3>
-            <div class="log-box" id="logBox">
-              <div class="log-entry"><span class="log-time">[Init]</span> Dashboard ready. WebSocket standing by.</div>
-            </div>
+          </div>
 
+        </div>
       </main>
 
       <!-- Panel: 3D Digital Twin Simulation (Three.js WebGL CAD Model) -->
@@ -346,10 +329,6 @@
           <div>
             <h3 class="card-title">ROS 2 Humble Architecture & Computational Graph</h3>
             <p class="card-subtitle">Decoupled robotics middleware design for ROS 2 node graph, MoveIt 2 motion planning, and rosbridge WebSocket gateway.</p>
-          </div>
-          <div class="status-pill" id="rosStatusPill">
-            <span class="status-dot"></span>
-            <span>Target Distribution: ROS 2 Humble Hawksbill</span>
           </div>
         </div>
 
@@ -504,10 +483,6 @@
               <span class="status-dot"></span>
               <span>Camera 1: LIVE (30 FPS)</span>
             </div>
-            <div class="status-pill connected" style="background: rgba(46, 125, 50, 0.12); color: #2E7D32;">
-              <span class="status-dot" style="background: #2E7D32;"></span>
-              <span>ArUco: DICT_4X4_50</span>
-            </div>
             <div class="status-pill" id="perceptionBoundsPill" style="background: rgba(140, 130, 117, 0.12); color: var(--text-muted);">
               <span class="status-dot"></span>
               <span id="perceptionBoundsText">Workspace: SCANNING</span>
@@ -540,14 +515,14 @@
               <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196, 120, 74, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">30cm Width × 25cm Reach</span>
             </div>
 
-            <div style="position: relative; width: 100%; aspect-ratio: 370 / 310; max-height: 380px; background: #F3EDE4; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
-              <svg id="workspaceRadarSvg" viewBox="0 0 370 310" style="width: 100%; height: 100%; display: block;"></svg>
+            <div style="position: relative; width: 100%; aspect-ratio: 420 / 260; max-height: 380px; background: #F3EDE4; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
+              <svg id="workspaceRadarSvg" viewBox="0 0 420 260" style="width: 100%; height: 100%; display: block;"></svg>
             </div>
 
             <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted); display: flex; justify-content: space-between;">
               <span>Tag 2: Origin (0,0)</span>
               <span>Tag 0: Target Block</span>
-              <span>Platform: 30cm × 25cm (6:5)</span>
+              <span>Platform: 30cm Wide × 25cm Deep</span>
             </div>
           </div>
 
@@ -855,7 +830,6 @@
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
             <div>
               <h3 class="card-title">Demonstration Dataset Recording & Trajectory Replay (Phase C)</h3>
-              <p class="card-subtitle">Record human teleoperation demonstrations with 30Hz trajectory logging, auto-homing, and smooth trajectory replay.</p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
               <div id="lblBlockPoseStatus" class="status-pill" style="display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.78rem; padding: 6px 12px; border-radius: 6px; background: rgba(0, 165, 255, 0.1); border: 1px solid rgba(0, 165, 255, 0.3); color: #0099FF; font-weight: 600;">
@@ -886,7 +860,6 @@
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
             <div>
               <h3 class="card-title">Autonomous Policy Execution (Phase D)</h3>
-              <p class="card-subtitle">End-to-end Behavior Cloning policy execution. The policy detects live block pose (X, Y, θ) from Camera 1 and autonomously completes the pick-and-place task.</p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
               <div id="lblAutoBlockPoseStatus" class="status-pill" style="display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.78rem; padding: 6px 12px; border-radius: 6px; background: rgba(0, 165, 255, 0.1); border: 1px solid rgba(0, 165, 255, 0.3); color: #0099FF; font-weight: 600;">
@@ -980,12 +953,12 @@
   <script src="js/libs/STLLoader.js"></script>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.64"></script>
-  <script src="js/servo_panel.js?v=1.0.64"></script>
-  <script src="js/teleop_panel.js?v=1.0.64"></script>
-  <script src="js/dataset_panel.js?v=1.0.64"></script>
-  <script src="js/autonomous_panel.js?v=1.0.64"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.64"></script>
-  <script src="js/perception_panel.js?v=1.0.64"></script>
+  <script src="js/app.js?v=1.0.65"></script>
+  <script src="js/servo_panel.js?v=1.0.65"></script>
+  <script src="js/teleop_panel.js?v=1.0.65"></script>
+  <script src="js/dataset_panel.js?v=1.0.65"></script>
+  <script src="js/autonomous_panel.js?v=1.0.65"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.65"></script>
+  <script src="js/perception_panel.js?v=1.0.65"></script>
 </body>
 </html>

@@ -125,22 +125,22 @@ const App = {
     const statusText = document.getElementById('statusText');
 
     if (data.is_estop) {
-      statusPill.className = 'status-pill estop';
-      statusText.textContent = 'EMERGENCY STOP ACTIVE';
+      if (statusPill) statusPill.className = 'status-pill estop';
+      if (statusText) statusText.textContent = 'EMERGENCY STOP ACTIVE';
       
       const btnResetEstop = document.getElementById('btnResetEstop');
       if (btnResetEstop) btnResetEstop.style.display = 'block';
 
     } else if (data.is_connected) {
-      statusPill.className = 'status-pill connected';
-      statusText.textContent = `Connected: ${data.port} (${data.baudrate} Baud)`;
+      if (statusPill) statusPill.className = 'status-pill connected';
+      if (statusText) statusText.textContent = `Connected: ${data.port} (${data.baudrate} Baud)`;
       
       const btnResetEstop = document.getElementById('btnResetEstop');
       if (btnResetEstop) btnResetEstop.style.display = 'none';
 
     } else {
-      statusPill.className = 'status-pill';
-      statusText.textContent = 'Offline / Disconnected';
+      if (statusPill) statusPill.className = 'status-pill';
+      if (statusText) statusText.textContent = 'Offline / Disconnected';
 
       const btnResetEstop = document.getElementById('btnResetEstop');
       if (btnResetEstop) btnResetEstop.style.display = 'none';

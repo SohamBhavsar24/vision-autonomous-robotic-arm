@@ -247,6 +247,9 @@
   - `dashboard/backend/main.py`: Automatically loads credentials from local `.env` via a built-in parser into `os.environ`. `/api/journal` handles GET, POST, and DELETE with automatic background sync to Supabase. `/api/upload` safely forwards uploaded media to Supabase Cloud Storage without client credentials.
   - `api/journal.js`: Vercel serverless function reading `process.env.SUPABASE_URL` and `process.env.SUPABASE_KEY`, supporting GET, POST, PUT, and DELETE methods.
 - **Frontend Key Scrubbing:** Removed all hardcoded `SUPABASE_URL` and `SUPABASE_KEY` references from `project_journal.html` and `dashboard/frontend/project_journal.html`. All journal queries, updates, and deletes route strictly through `/api/journal` proxies.
+- **Dashboard UI De-cluttering & Landscape Perception Radar:**
+  - Purged top header 'Disconnected (Reconnecting...)', ROS 2 'Target Distribution: ROS 2 Humble Hawksbill', 'ArUco: DICT_4X4_50', Arduino CLI status badge, Activity Log card, Safety Control subtitle, Dataset subtitle, and Autonomous subtitle.
+  - Upgraded Perception 2D Workspace Radar to a true widescreen landscape aspect ratio (1.65:1, pad 330px x 200px, container 420/260) with subtle 5x5 cm interior grid lines, making the 30cm wide x 25cm deep workspace distinctly rectangular.
 - **Strict Zero-Emoji Enforcement:** Verified 0 emoji characters across all modified files.
 
 ---
