@@ -555,47 +555,38 @@
             </div>
           </div>
 
-          <!-- Real-Time Spatial Telemetry Cards (4 Cards spanning 12 cols) -->
+          <!-- Real-Time Spatial Telemetry Cards (3 Cards spanning 12 cols) -->
           <div class="card" style="grid-column: span 12; padding: 18px 24px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
               <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin: 0;">Live Spatial Coordinate Telemetry</h4>
               <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Broadcast via WebSocket /ws (30Hz)</span>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
               <!-- X Lateral -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
-                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #B53A2E; font-weight: 600; text-transform: uppercase;">X Lateral (+Right)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
-                  <span id="percepValX">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px 18px;">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: #B53A2E; font-weight: 600; text-transform: uppercase;">X Lateral (+Right)</div>
+                <div style="font-family: var(--font-mono); font-size: 1.55rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                  <span id="percepValX">0.0</span> <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">cm</span>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Range: 0 to 30.0 cm</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Horizontal Table Offset: 0 to 30.0 cm</div>
               </div>
 
               <!-- Y Reach -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
-                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #2E7D32; font-weight: 600; text-transform: uppercase;">Y Reach (+Forward)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
-                  <span id="percepValY">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px 18px;">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: #2E7D32; font-weight: 600; text-transform: uppercase;">Y Reach (+Forward)</div>
+                <div style="font-family: var(--font-mono); font-size: 1.55rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                  <span id="percepValY">0.0</span> <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">cm</span>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Range: 0 to 25.0 cm</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Forward Depth Reach: 0 to 25.0 cm</div>
               </div>
 
               <!-- Orientation Theta -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
-                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase;">Heading (θ)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
-                  <span id="percepValTheta">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">°</span>
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px 18px;">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase;">Heading (θ)</div>
+                <div style="font-family: var(--font-mono); font-size: 1.55rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                  <span id="percepValTheta">0.0</span> <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">°</span>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Block Rotation Angle</div>
-              </div>
-
-              <!-- Distance d -->
-              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
-                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-main); font-weight: 600; text-transform: uppercase;">Vector Dist (d)</div>
-                <div style="font-family: var(--font-mono); font-size: 1.45rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
-                  <span id="percepValDist">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
-                </div>
-                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">√(X² + Y²) from Origin</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Block Rotation Angle for Gripper Alignment</div>
               </div>
             </div>
           </div>

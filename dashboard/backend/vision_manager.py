@@ -217,13 +217,6 @@ class VisionManager:
                 theta_rad = np.arctan2(c1[1] - c0[1], c1[0] - c0[0])
                 theta_deg = float(np.degrees(theta_rad))
 
-                # Draw connecting vector line between World Origin Tag 2 and Block Tag 0
-                cv2.line(frame, (int(origin_x), int(origin_y)), (int(block_x_px), int(block_y_px)), (255, 153, 0), 2, cv2.LINE_AA)
-                mid_x = int((origin_x + block_x_px) / 2)
-                mid_y = int((origin_y + block_y_px) / 2)
-                dist_cm = round(float(np.sqrt(dx_cm**2 + dy_cm**2)), 1)
-                cv2.putText(frame, f"d={dist_cm}cm", (mid_x + 5, mid_y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (255, 153, 0), 2, cv2.LINE_AA)
-
                 self.latest_block_pose = {
                     "x_cm": round(dx_cm, 1),
                     "y_cm": round(dy_cm, 1),

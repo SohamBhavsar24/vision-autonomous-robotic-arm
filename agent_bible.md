@@ -190,9 +190,10 @@
 - **Interactive 2D Spatial Workspace Radar (SVG):**
   - Engineered a top-down bird's-eye 2D SVG radar visualizing the continuous $25\text{ cm} \times 30\text{ cm}$ manipulation table workspace ($750\text{ cm}^2$).
   - Per project design specifications, removed internal 5x5 cm demonstration collection grid lines and cell identifiers (`C1R1`..`C6R5`) so the radar represents clean, open, continuous Cartesian manipulation space.
-  - Features the World Origin ArUco Tag 2 anchor at $(0, 0)$ with $+X$ and $+Y$ coordinate axes, axis scale ticks every 5cm, a dynamically moving Target Block (ArUco Tag 0) puck with orientation heading vector arrow ($\theta$), and distance vector line.
+  - Features the World Origin ArUco Tag 2 anchor at $(0, 0)$ with $+X$ and $+Y$ coordinate axes, axis scale ticks every 5cm, and a dynamically moving Target Block (ArUco Tag 0) puck with orientation heading vector arrow ($\theta$).
+  - Removed origin-to-block vector line and distance overlay from both OpenCV camera stream (`vision_manager.py`) and 2D workspace radar, aligning display strictly with the 3 spatial control variables ($X, Y, \theta$) ingested by the autonomous neural policy.
 - **Real-Time Spatial Coordinate Telemetry:**
-  - Integrated 4 high-visibility digital telemetry cards: $X$ Lateral Position (cm), $Y$ Reach Depth (cm), Heading Angle $\theta$ (°), and Vector Distance $d$ (cm).
+  - Integrated 3 primary digital telemetry cards: $X$ Lateral Position (cm), $Y$ Reach Depth (cm), and Heading Angle $\theta$ (°) for gripper alignment.
   - Added real-time workspace reachability safety guard badge: transitioning between `INSIDE SAFE REACH` (sage green `#2E7D32`), `OUT OF BOUNDS` (brick red `#B53A2E`), and `SCANNING / IDLE` (neutral taupe).
 - **Multi-Target Detection Registry & OpenCV Pipeline Specs:**
   - Embedded tracking status for ArUco Marker ID 0 (Target Block), Marker ID 2 (World Origin / Target Box), and Marker ID 1 (Secondary Block for multi-color/sorting pipeline).

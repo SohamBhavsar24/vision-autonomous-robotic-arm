@@ -11,7 +11,7 @@
  *   - Continuous 2D SVG Workspace Radar (25cm x 30cm manipulation platform)
  *   - Dynamic Target Block (ArUco Tag 0) puck with orientation heading vector
  *   - World Origin (ArUco Tag 2) spatial calibration anchor at (0, 0)
- *   - Real-world coordinate telemetry cards (X, Y, Theta, Distance)
+ *   - Real-world coordinate telemetry cards (X Lateral, Y Reach, Heading Theta)
  *   - Workspace reachability safety guard (Inside Bounds vs Out of Reach)
  *   - Multi-target detection diagnostics
  * ==========================================================================
@@ -51,7 +51,6 @@
       this.dom.valX = document.getElementById('percepValX');
       this.dom.valY = document.getElementById('percepValY');
       this.dom.valTheta = document.getElementById('percepValTheta');
-      this.dom.valDist = document.getElementById('percepValDist');
       this.dom.boundsPill = document.getElementById('perceptionBoundsPill');
       this.dom.boundsText = document.getElementById('perceptionBoundsText');
       this.dom.tag0Badge = document.getElementById('percepTag0Badge');
@@ -219,31 +218,6 @@
       axesGroup.appendChild(originAnchor);
       svg.appendChild(axesGroup);
 
-      // Connecting vector line from Origin to Target Block
-      const vectorLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      vectorLine.setAttribute('id', 'radarVectorLine');
-      vectorLine.setAttribute('x1', this.SVG_ORIGIN_X);
-      vectorLine.setAttribute('y1', this.SVG_ORIGIN_Y);
-      vectorLine.setAttribute('x2', this.SVG_ORIGIN_X);
-      vectorLine.setAttribute('y2', this.SVG_ORIGIN_Y);
-      vectorLine.setAttribute('stroke', '#C4784A');
-      vectorLine.setAttribute('stroke-width', '1.5');
-      vectorLine.setAttribute('stroke-dasharray', '3 3');
-      vectorLine.setAttribute('display', 'none');
-      svg.appendChild(vectorLine);
-
-      // Vector Distance Badge
-      const distBadge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      distBadge.setAttribute('id', 'radarDistBadge');
-      distBadge.setAttribute('x', '0');
-      distBadge.setAttribute('y', '0');
-      distBadge.setAttribute('fill', '#C4784A');
-      distBadge.setAttribute('font-family', 'IBM Plex Mono, monospace');
-      distBadge.setAttribute('font-weight', '600');
-      distBadge.setAttribute('font-size', '9px');
-      distBadge.setAttribute('display', 'none');
-      svg.appendChild(distBadge);
-
       // Dynamic Target Block Puck Group (ArUco Tag 0)
       const blockGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       blockGroup.setAttribute('id', 'radarBlockPuck');
@@ -337,7 +311,6 @@
       const x = this.currentPose.x_cm;
       const y = this.currentPose.y_cm;
       const theta = this.currentPose.theta_deg;
-      const dist = Math.sqrt(x * x + y * y);
 
       // Check workspace reachability boundaries (0-30cm x 0-25cm with 2cm tolerance margin)
       const isReachable = (x >= -2.0 && x <= 32.0 && y >= -2.0 && y <= 27.0);
@@ -346,7 +319,6 @@
       if (this.dom.valX) this.dom.valX.textContent = isValid ? `${x >= 0 ? '+' : ''}${x.toFixed(1)}` : '0.0';
       if (this.dom.valY) this.dom.valY.textContent = isValid ? `${y >= 0 ? '+' : ''}${y.toFixed(1)}` : '0.0';
       if (this.dom.valTheta) this.dom.valTheta.textContent = isValid ? `${theta.toFixed(1)}` : '0.0';
-      if (this.dom.valDist) this.dom.valDist.textContent = isValid ? `${dist.toFixed(1)}` : '0.0';
 
       // Update Reachability Status Badge
       if (this.dom.boundsPill && this.dom.boundsText) {
@@ -384,24 +356,20 @@
       }
 
       // Update SVG Visualizer
-      this.updateRadarSvg(isValid, x, y, theta, dist);
+      this.updateRadarSvg(isValid, x, y, theta);
     }
 
     /**
      * Updates the SVG elements of the 2D workspace radar.
      */
-    updateRadarSvg(isValid, x, y, theta, dist) {
+    updateRadarSvg(isValid, x, y, theta) {
       const blockPuck = document.getElementById('radarBlockPuck');
-      const vectorLine = document.getElementById('radarVectorLine');
-      const distBadge = document.getElementById('radarDistBadge');
       const standbyMsg = document.getElementById('radarStandbyMsg');
       const blockRect = document.getElementById('radarBlockRect');
       const headingLine = document.getElementById('radarHeadingLine');
 
       if (!isValid) {
         if (blockPuck) blockPuck.setAttribute('display', 'none');
-        if (vectorLine) vectorLine.setAttribute('display', 'none');
-        if (distBadge) distBadge.setAttribute('display', 'none');
         if (standbyMsg) standbyMsg.setAttribute('display', 'block');
         return;
       }
@@ -433,25 +401,6 @@
         const hy = headLen * Math.sin(rad - Math.PI / 2);
         headingLine.setAttribute('x2', hx.toFixed(1));
         headingLine.setAttribute('y2', hy.toFixed(1));
-      }
-
-      // Update vector line from (0, 0)
-      if (vectorLine) {
-        vectorLine.setAttribute('display', 'block');
-        vectorLine.setAttribute('x1', this.SVG_ORIGIN_X);
-        vectorLine.setAttribute('y1', this.SVG_ORIGIN_Y);
-        vectorLine.setAttribute('x2', svgX);
-        vectorLine.setAttribute('y2', svgY);
-      }
-
-      // Update distance label at line midpoint
-      if (distBadge) {
-        distBadge.setAttribute('display', 'block');
-        const midX = (this.SVG_ORIGIN_X + svgX) / 2 + 5;
-        const midY = (this.SVG_ORIGIN_Y + svgY) / 2 - 5;
-        distBadge.setAttribute('x', midX);
-        distBadge.setAttribute('y', midY);
-        distBadge.textContent = `${dist.toFixed(1)}cm`;
       }
     }
   }
