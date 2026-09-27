@@ -28,13 +28,13 @@ const App = {
 
     const titles = {
       'panel-control': 'Robot Servo Control & Assembly Helper',
+      'panel-teleop': 'PS5 Controller Teleoperation & IK',
+      'panel-perception': 'Computer Vision Perception & Spatial Workspace Radar',
+      'panel-dataset': 'Demonstration Dataset Management',
+      'panel-autonomous': 'Autonomous Inference & Execution',
       'panel-digital-twin': '3D Digital Twin Simulation (Interactive WebGL CAD)',
       'panel-ros': 'ROS 2 Humble Architecture & Computational Graph',
-      'panel-journal': 'Robotic Arm Project Journal & Log Archive',
-      'panel-perception': 'Computer Vision Perception & Spatial Workspace Radar',
-      'panel-teleop': 'PS5 Controller Teleoperation & IK',
-      'panel-dataset': 'Demonstration Dataset Management',
-      'panel-autonomous': 'Autonomous Inference & Execution'
+      'panel-journal': 'Robotic Arm Project Journal & Log Archive'
     };
 
     navItems.forEach(item => {
