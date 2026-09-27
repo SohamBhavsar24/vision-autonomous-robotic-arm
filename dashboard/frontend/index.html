@@ -491,14 +491,14 @@
         </div>
 
         <div class="dashboard-grid">
-          <!-- Left: Live Camera 1 Stream (Logitech C270) (Span 6) -->
-          <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
+          <!-- Left: Live Camera 1 Stream (Logitech C270) (Span 8) -->
+          <div class="card" style="grid-column: span 8; display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
               <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Overhead Stream (Logitech C270)</span>
               <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #2E7D32; background: rgba(46, 125, 50, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">SubPix Refinement ACTIVE</span>
             </div>
             
-            <div style="position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 380px; background: #1A1817; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <div style="position: relative; width: 100%; aspect-ratio: 4 / 3; min-height: 480px; max-height: 640px; background: #1A1817; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
               <img src="/api/video_feed/1" id="perceptionCamImg" style="width: 100%; height: 100%; object-fit: contain;" alt="Camera 1 Live Stream">
             </div>
 
@@ -508,21 +508,46 @@
             </div>
           </div>
 
-          <!-- Right: 2D Spatial Workspace Radar (Span 6) -->
-          <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">30cm × 25cm Workspace Radar</span>
-              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196, 120, 74, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">30cm Width × 25cm Reach</span>
+          <!-- Right: Radar + Registry Column (Span 4) -->
+          <div style="grid-column: span 4; display: flex; flex-direction: column; gap: 24px;">
+            <!-- 2D Spatial Workspace Radar -->
+            <div class="card" style="display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">30cm × 25cm Workspace Radar</span>
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196, 120, 74, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">30cm Width × 25cm Reach</span>
+              </div>
+
+              <div style="position: relative; width: 100%; aspect-ratio: 420 / 260; background: #F3EDE4; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
+                <svg id="workspaceRadarSvg" viewBox="0 0 420 260" style="width: 100%; height: 100%; display: block;"></svg>
+              </div>
+
+              <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                <span>Tag 2: Origin (0,0)</span>
+                <span>Tag 0: Target Block</span>
+                <span>30cm W × 25cm D</span>
+              </div>
             </div>
 
-            <div style="position: relative; width: 100%; aspect-ratio: 420 / 260; max-height: 380px; background: #F3EDE4; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
-              <svg id="workspaceRadarSvg" viewBox="0 0 420 260" style="width: 100%; height: 100%; display: block;"></svg>
-            </div>
+            <!-- ArUco Marker Target Registry -->
+            <div class="card" style="display: flex; flex-direction: column;">
+              <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin-bottom: 12px;">ArUco Marker Target Registry</h4>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 6px;">
+                  <div>
+                    <strong style="font-size: 0.82rem; color: var(--text-main);">Marker ID 0: Sponge Block 1</strong>
+                    <div id="percepTag0Coord" style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">Searching in 30 FPS overhead stream...</div>
+                  </div>
+                  <span id="percepTag0Badge" style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(140, 130, 117, 0.12); color: var(--text-muted);">LOST</span>
+                </div>
 
-            <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted); display: flex; justify-content: space-between;">
-              <span>Tag 2: Origin (0,0)</span>
-              <span>Tag 0: Target Block</span>
-              <span>Platform: 30cm Wide × 25cm Deep</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 6px;">
+                  <div>
+                    <strong style="font-size: 0.82rem; color: var(--text-main);">Marker ID 2: World Origin / Target Box</strong>
+                    <div id="percepTag2Coord" style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">(0.0 cm, 0.0 cm) • Fixed Calibration Baseline (4.0 cm tag)</div>
+                  </div>
+                  <span style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(46, 125, 50, 0.12); color: #2E7D32;">ANCHOR</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -562,42 +587,25 @@
             </div>
           </div>
 
-          <!-- Bottom Row: Diagnostics & Pipeline Specifications -->
-          <div class="card" style="grid-column: span 6;">
-            <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin-bottom: 12px;">ArUco Marker Target Registry</h4>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 6px;">
-                <div>
-                  <strong style="font-size: 0.82rem; color: var(--text-main);">Marker ID 0: Sponge Block 1</strong>
-                  <div id="percepTag0Coord" style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">Searching in 30 FPS overhead stream...</div>
-                </div>
-                <span id="percepTag0Badge" style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(140, 130, 117, 0.12); color: var(--text-muted);">LOST</span>
-              </div>
-
-              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 6px;">
-                <div>
-                  <strong style="font-size: 0.82rem; color: var(--text-main);">Marker ID 2: World Origin / Target Box</strong>
-                  <div id="percepTag2Coord" style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">(0.0 cm, 0.0 cm) • Fixed Calibration Baseline (4.0 cm tag)</div>
-                </div>
-                <span style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(46, 125, 50, 0.12); color: #2E7D32;">ANCHOR</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="grid-column: span 6;">
+          <!-- Bottom Row: Pipeline Specifications (span 12) -->
+          <div class="card" style="grid-column: span 12;">
             <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin-bottom: 12px;">Computer Vision Pipeline Specifications</h4>
-            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
-              <div style="margin-bottom: 6px;">
-                <strong style="color: var(--text-main);">1. OpenCV Dictionary:</strong> <code>DICT_4X4_50</code> with solid 1-cell border verification (eliminates false positives from shadows and ambient room noise).
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
+                <strong style="color: var(--text-main);">1. OpenCV Dictionary:</strong><br>
+                <code>DICT_4X4_50</code> with solid 1-cell border verification (eliminates false positives from shadows and ambient room noise).
               </div>
-              <div style="margin-bottom: 6px;">
-                <strong style="color: var(--text-main);">2. Sub-Pixel Refinement:</strong> <code>CORNER_REFINE_SUBPIX</code> ensures sub-millimeter precision for corner localization.
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
+                <strong style="color: var(--text-main);">2. Sub-Pixel Refinement:</strong><br>
+                <code>CORNER_REFINE_SUBPIX</code> ensures sub-millimeter precision for corner localization.
               </div>
-              <div style="margin-bottom: 6px;">
-                <strong style="color: var(--text-main);">3. Coordinate Transformation:</strong> Pixel-to-centimeter dynamic scaling calibrated against known 4.0 cm width of World Origin Tag 2.
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
+                <strong style="color: var(--text-main);">3. Coordinate Transformation:</strong><br>
+                Pixel-to-centimeter dynamic scaling calibrated against known 4.0 cm width of World Origin Tag 2.
               </div>
-              <div>
-                <strong style="color: var(--text-main);">4. FOV Decoupling:</strong> Camera 1 strictly observes the 25cm × 30cm workspace; drop target box is situated outside camera view, preventing false pick triggers.
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 16px;">
+                <strong style="color: var(--text-main);">4. FOV Decoupling:</strong><br>
+                Camera 1 strictly observes the 25cm × 30cm workspace; drop target box is situated outside camera view, preventing false pick triggers.
               </div>
             </div>
           </div>
@@ -953,12 +961,12 @@
   <script src="js/libs/STLLoader.js"></script>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.65"></script>
-  <script src="js/servo_panel.js?v=1.0.65"></script>
-  <script src="js/teleop_panel.js?v=1.0.65"></script>
-  <script src="js/dataset_panel.js?v=1.0.65"></script>
-  <script src="js/autonomous_panel.js?v=1.0.65"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.65"></script>
-  <script src="js/perception_panel.js?v=1.0.65"></script>
+  <script src="js/app.js?v=1.0.66"></script>
+  <script src="js/servo_panel.js?v=1.0.66"></script>
+  <script src="js/teleop_panel.js?v=1.0.66"></script>
+  <script src="js/dataset_panel.js?v=1.0.66"></script>
+  <script src="js/autonomous_panel.js?v=1.0.66"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.66"></script>
+  <script src="js/perception_panel.js?v=1.0.66"></script>
 </body>
 </html>

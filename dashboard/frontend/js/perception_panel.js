@@ -98,31 +98,6 @@
       const axesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       axesGroup.setAttribute('id', 'radarAxes');
 
-      // Subtle interior grid lines (5cm x 5cm cells) to clearly show 6 columns x 5 rows
-      for (let cm = 5; cm < 30; cm += 5) {
-        const gx = this.SVG_ORIGIN_X + cm * this.SCALE_X_PX_PER_CM;
-        const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gLine.setAttribute('x1', gx);
-        gLine.setAttribute('y1', this.SVG_ORIGIN_Y);
-        gLine.setAttribute('x2', gx);
-        gLine.setAttribute('y2', this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX);
-        gLine.setAttribute('stroke', '#EAE3D8');
-        gLine.setAttribute('stroke-width', '1');
-        gLine.setAttribute('stroke-dasharray', '3,3');
-        axesGroup.appendChild(gLine);
-      }
-      for (let cm = 5; cm < 25; cm += 5) {
-        const gy = this.SVG_ORIGIN_Y - cm * this.SCALE_Y_PX_PER_CM;
-        const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gLine.setAttribute('x1', this.SVG_ORIGIN_X);
-        gLine.setAttribute('y1', gy);
-        gLine.setAttribute('x2', this.SVG_ORIGIN_X + this.GRID_WIDTH_PX);
-        gLine.setAttribute('y2', gy);
-        gLine.setAttribute('stroke', '#EAE3D8');
-        gLine.setAttribute('stroke-width', '1');
-        gLine.setAttribute('stroke-dasharray', '3,3');
-        axesGroup.appendChild(gLine);
-      }
 
       // Platform dimension indicator in top right of workspace
       const dimBadge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
