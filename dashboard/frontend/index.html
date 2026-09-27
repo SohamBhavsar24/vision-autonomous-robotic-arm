@@ -516,14 +516,14 @@
         </div>
 
         <div class="dashboard-grid">
-          <!-- Left: Live Camera 1 Stream (Logitech C270) (Span 7) -->
-          <div class="card" style="grid-column: span 7; display: flex; flex-direction: column;">
+          <!-- Left: Live Camera 1 Stream (Logitech C270) (Span 6) -->
+          <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
               <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Overhead Stream (Logitech C270)</span>
               <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #2E7D32; background: rgba(46, 125, 50, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">SubPix Refinement ACTIVE</span>
             </div>
             
-            <div style="position: relative; width: 100%; height: 380px; background: #1A1817; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <div style="position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 380px; background: #1A1817; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
               <img src="/api/video_feed/1" id="perceptionCamImg" style="width: 100%; height: 100%; object-fit: contain;" alt="Camera 1 Live Stream">
             </div>
 
@@ -533,21 +533,21 @@
             </div>
           </div>
 
-          <!-- Right: 2D Spatial Workspace Radar (Span 5) -->
-          <div class="card" style="grid-column: span 5; display: flex; flex-direction: column;">
+          <!-- Right: 2D Spatial Workspace Radar (Span 6) -->
+          <div class="card" style="grid-column: span 6; display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">25cm × 30cm Workspace Radar</span>
-              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196, 120, 74, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Top-Down Bird's-Eye</span>
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">30cm × 25cm Workspace Radar</span>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196, 120, 74, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">30cm Width × 25cm Reach</span>
             </div>
 
-            <div style="position: relative; width: 100%; height: 380px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
-              <svg id="workspaceRadarSvg" viewBox="0 0 370 310" style="width: 100%; height: 100%; max-height: 360px; display: block;"></svg>
+            <div style="position: relative; width: 100%; aspect-ratio: 370 / 310; max-height: 380px; background: #F3EDE4; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
+              <svg id="workspaceRadarSvg" viewBox="0 0 370 310" style="width: 100%; height: 100%; display: block;"></svg>
             </div>
 
             <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted); display: flex; justify-content: space-between;">
               <span>Tag 2: Origin (0,0)</span>
               <span>Tag 0: Target Block</span>
-              <span>Platform: 30cm × 25cm</span>
+              <span>Platform: 30cm × 25cm (6:5)</span>
             </div>
           </div>
 
@@ -980,12 +980,12 @@
   <script src="js/libs/STLLoader.js"></script>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.63"></script>
-  <script src="js/servo_panel.js?v=1.0.60"></script>
-  <script src="js/teleop_panel.js?v=1.0.60"></script>
-  <script src="js/dataset_panel.js?v=1.0.60"></script>
-  <script src="js/autonomous_panel.js?v=1.0.60"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.63"></script>
-  <script src="js/perception_panel.js?v=1.0.60"></script>
+  <script src="js/app.js?v=1.0.64"></script>
+  <script src="js/servo_panel.js?v=1.0.64"></script>
+  <script src="js/teleop_panel.js?v=1.0.64"></script>
+  <script src="js/dataset_panel.js?v=1.0.64"></script>
+  <script src="js/autonomous_panel.js?v=1.0.64"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.64"></script>
+  <script src="js/perception_panel.js?v=1.0.64"></script>
 </body>
 </html>

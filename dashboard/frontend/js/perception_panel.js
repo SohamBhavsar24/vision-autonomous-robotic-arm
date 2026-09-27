@@ -81,21 +81,33 @@
       `;
       svg.appendChild(defs);
 
-      // Background rect for the continuous 30cm x 25cm table workspace
+      // Background rect for the continuous 30cm x 25cm table workspace (6:5 aspect ratio)
       const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       bgRect.setAttribute('x', this.SVG_ORIGIN_X);
       bgRect.setAttribute('y', this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX);
       bgRect.setAttribute('width', this.GRID_WIDTH_PX);
       bgRect.setAttribute('height', this.GRID_HEIGHT_PX);
-      bgRect.setAttribute('fill', '#FAF7F2');
-      bgRect.setAttribute('stroke', '#D4C9BA');
-      bgRect.setAttribute('stroke-width', '1.5');
+      bgRect.setAttribute('fill', '#FFFFFF');
+      bgRect.setAttribute('stroke', '#C4784A');
+      bgRect.setAttribute('stroke-width', '2');
       bgRect.setAttribute('rx', '4');
       svg.appendChild(bgRect);
 
       // Coordinate axes
       const axesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       axesGroup.setAttribute('id', 'radarAxes');
+
+      // Platform dimension indicator in top right of workspace
+      const dimBadge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      dimBadge.setAttribute('x', this.SVG_ORIGIN_X + this.GRID_WIDTH_PX - 8);
+      dimBadge.setAttribute('y', this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX + 16);
+      dimBadge.setAttribute('text-anchor', 'end');
+      dimBadge.setAttribute('fill', '#A89E90');
+      dimBadge.setAttribute('font-family', 'IBM Plex Mono, monospace');
+      dimBadge.setAttribute('font-size', '9px');
+      dimBadge.setAttribute('font-weight', '600');
+      dimBadge.textContent = '30 cm × 25 cm (6:5)';
+      axesGroup.appendChild(dimBadge);
 
       // +X Axis (Horizontal Red)
       const lineX = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -130,13 +142,14 @@
       axesGroup.appendChild(lineY);
 
       const labelY = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      labelY.setAttribute('x', this.SVG_ORIGIN_X - 26);
+      labelY.setAttribute('x', this.SVG_ORIGIN_X - 6);
       labelY.setAttribute('y', this.SVG_ORIGIN_Y - this.GRID_HEIGHT_PX - 8);
+      labelY.setAttribute('text-anchor', 'end');
       labelY.setAttribute('fill', '#2E7D32');
       labelY.setAttribute('font-family', 'IBM Plex Mono, monospace');
       labelY.setAttribute('font-weight', '600');
       labelY.setAttribute('font-size', '10px');
-      labelY.textContent = '+Y';
+      labelY.textContent = '+Y (25cm)';
       axesGroup.appendChild(labelY);
 
       // Scale Ticks and numbers along X axis (every 5cm)

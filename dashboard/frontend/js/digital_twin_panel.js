@@ -408,11 +408,11 @@ const DigitalTwinPanel = {
     navHUD.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.35)';
 
     navHUD.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.70rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.70rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer;" id="dtNavHUDHeader">
         <span>Flight Navigation (WASD)</span>
-        <button id="btnDtNavMinimize" style="background: none; border: none; color: #888888; cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; padding: 0 4px;" title="Toggle Controls">_</button>
+        <button id="btnDtNavMinimize" style="background: none; border: none; color: #888888; cursor: pointer; font-family: var(--font-mono); font-size: 0.85rem; padding: 0 4px; font-weight: bold;" title="Toggle Controls">+</button>
       </div>
-      <div id="dtNavControlsBody">
+      <div id="dtNavControlsBody" style="display: none; margin-top: 6px;">
         <div style="display: flex; gap: 12px; align-items: center; justify-content: center;">
           <div style="display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(2, 28px); gap: 3px; justify-items: center; align-items: center;">
             <div></div>
@@ -440,14 +440,15 @@ const DigitalTwinPanel = {
 
     // Bind navigation buttons and toggles
     const btnMin = navHUD.querySelector('#btnDtNavMinimize');
+    const header = navHUD.querySelector('#dtNavHUDHeader');
     const body = navHUD.querySelector('#dtNavControlsBody');
-    if (btnMin && body) {
-      btnMin.onclick = () => {
-        const isHidden = body.style.display === 'none';
-        body.style.display = isHidden ? 'block' : 'none';
-        btnMin.textContent = isHidden ? '_' : '+';
-      };
-    }
+    const toggleNavHUD = () => {
+      const isHidden = body.style.display === 'none';
+      body.style.display = isHidden ? 'block' : 'none';
+      btnMin.textContent = isHidden ? '_' : '+';
+    };
+    if (btnMin) btnMin.onclick = (e) => { e.stopPropagation(); toggleNavHUD(); };
+    if (header) header.onclick = toggleNavHUD;
 
     const btnFocusBlock = navHUD.querySelector('#dtBtnFocusBlock');
     if (btnFocusBlock) {
