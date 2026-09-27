@@ -96,6 +96,7 @@
 | 34 | Sequential Dual-Block Autonomous Pipeline | The workspace supports both Block 1 (Tag 0) and Block 2 (Tag 1) simultaneously. The autonomous runner executes priority sequential picking with spatial sorting to prevent mid-air collisions |
 | 35 | Teleop Drop Pose Teaching via D-Pad & Web UI | Operators can jog the arm in teleop to desired drop poses and persist the 5 primary joint angles `[θ1..θ5]` to `drop_locations.json` via dedicated UI controls or PS5 D-Pad triggers (D-Pad Up for Block 1, D-Pad Down for Block 2). Gripper release dynamically executes the active `openAngle` from Servo Control calibration |
 | 36 | Proximity-Based Spatial Sweep Order (Higher X First) | When multiple blocks (Tag 0, Tag 1) occupy the workspace simultaneously, the autonomous scheduler prioritizes picking the block closest to the drop zone (higher $X$ / leftwards) first. Clearing the downstream object first guarantees that subsequent transfers encounter zero intermediate obstacles, eliminating the need for complex collision avoidance or high clearance elevation |
+| 37 | Single Source of Truth for Gripper Open Angle (Servo Control Panel) | The dynamic Gripper Open Angle is explicitly defined on the Servo Control panel under the Servo 5 (Gripper Claw, Ch 10) card via `#inputGripperOpenCard` and `#angleGripperOpen`. It persists via browser `localStorage.getItem("gripper_open")` and backend `kinematics_config.json`. The value 140° was an initial assembly placeholder and is strictly prohibited from being hardcoded in any controller, model, runner, or script. All modules (Homing, Teleoperation, Dataset Recording/Replay, Digital Twin Safe Poses, Autonomous Mode, and Drop Pose Releases) must dynamically query this calibrated value |
 
 ---
 
@@ -228,6 +229,11 @@
   - Dedicated Drop Location configuration card on `panel-teleop` persisting joint angles `[θ1..θ5, gripper]` to backend `drop_locations.json` (and `localStorage`), surviving server restarts and browser hard refreshes.
   - PS5 controller mapping: Jog arm in teleop mode to desired bin position, then press D-Pad Up to save/test Block 1 Drop Pose, or D-Pad Down to save/test Block 2 Drop Pose.
   - Streamlines demonstration recording: operator only demonstrates the visual pick and lift, cutting collection time in half.
+- **Explicit Mandate: Servo Control Panel as Single Source of Truth for Gripper Open Angle:**
+  - Formally codified that the **Servo Control panel** ([`#inputGripperOpenCard`](file:///Users/sohambhavsar/Desktop/Autonomoous%20arm/dashboard/frontend/index.html#L235) on the Servo 5 Gripper Claw card) is the primary user calibration interface and authoritative source of truth for `openAngle` (`gripper_open`).
+  - Persisted dynamically to browser `localStorage['gripper_open']` and backend `kinematics_config.json`.
+  - Prohibits hardcoding `140°` anywhere in the codebase. 140° was strictly an initial assembly placeholder.
+  - Drop poses in `drop_locations.json` store only the 5 arm kinematic joint angles `[θ1..θ5]`, ensuring that drop release motions and return-to-home transitions always dynamically execute the live user-calibrated `openAngle` from this panel.
 - **Digital Twin & Perception UI Refinements:**
   - Made 3D Digital Twin flight navigation HUD collapsed by default (`+` state) on server reboot and hard refresh.
   - Matched Workspace Radar SVG to exact physical $30\text{ cm} \times 25\text{ cm}$ ($6 : 5$) aspect ratio with high-contrast white mat fill, terracotta border, and balanced 6/6 grid layout.
