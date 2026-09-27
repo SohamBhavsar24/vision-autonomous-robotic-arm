@@ -2066,8 +2066,8 @@ const DigitalTwinPanel = {
     tagCanvas.height = 256;
     const tctx = tagCanvas.getContext('2d');
 
-    // Foam block color border
-    tctx.fillStyle = '#2A7B9B';
+    // Foam block color border (vibrant sponge foam yellow)
+    tctx.fillStyle = '#E5B824';
     tctx.fillRect(0, 0, 256, 256);
 
     // Black marker border
@@ -2099,9 +2099,9 @@ const DigitalTwinPanel = {
 
     const tagTexture = new THREE.CanvasTexture(tagCanvas);
 
-    // Materials: top has ArUco marker, sides are colored sponge foam
+    // Materials: top has ArUco marker, sides are yellow sponge foam
     const sideMat = new THREE.MeshStandardMaterial({
-      color: 0x2A7B9B,
+      color: 0xE5B824,
       roughness: 0.6,
       metalness: 0.1,
       transparent: true,
@@ -2115,7 +2115,7 @@ const DigitalTwinPanel = {
       opacity: 0.98
     });
     const bottomMat = new THREE.MeshStandardMaterial({
-      color: 0x1E5970,
+      color: 0xC89C18,
       roughness: 0.8,
       transparent: true,
       opacity: 0.95
