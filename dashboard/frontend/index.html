@@ -32,12 +32,6 @@
           </a>
         </li>
         <li>
-          <a class="nav-item" data-panel="panel-camera">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-            <span>Camera Feeds</span>
-          </a>
-        </li>
-        <li>
           <a class="nav-item" data-panel="panel-perception">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             <span>Perception</span>
@@ -501,58 +495,167 @@
         </div>
       </main>
 
-      <!-- Single Camera Feed & OpenCV Perception Dashboard -->
-      <main class="content-panel" id="panel-camera">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+      <!-- Panel: Unified Computer Vision Perception & Spatial Workspace Radar -->
+      <main class="content-panel" id="panel-perception">
+        <!-- Top Status Bar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
           <div>
-            <h3 class="card-title">Camera Feed & OpenCV Perception Pipeline</h3>
-            <p class="card-subtitle">Real-time MJPEG camera stream & live OpenCV ArUco marker tracking.</p>
+            <h3 class="card-title">Computer Vision Perception & Spatial Workspace Radar</h3>
+            <p class="card-subtitle">Real-time OpenCV ArUco localization, 25cm × 30cm coordinate transformation, and workspace reachability.</p>
           </div>
-          <div class="status-pill connected" id="camStatusPill">
-            <span class="status-dot"></span>
-            <span>Camera 1 (Top Workspace View): LIVE MJPEG STREAM</span>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div class="status-pill connected" id="camStatusPill">
+              <span class="status-dot"></span>
+              <span>Camera 1: LIVE (30 FPS)</span>
+            </div>
+            <div class="status-pill connected" style="background: rgba(46, 125, 50, 0.12); color: #2E7D32;">
+              <span class="status-dot" style="background: #2E7D32;"></span>
+              <span>ArUco: DICT_4X4_50</span>
+            </div>
+            <div class="status-pill" id="perceptionBoundsPill" style="background: rgba(140, 130, 117, 0.12); color: var(--text-muted);">
+              <span class="status-dot"></span>
+              <span id="perceptionBoundsText">Workspace: SCANNING</span>
+            </div>
           </div>
         </div>
 
         <div class="dashboard-grid">
-          <!-- Camera 1: Top Workspace Camera (Logitech C270) Expanded to Full Width -->
-          <div class="card" style="grid-column: span 12;">
+          <!-- Left: Live Camera 1 Stream (Logitech C270) (Span 7) -->
+          <div class="card" style="grid-column: span 7; display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Camera 1 (Top Workspace View - Logitech C270)</span>
-              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #2E7D32; background: rgba(46, 125, 50, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">ArUco Detector ACTIVE</span>
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">Overhead Stream (Logitech C270)</span>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #2E7D32; background: rgba(46, 125, 50, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">SubPix Refinement ACTIVE</span>
             </div>
             
-            <div style="position: relative; width: 100%; height: 520px; background: #1A1817; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
-              <img src="/api/video_feed/1" style="width: 100%; height: 100%; object-fit: contain;" alt="Camera 1 Live Stream">
+            <div style="position: relative; width: 100%; height: 380px; background: #1A1817; border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center;">
+              <img src="/api/video_feed/1" id="perceptionCamImg" style="width: 100%; height: 100%; object-fit: contain;" alt="Camera 1 Live Stream">
             </div>
 
-            <div style="margin-top: 12px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+            <div style="margin-top: 12px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
               <span>Resolution: 640×480 • 30 FPS Stream</span>
-              <span style="color: var(--accent-primary);">Target: Block 1 (ArUco ID: 0) & World Origin (ArUco ID: 2)</span>
+              <span style="color: var(--accent-primary);">Target: Block 1 (ID 0) | Anchor: Origin (ID 2)</span>
             </div>
           </div>
 
-          <!-- Perception Summary Banner -->
-          <div class="card" style="grid-column: span 12; border-left: 4px solid var(--accent-primary);">
-            <h3 class="card-title">Real-Time ArUco Marker ID 0 Detection Status</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-top: 8px;">
-              1. <strong>OpenCV ArUco Engine (DICT_4X4_50):</strong> Scans incoming 30 FPS video frames from Camera 1.<br>
-              2. <strong>Marker Identification:</strong> Automatically detects 4 corner sub-pixel coordinates, draws green bounding boxes, and displays live object label <code>Block 1 (ArUco ID: 0)</code>.<br>
-              3. <strong>Cardboard-Backed Tag Stability:</strong> Guarantees 100% flat surface geometry for camera localization.
-            </p>
-          </div>
-        </div>
-      </main>
+          <!-- Right: 2D Spatial Workspace Radar (Span 5) -->
+          <div class="card" style="grid-column: span 5; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; color: var(--text-main);">25cm × 30cm Workspace Grid Radar</span>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-primary); background: rgba(196, 120, 74, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600;">Top-Down Bird's-Eye</span>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">Platform coordinate frame: 30 cells (5cm × 5cm) • Zero-IK Joint Manifold</p>
 
-      <!-- Panel: Perception Pipeline -->
-      <main class="content-panel" id="panel-perception">
-        <div class="card">
-          <h3 class="card-title">OpenCV Perception Pipeline & Coordinate Mapping</h3>
-          <p class="card-subtitle">Real-time object localization and pixel-to-centimeter world coordinate mapping.</p>
-          
-          <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-primary); background: var(--bg-page); border: 1px solid var(--border-subtle); padding: 14px 20px; border-radius: 8px;">
-            <strong>Target Object Detected:</strong> <span style="color: var(--text-main); font-weight: 600;">Sponge Block 1 (ArUco Marker ID 0)</span><br>
-            <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 6px;">Live camera stream is streaming on the <strong>Camera Feeds</strong> tab. Coordinate mapping to robot base origin (cm) active.</span>
+            <div style="position: relative; width: 100%; height: 380px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-card); overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 6px;">
+              <svg id="workspaceRadarSvg" viewBox="0 0 370 310" style="width: 100%; height: 100%; max-height: 360px; display: block;"></svg>
+            </div>
+
+            <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>Tag 2: Origin (0,0)</span>
+              <span>Tag 0: Target Block</span>
+              <span>Cell Size: 5×5 cm</span>
+            </div>
+          </div>
+
+          <!-- Real-Time Spatial Telemetry Cards (5 Cards spanning 12 cols) -->
+          <div class="card" style="grid-column: span 12; padding: 18px 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin: 0;">Live Spatial Coordinate Telemetry</h4>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Broadcast via WebSocket /ws (30Hz)</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;">
+              <!-- X Lateral -->
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #B53A2E; font-weight: 600; text-transform: uppercase;">X Lateral (+Right)</div>
+                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                  <span id="percepValX">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Range: 0 to 30.0 cm</div>
+              </div>
+
+              <!-- Y Reach -->
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: #2E7D32; font-weight: 600; text-transform: uppercase;">Y Reach (+Forward)</div>
+                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                  <span id="percepValY">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Range: 0 to 25.0 cm</div>
+              </div>
+
+              <!-- Orientation Theta -->
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase;">Heading (θ)</div>
+                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                  <span id="percepValTheta">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">°</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Block Rotation Angle</div>
+              </div>
+
+              <!-- Distance d -->
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-main); font-weight: 600; text-transform: uppercase;">Vector Dist (d)</div>
+                <div style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text-main); margin-top: 4px;">
+                  <span id="percepValDist">0.0</span> <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">cm</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">√(X² + Y²) from Origin</div>
+              </div>
+
+              <!-- Active Grid Cell -->
+              <div style="background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px;">
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase;">Active Sub-Cell</div>
+                <div style="font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <span id="percepValCell">—</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">30-Cell Demonstration Grid</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Diagnostics & Pipeline Specifications -->
+          <div class="card" style="grid-column: span 6;">
+            <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin-bottom: 12px;">ArUco Marker Target Registry</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 6px;">
+                <div>
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">Marker ID 0: Sponge Block 1</strong>
+                  <div id="percepTag0Coord" style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">Searching in 30 FPS overhead stream...</div>
+                </div>
+                <span id="percepTag0Badge" style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(140, 130, 117, 0.12); color: var(--text-muted);">LOST</span>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 6px;">
+                <div>
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">Marker ID 2: World Origin / Target Box</strong>
+                  <div id="percepTag2Coord" style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">(0.0 cm, 0.0 cm) • Fixed Calibration Baseline (4.0 cm tag)</div>
+                </div>
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(46, 125, 50, 0.12); color: #2E7D32;">ANCHOR</span>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-page); border: 1px solid var(--border-subtle); border-radius: 6px;">
+                <div>
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">Marker ID 1: Sponge Block 2</strong>
+                  <div style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">Secondary object for future multi-block sorting</div>
+                </div>
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(140, 130, 117, 0.12); color: var(--text-muted);">STANDBY</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="grid-column: span 6;">
+            <h4 style="font-family: var(--font-serif); font-size: 1.05rem; color: var(--text-main); margin-bottom: 12px;">Computer Vision Pipeline Specifications</h4>
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+              <div style="margin-bottom: 6px;">
+                <strong style="color: var(--text-main);">1. OpenCV Dictionary:</strong> <code>DICT_4X4_50</code> with solid 1-cell border verification (eliminates false positives from shadows and ambient room noise).
+              </div>
+              <div style="margin-bottom: 6px;">
+                <strong style="color: var(--text-main);">2. Sub-Pixel Refinement:</strong> <code>CORNER_REFINE_SUBPIX</code> ensures sub-millimeter precision for corner localization.
+              </div>
+              <div style="margin-bottom: 6px;">
+                <strong style="color: var(--text-main);">3. Coordinate Transformation:</strong> Pixel-to-centimeter dynamic scaling calibrated against known 4.0 cm width of World Origin Tag 2.
+              </div>
+              <div>
+                <strong style="color: var(--text-main);">4. FOV Decoupling:</strong> Camera 1 strictly observes the 25cm × 30cm workspace; drop target box is situated outside camera view, preventing false pick triggers.
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -908,11 +1011,12 @@
   <script src="js/libs/STLLoader.js"></script>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.56"></script>
-  <script src="js/servo_panel.js?v=1.0.59"></script>
-  <script src="js/teleop_panel.js?v=1.0.59"></script>
-  <script src="js/dataset_panel.js?v=1.0.56"></script>
-  <script src="js/autonomous_panel.js?v=1.0.59"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.59"></script>
+  <script src="js/app.js?v=1.0.60"></script>
+  <script src="js/servo_panel.js?v=1.0.60"></script>
+  <script src="js/teleop_panel.js?v=1.0.60"></script>
+  <script src="js/dataset_panel.js?v=1.0.60"></script>
+  <script src="js/autonomous_panel.js?v=1.0.60"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.60"></script>
+  <script src="js/perception_panel.js?v=1.0.60"></script>
 </body>
 </html>

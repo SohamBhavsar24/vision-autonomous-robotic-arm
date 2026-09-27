@@ -31,8 +31,7 @@ const App = {
       'panel-digital-twin': '3D Digital Twin Simulation (Interactive WebGL CAD)',
       'panel-ros': 'ROS 2 Humble Architecture & Computational Graph',
       'panel-journal': 'Robotic Arm Project Journal & Log Archive',
-      'panel-camera': 'Live Dual-Camera Feeds',
-      'panel-perception': 'OpenCV Perception & Coordinate Mapping',
+      'panel-perception': 'Computer Vision Perception & Spatial Workspace Radar',
       'panel-teleop': 'PS5 Controller Teleoperation & IK',
       'panel-dataset': 'Demonstration Dataset Management',
       'panel-autonomous': 'Autonomous Inference & Execution'
@@ -174,6 +173,11 @@ const App = {
     // Update Digital Twin ArUco Block Perception Tracking
     if (data.latest_block_pose && window.DigitalTwinPanel) {
       window.DigitalTwinPanel.updateBlockPose(data.latest_block_pose);
+    }
+
+    // Update Computer Vision Perception Panel (2D Radar & Telemetry)
+    if (data.latest_block_pose && window.PerceptionPanel) {
+      window.PerceptionPanel.updateBlockPose(data.latest_block_pose);
     }
   },
 

@@ -90,6 +90,7 @@
 | 29 | Standalone Decoupled Research Poster | High-resolution print-ready A0 academic poster web application hosted independently on port 8055, decoupled from dashboard telemetry to prevent runtime interference |
 | 30 | Offline 3D STL Digital Twin | Zero-CDN Three.js + STLLoader WebGL engine loading local CAD meshes (`Arm 01.STL`, `Arm 02 v3.STL`, `Arm 03.STL`, `Base.STL`, `Waist.STL`, `Gripper base.STL`, `Gripper 1.STL`) with live WebSocket `/ws` joint telemetry mapping |
 | 31 | Digital Twin 3D Mesh Table Penetration Prevention & Geofencing Floor Guard | Zero analytical kinematics equations. Derives exact end-effector / claw 3D world elevation ($Y_{\text{min}}$ in mm) directly from Three.js scene-graph mesh forward transforms (`THREE.Box3().setFromObject(this.wristPitchGroup)`). If candidate joint angles command claws below $8.0\text{ mm}$ safety threshold ($Y_{\text{floor\_limit}}$) above tabletop ($Y = 0\text{ mm}$ table, $Y = 1.6\text{ mm}$ pad), commands are blocked at transmission, a flashing red HUD collision banner is displayed, claws highlight red, and angles revert to `lastSafeAngles`. Enforced universally across PS5 Teleoperation (Joint & IK modes), Manual Sliders, and Autonomous Mode execution. Runtime toggle button (`#btnDtToggleGeofence`) with `localStorage` persistence enables on-the-fly override |
+| 32 | Unified Computer Vision Perception & Spatial Workspace Radar | Permanent cancellation of Camera 2; consolidated redundant `Camera Feeds` and placeholder `Perception` panels into a single unified `Perception` panel (`panel-perception`). Features side-by-side live overhead Camera 1 stream (Logitech C270, 30 FPS MJPEG, SubPix ArUco tracking) and an interactive 2D SVG Spatial Workspace Radar mapping the $25\text{ cm} \times 30\text{ cm}$ manipulation table (30 sub-cells, World Origin Tag 2, moving Block Tag 0 puck with orientation vector, distance badge, and active cell highlight). Displays 30Hz real-time coordinate telemetry cards ($X, Y, \theta, d$, Active Cell) and workspace reachability safety guard |
 
 ---
 
@@ -183,6 +184,20 @@
 - **Supabase Cloud Journal Sync (Entries 15 & 16):** Successfully published Log Entry #15 (Three.js WebGL Digital Twin & ROS 2 Architecture) and Log Entry #16 (Continuous Autonomous Execution Engine & 3D Mesh Table Penetration Prevention) directly to the live Supabase PostgreSQL database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`) and synchronized local backend JSON and Vercel PWA seed entries.
 - **Journal PWA Enhancements (100-Word Limit & In-Place Editing):** Upgraded `project_journal.html` and `dashboard/frontend/project_journal.html` with a 100-word truncation filter and collapsible "Read More ▾" / "Read Less ▴" toggle button for long narrative entries. Added full editing capabilities: each journal card features an "Edit" button pre-populating the entry modal (date, title, story, attachment status) with instant Supabase PostgreSQL (`resolution=merge-duplicates`) and `localStorage` cloud synchronization.
 - **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all modified JavaScript, HTML, CSS, and markdown files.
+
+### Session 16 (2026-09-27) — CAMERA FEEDS & PERCEPTION PANEL CONSOLIDATION, 2D WORKSPACE GRID RADAR & REAL-TIME TELEMETRY
+- **Retirement of Redundant "Camera Feeds" Panel:** Formally canceled Camera 2 (wrist/side logging camera) to permanently streamline operations to single overhead Camera 1 (Logitech C270). Removed the redundant `Camera Feeds` item from the sidebar navigation and consolidated all vision functionality into the unified **Perception** panel (`panel-perception`).
+- **Interactive 2D Spatial Workspace Radar (SVG):**
+  - Engineered a top-down bird's-eye 2D SVG radar visualizing the $25\text{ cm} \times 30\text{ cm}$ manipulation table workspace ($750\text{ cm}^2$).
+  - Maps the 30 sub-squares ($5\text{ cm} \times 5\text{ cm}$) from the progressive demonstration protocol with coordinates and cell identifiers (`C1R1` through `C6R5`).
+  - Features the World Origin ArUco Tag 2 anchor at $(0, 0)$ with $+X$ and $+Y$ coordinate axes, a dynamically moving Target Block (ArUco Tag 0) puck with orientation heading vector arrow ($\theta$), distance vector line, and real-time active cell highlight.
+- **Real-Time Spatial Coordinate Telemetry:**
+  - Integrated 5 high-visibility digital telemetry cards: $X$ Lateral Position (cm), $Y$ Reach Depth (cm), Heading Angle $\theta$ (°), Vector Distance $d$ (cm), and Active Sub-Cell locator.
+  - Added real-time workspace reachability safety guard badge: transitioning between `INSIDE SAFE REACH` (sage green `#2E7D32`), `OUT OF BOUNDS` (brick red `#B53A2E`), and `SCANNING / IDLE` (neutral taupe).
+- **Multi-Target Detection Registry & OpenCV Pipeline Specs:**
+  - Embedded tracking status for ArUco Marker ID 0 (Target Block), Marker ID 2 (World Origin / Target Box), and Marker ID 1 (Secondary Block for multi-color/sorting pipeline).
+  - Detailed sub-pixel refinement (`CORNER_REFINE_SUBPIX`), `DICT_4X4_50` solid border verification, and FOV decoupling specifications directly within the panel interface.
+- **Strict Zero-Emoji & Warm Palette Compliance:** Verified 100% clean of emoji characters across all frontend templates and controllers, adhering strictly to the warm cream/linen/sand design system.
 
 ---
 
