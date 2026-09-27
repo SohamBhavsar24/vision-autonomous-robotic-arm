@@ -124,6 +124,7 @@ class ServoAnglesRequest(BaseModel):
 
 CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "kinematics_config.json"))
 CLAW_CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "claw_config.json"))
+CAMERA_CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "camera_config.json"))
 JOURNAL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "journal_entries.json"))
 DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "dataset_episodes.json"))
 DATASETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "datasets"))
@@ -274,6 +275,30 @@ async def save_claw_config(config: dict):
         return {"status": "saved", "config": config}
     except Exception as e:
         logger.error(f"Error saving claw_config.json: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/api/digital_twin/camera_default")
+async def get_camera_default():
+    """Returns persistent digital twin default camera viewpoint."""
+    if os.path.exists(CAMERA_CONFIG_PATH):
+        try:
+            with open(CAMERA_CONFIG_PATH, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error loading camera_config.json: {e}")
+    return {}
+
+
+@app.post("/api/digital_twin/camera_default")
+async def save_camera_default(config: dict):
+    """Saves updated digital twin default camera viewpoint to disk."""
+    try:
+        with open(CAMERA_CONFIG_PATH, "w") as f:
+            json.dump(config, f, indent=2)
+        return {"status": "saved", "config": config}
+    except Exception as e:
+        logger.error(f"Error saving camera_config.json: {e}")
         return {"status": "error", "message": str(e)}
 
 

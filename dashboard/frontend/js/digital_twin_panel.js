@@ -169,6 +169,7 @@ const DigitalTwinPanel = {
     this.createOverlayUI();
     this.createTunerPanel();
     this.loadSavedClawConfig();
+    this.loadSavedCameraConfig();
     this.setupKeyboardControls();
     this.initScene();
     this.initLighting();
@@ -504,6 +505,46 @@ const DigitalTwinPanel = {
       })
       .catch(() => {
         // Backend offline or unreachable, localStorage fallback already loaded
+      });
+  },
+
+  /* Persistence for Default Camera Viewport (localStorage + Backend Disk) */
+  loadSavedCameraConfig() {
+    // 1. Synchronously restore from localStorage for instant offline readiness
+    try {
+      const cached = localStorage.getItem('dt_camera_default');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.pos && parsed.target) {
+          if (this.camera) this.camera.position.set(parsed.pos.x, parsed.pos.y, parsed.pos.z);
+          if (this.controls) {
+            this.controls.target.set(parsed.target.x, parsed.target.y, parsed.target.z);
+            this.controls.update();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read cached camera config from localStorage:', e);
+    }
+
+    // 2. Asynchronously sync with backend server disk (survives browser data clearing & restarts)
+    fetch('/api/digital_twin/camera_default')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.pos && data.target) {
+          localStorage.setItem('dt_camera_default', JSON.stringify(data));
+          // If camera was not moved by user yet, update to backend saved viewpoint
+          if (this.camera && !this._userMovedCamera) {
+            this.camera.position.set(data.pos.x, data.pos.y, data.pos.z);
+            if (this.controls) {
+              this.controls.target.set(data.target.x, data.target.y, data.target.z);
+              this.controls.update();
+            }
+          }
+        }
+      })
+      .catch(err => {
+        console.warn('Could not sync camera_default with backend:', err);
       });
   },
 
@@ -1362,6 +1403,9 @@ const DigitalTwinPanel = {
       this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
       this.controls.minDistance = 100;
       this.controls.maxDistance = 1200;
+      this.controls.addEventListener('start', () => {
+        this._userMovedCamera = true;
+      });
       this.controls.update();
     }
 
@@ -2015,6 +2059,15 @@ const DigitalTwinPanel = {
       console.warn('Failed to save dt_camera_default:', e);
     }
 
+    // Persist to backend server disk so it survives server restarts, hard refreshes, and multi-device access
+    fetch('/api/digital_twin/camera_default', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(customView)
+    }).catch(err => {
+      console.warn('Could not persist camera_default to backend:', err);
+    });
+
     this.showCameraToast('Camera View Saved as Default');
 
     const btn = document.getElementById('btnDtSetDefaultCamera');
@@ -2124,6 +2177,7 @@ const DigitalTwinPanel = {
 
       if (handled) {
         e.preventDefault();
+        this._userMovedCamera = true;
         this.syncNavButtonsUI();
       }
     });
