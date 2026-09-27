@@ -318,13 +318,14 @@
           <!-- Full-Screen 3D Viewport Box -->
           <div class="card" style="grid-column: span 12;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (Orbit Controls: Drag to rotate • Scroll to zoom • Right-click to pan)</span>
+              <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (WASD / Arrows: Fly & Pan • Q / E: Elevate • Drag: Orbit • Scroll: Zoom)</span>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <span id="dtClearanceMeter" style="font-family: var(--font-mono); font-size: 0.75rem; color: #888888; background: rgba(150, 150, 150, 0.12); border: 1px solid rgba(150, 150, 150, 0.25); padding: 4px 10px; border-radius: 4px; font-weight: 600;">Safety: BYPASSED</span>
                 <button class="btn btn-secondary" id="btnDtToggleGeofence" style="font-size: 0.75rem; padding: 4px 12px; background: #555555; border-color: #444444; color: #BBBBBB; font-weight: 600; cursor: pointer;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGeofence()">Table Safety: OFF</button>
                 <button class="btn btn-secondary" id="btnDtTune" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleTunerPanel()">Tune Claws</button>
                 <button class="btn btn-secondary" id="btnDtHome" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setHomePose()">Home Pose (90°)</button>
                 <button class="btn btn-secondary" id="btnDtToggleGrid" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGrid()">Toggle Grid</button>
+                <button class="btn btn-secondary" id="btnDtSetDefaultCamera" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setDefaultCamera()">Set Camera Default</button>
                 <button class="btn btn-secondary" id="btnDtResetCamera" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.resetCamera()">Reset Camera</button>
               </div>
             </div>
@@ -989,7 +990,7 @@
   <script src="js/teleop_panel.js?v=1.0.60"></script>
   <script src="js/dataset_panel.js?v=1.0.60"></script>
   <script src="js/autonomous_panel.js?v=1.0.60"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.61"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.62"></script>
   <script src="js/perception_panel.js?v=1.0.60"></script>
 </body>
 </html>

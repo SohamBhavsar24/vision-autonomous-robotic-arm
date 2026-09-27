@@ -24,6 +24,24 @@ const DigitalTwinPanel = {
   isGridVisible: true,
   isLoading: true,
 
+  // Camera Flight & Game Navigation State
+  keysPressed: {
+    w: false, a: false, s: false, d: false,
+    q: false, e: false,
+    ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+    Space: false, Shift: false
+  },
+  activeNavDirs: {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    up: false,
+    down: false
+  },
+  lastNavTime: null,
+  _toastTimer: null,
+
   // Geofencing & Table Penetration Protection (Zero Kinematics, Pure Three.js 3D Bounds)
   geofenceEnabled: false,
   tableFloorLimitY: 8.0, // mm above ground plane (wood tabletop is at Y=0, pad surface is at Y=1.6)
@@ -151,6 +169,7 @@ const DigitalTwinPanel = {
     this.createOverlayUI();
     this.createTunerPanel();
     this.loadSavedClawConfig();
+    this.setupKeyboardControls();
     this.initScene();
     this.initLighting();
     this.buildKinematicHierarchy();
@@ -193,6 +212,14 @@ const DigitalTwinPanel = {
       btnToggleGrid.onclick = (e) => {
         e.preventDefault();
         this.toggleGrid();
+      };
+    }
+
+    const btnSetDefaultCam = document.getElementById('btnDtSetDefaultCamera');
+    if (btnSetDefaultCam) {
+      btnSetDefaultCam.onclick = (e) => {
+        e.preventDefault();
+        this.setDefaultCamera();
       };
     }
 
@@ -326,6 +353,121 @@ const DigitalTwinPanel = {
     collisionBanner.innerHTML = 'TABLE PENETRATION DETECTED: REVERTED TO SAFE POSE';
     this.container.appendChild(collisionBanner);
     this.collisionBanner = collisionBanner;
+
+    // Inject styles for Navigation buttons if not already present
+    if (!document.getElementById('dtNavStyles')) {
+      const styleEl = document.createElement('style');
+      styleEl.id = 'dtNavStyles';
+      styleEl.textContent = `
+        .dt-nav-btn {
+          background: #3A3531;
+          border: 1px solid rgba(224, 214, 200, 0.25);
+          border-radius: 4px;
+          color: #FAF7F2;
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+          transition: all 0.15s ease;
+          user-select: none;
+        }
+        .dt-nav-btn:hover {
+          background: #4E463E;
+          border-color: var(--accent-primary);
+        }
+        .dt-nav-btn.active, .dt-nav-btn:active {
+          background: var(--accent-primary) !important;
+          color: #FFFFFF !important;
+          border-color: var(--accent-primary) !important;
+        }
+      `;
+      document.head.appendChild(styleEl);
+    }
+
+    // Interactive 3D Camera Flight Navigation Widget (Bottom-Right)
+    const navHUD = document.createElement('div');
+    navHUD.id = 'dtGameNavHUD';
+    navHUD.style.position = 'absolute';
+    navHUD.style.bottom = '16px';
+    navHUD.style.right = '16px';
+    navHUD.style.zIndex = '6';
+    navHUD.style.background = 'rgba(26, 24, 23, 0.92)';
+    navHUD.style.border = '1px solid rgba(224, 214, 200, 0.22)';
+    navHUD.style.borderRadius = '8px';
+    navHUD.style.padding = '8px 12px';
+    navHUD.style.fontFamily = 'var(--font-mono)';
+    navHUD.style.color = '#FAF7F2';
+    navHUD.style.backdropFilter = 'blur(6px)';
+    navHUD.style.userSelect = 'none';
+    navHUD.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.35)';
+
+    navHUD.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.70rem; color: var(--accent-primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+        <span>Flight Navigation (WASD)</span>
+        <button id="btnDtNavMinimize" style="background: none; border: none; color: #888888; cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; padding: 0 4px;" title="Toggle Controls">_</button>
+      </div>
+      <div id="dtNavControlsBody">
+        <div style="display: flex; gap: 12px; align-items: center; justify-content: center;">
+          <div style="display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(2, 28px); gap: 3px; justify-items: center; align-items: center;">
+            <div></div>
+            <button class="dt-nav-btn" data-dir="forward" id="dtBtnNavW" title="Fly Forward (W / Up Arrow)">W</button>
+            <div></div>
+            <button class="dt-nav-btn" data-dir="left" id="dtBtnNavA" title="Strafe Left (A / Left Arrow)">A</button>
+            <button class="dt-nav-btn" data-dir="backward" id="dtBtnNavS" title="Fly Backward (S / Down Arrow)">S</button>
+            <button class="dt-nav-btn" data-dir="right" id="dtBtnNavD" title="Strafe Right (D / Right Arrow)">D</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <button class="dt-nav-btn" data-dir="up" id="dtBtnNavUp" style="padding: 0 10px; height: 28px; font-size: 0.68rem;" title="Elevate Up (+Y / E key / Space)">▲ Up (E)</button>
+            <button class="dt-nav-btn" data-dir="down" id="dtBtnNavDown" style="padding: 0 10px; height: 28px; font-size: 0.68rem;" title="Elevate Down (-Y / Q key)">▼ Down (Q)</button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 8px;">
+          <button class="dt-nav-btn" id="dtBtnFocusBlock" style="flex: 1; height: 22px; font-size: 0.65rem;" title="Lock camera orbit to Yellow Sponge Block">Focus Block</button>
+          <button class="dt-nav-btn" id="dtBtnFocusArm" style="flex: 1; height: 22px; font-size: 0.65rem;" title="Lock camera orbit to Robot Arm">Focus Arm</button>
+        </div>
+        <div style="font-size: 0.62rem; color: #888888; margin-top: 6px; line-height: 1.2; text-align: center;">
+          WASD: Fly • Drag: Orbit • Scroll: Zoom • Shift: Fast
+        </div>
+      </div>
+    `;
+    this.container.appendChild(navHUD);
+
+    // Bind navigation buttons and toggles
+    const btnMin = navHUD.querySelector('#btnDtNavMinimize');
+    const body = navHUD.querySelector('#dtNavControlsBody');
+    if (btnMin && body) {
+      btnMin.onclick = () => {
+        const isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? 'block' : 'none';
+        btnMin.textContent = isHidden ? '_' : '+';
+      };
+    }
+
+    const btnFocusBlock = navHUD.querySelector('#dtBtnFocusBlock');
+    if (btnFocusBlock) {
+      btnFocusBlock.onclick = (e) => {
+        e.preventDefault();
+        this.focusOnBlock();
+      };
+    }
+
+    const btnFocusArm = navHUD.querySelector('#dtBtnFocusArm');
+    if (btnFocusArm) {
+      btnFocusArm.onclick = (e) => {
+        e.preventDefault();
+        this.focusOnArm();
+      };
+    }
+
+    navHUD.querySelectorAll('.dt-nav-btn[data-dir]').forEach(btn => {
+      const dir = btn.getAttribute('data-dir');
+      this.bindNavButtonHold(btn, dir);
+    });
   },
 
   /* Persistence for Gripper Claw Configuration */
@@ -1199,7 +1341,8 @@ const DigitalTwinPanel = {
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 3000);
-    this.camera.position.set(0, 260, 440);
+    const initialCam = this.getDefaultCameraView();
+    this.camera.position.set(initialCam.pos.x, initialCam.pos.y, initialCam.pos.z);
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -1213,7 +1356,7 @@ const DigitalTwinPanel = {
     // OrbitControls
     if (typeof THREE.OrbitControls !== 'undefined') {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-      this.controls.target.set(0, 160, 0);
+      this.controls.target.set(initialCam.target.x, initialCam.target.y, initialCam.target.z);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.05;
       this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
@@ -1829,13 +1972,279 @@ const DigitalTwinPanel = {
     }
   },
 
-  /* Reset Viewport Camera */
+  /* Get Default Camera View (from localStorage or factory isometric perspective) */
+  getDefaultCameraView() {
+    try {
+      const saved = localStorage.getItem('dt_camera_default');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.pos && parsed.target) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read dt_camera_default from localStorage:', e);
+    }
+
+    // High-visibility factory 3/4 isometric perspective:
+    // Captures 6-DOF arm articulation, tabletop workspace, and yellow sponge block in clear 3D depth
+    return {
+      pos: { x: 260, y: 280, z: 380 },
+      target: { x: 0, y: 110, z: 150 }
+    };
+  },
+
+  /* Set Current Camera View as User Default */
+  setDefaultCamera() {
+    if (!this.camera || !this.controls) return;
+    const customView = {
+      pos: {
+        x: Math.round(this.camera.position.x * 10) / 10,
+        y: Math.round(this.camera.position.y * 10) / 10,
+        z: Math.round(this.camera.position.z * 10) / 10
+      },
+      target: {
+        x: Math.round(this.controls.target.x * 10) / 10,
+        y: Math.round(this.controls.target.y * 10) / 10,
+        z: Math.round(this.controls.target.z * 10) / 10
+      }
+    };
+    try {
+      localStorage.setItem('dt_camera_default', JSON.stringify(customView));
+    } catch (e) {
+      console.warn('Failed to save dt_camera_default:', e);
+    }
+
+    this.showCameraToast('Camera View Saved as Default');
+
+    const btn = document.getElementById('btnDtSetDefaultCamera');
+    if (btn) {
+      const origText = btn.textContent;
+      btn.textContent = 'Default Saved!';
+      btn.style.color = 'var(--accent-primary)';
+      btn.style.borderColor = 'var(--accent-primary)';
+      setTimeout(() => {
+        btn.textContent = origText;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1500);
+    }
+  },
+
+  /* Reset Viewport Camera to Saved Default or Factory View */
   resetCamera() {
     if (!this.camera) return;
-    this.camera.position.set(0, 260, 440);
+    const view = this.getDefaultCameraView();
+    this.camera.position.set(view.pos.x, view.pos.y, view.pos.z);
     if (this.controls) {
-      this.controls.target.set(0, 160, 0);
+      this.controls.target.set(view.target.x, view.target.y, view.target.z);
       this.controls.update();
+    }
+    this.showCameraToast('Camera Reset to Default View');
+  },
+
+  /* Floating Toast Notification in 3D Viewport */
+  showCameraToast(message) {
+    if (!this.container) return;
+    let toast = document.getElementById('dtCameraToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'dtCameraToast';
+      toast.style.position = 'absolute';
+      toast.style.top = '16px';
+      toast.style.left = '50%';
+      toast.style.transform = 'translateX(-50%)';
+      toast.style.background = 'rgba(26, 24, 23, 0.94)';
+      toast.style.border = '1px solid var(--accent-primary)';
+      toast.style.color = '#FAF7F2';
+      toast.style.fontFamily = 'var(--font-mono)';
+      toast.style.fontSize = '0.78rem';
+      toast.style.padding = '8px 18px';
+      toast.style.borderRadius = '20px';
+      toast.style.zIndex = '30';
+      toast.style.pointerEvents = 'none';
+      toast.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.35)';
+      toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      this.container.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-8px)';
+    }, 1800);
+  },
+
+  /* Quick Focus Camera Orbit Target on Yellow Sponge Block */
+  focusOnBlock() {
+    if (!this.controls) return;
+    const bx = this.currentBlock3D.x;
+    const by = this.currentBlock3D.y;
+    const bz = this.currentBlock3D.z;
+    this.controls.target.set(bx, by, bz);
+    this.controls.update();
+    this.showCameraToast('Orbit Target Locked to Yellow Sponge Block');
+  },
+
+  /* Quick Focus Camera Orbit Target on Robot Arm */
+  focusOnArm() {
+    if (!this.controls) return;
+    this.controls.target.set(0, 110, 80);
+    this.controls.update();
+    this.showCameraToast('Orbit Target Locked to Robot Arm');
+  },
+
+  /* Keyboard Event Handlers for WASD + Elevation Camera Movement */
+  setupKeyboardControls() {
+    window.addEventListener('keydown', (e) => {
+      // Do not capture keys if typing in form inputs
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) {
+        return;
+      }
+
+      // Only active when digital twin panel is active
+      const dtPanel = document.getElementById('panel-digital-twin');
+      if (!dtPanel || !dtPanel.classList.contains('active')) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      let handled = false;
+
+      if (key === 'w' || e.key === 'ArrowUp') { this.keysPressed.w = true; handled = true; }
+      if (key === 's' || e.key === 'ArrowDown') { this.keysPressed.s = true; handled = true; }
+      if (key === 'a' || e.key === 'ArrowLeft') { this.keysPressed.a = true; handled = true; }
+      if (key === 'd' || e.key === 'ArrowRight') { this.keysPressed.d = true; handled = true; }
+      if (key === 'e' || e.key === 'PageUp' || e.code === 'Space') { this.keysPressed.e = true; handled = true; }
+      if (key === 'q' || e.key === 'PageDown') { this.keysPressed.q = true; handled = true; }
+      if (e.key === 'Shift') { this.keysPressed.Shift = true; }
+
+      if (handled) {
+        e.preventDefault();
+        this.syncNavButtonsUI();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const key = e.key.toLowerCase();
+      if (key === 'w' || e.key === 'ArrowUp') this.keysPressed.w = false;
+      if (key === 's' || e.key === 'ArrowDown') this.keysPressed.s = false;
+      if (key === 'a' || e.key === 'ArrowLeft') this.keysPressed.a = false;
+      if (key === 'd' || e.key === 'ArrowRight') this.keysPressed.d = false;
+      if (key === 'e' || e.key === 'PageUp' || e.code === 'Space') this.keysPressed.e = false;
+      if (key === 'q' || e.key === 'PageDown') this.keysPressed.q = false;
+      if (e.key === 'Shift') this.keysPressed.Shift = false;
+
+      this.syncNavButtonsUI();
+    });
+  },
+
+  /* Update On-Screen Navigation Button Styles */
+  syncNavButtonsUI() {
+    const updateBtn = (id, active) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (active) {
+          el.style.background = 'var(--accent-primary)';
+          el.style.color = '#FFFFFF';
+          el.style.borderColor = 'var(--accent-primary)';
+        } else {
+          el.style.background = '';
+          el.style.color = '';
+          el.style.borderColor = '';
+        }
+      }
+    };
+
+    updateBtn('dtBtnNavW', this.keysPressed.w || this.activeNavDirs.forward);
+    updateBtn('dtBtnNavS', this.keysPressed.s || this.activeNavDirs.backward);
+    updateBtn('dtBtnNavA', this.keysPressed.a || this.activeNavDirs.left);
+    updateBtn('dtBtnNavD', this.keysPressed.d || this.activeNavDirs.right);
+    updateBtn('dtBtnNavUp', this.keysPressed.e || this.activeNavDirs.up);
+    updateBtn('dtBtnNavDown', this.keysPressed.q || this.activeNavDirs.down);
+  },
+
+  /* Bind Mouse/Touch Hold Listeners for Directional Buttons */
+  bindNavButtonHold(buttonEl, dirName) {
+    if (!buttonEl) return;
+    const startMove = (e) => {
+      e.preventDefault();
+      this.activeNavDirs[dirName] = true;
+      this.syncNavButtonsUI();
+    };
+    const stopMove = (e) => {
+      e.preventDefault();
+      this.activeNavDirs[dirName] = false;
+      this.syncNavButtonsUI();
+    };
+
+    buttonEl.addEventListener('mousedown', startMove);
+    buttonEl.addEventListener('mouseup', stopMove);
+    buttonEl.addEventListener('mouseleave', stopMove);
+    buttonEl.addEventListener('touchstart', startMove, { passive: false });
+    buttonEl.addEventListener('touchend', stopMove, { passive: false });
+    buttonEl.addEventListener('touchcancel', stopMove, { passive: false });
+  },
+
+  /* 60 FPS Camera Free Flight & Coupled Orbit Target Movement */
+  updateCameraMovement() {
+    if (!this.camera) return;
+
+    const forwardKey = this.keysPressed.w || this.activeNavDirs.forward;
+    const backwardKey = this.keysPressed.s || this.activeNavDirs.backward;
+    const leftKey = this.keysPressed.a || this.activeNavDirs.left;
+    const rightKey = this.keysPressed.d || this.activeNavDirs.right;
+    const upKey = this.keysPressed.e || this.activeNavDirs.up;
+    const downKey = this.keysPressed.q || this.activeNavDirs.down;
+
+    const isMoving = forwardKey || backwardKey || leftKey || rightKey || upKey || downKey;
+    const now = performance.now();
+
+    if (!isMoving) {
+      this.lastNavTime = now;
+      return;
+    }
+
+    const dt = this.lastNavTime ? Math.min((now - this.lastNavTime) / 1000, 0.1) : 0.016;
+    this.lastNavTime = now;
+
+    // Movement speed: 240 mm/s (Shift boost: 520 mm/s)
+    const speed = (this.keysPressed.Shift ? 520 : 240) * dt;
+
+    // Camera forward vector in horizontal ground plane
+    const forward = new THREE.Vector3();
+    this.camera.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() < 0.0001) {
+      forward.set(0, 0, -1);
+    } else {
+      forward.normalize();
+    }
+
+    // Right vector (perpendicular to forward in XZ plane)
+    const right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    const moveVec = new THREE.Vector3(0, 0, 0);
+
+    if (forwardKey) moveVec.add(forward);
+    if (backwardKey) moveVec.sub(forward);
+    if (rightKey) moveVec.add(right);
+    if (leftKey) moveVec.sub(right);
+    if (upKey) moveVec.y += 1.0;
+    if (downKey) moveVec.y -= 1.0;
+
+    if (moveVec.lengthSq() > 0.0001) {
+      moveVec.normalize().multiplyScalar(speed);
+
+      // Translate BOTH camera position and orbit target together so orbit center moves with camera
+      this.camera.position.add(moveVec);
+      if (this.controls) {
+        this.controls.target.add(moveVec);
+      }
     }
   },
 
@@ -2388,6 +2797,9 @@ const DigitalTwinPanel = {
         this.updateClearanceDisplay(curClearance, curLowestY <= this.tableFloorLimitY);
       }
     }
+
+    // Update Camera Navigation (WASD + Elevate / Fly)
+    this.updateCameraMovement();
 
     // Update OrbitControls
     if (this.controls) {
