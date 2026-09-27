@@ -1775,14 +1775,14 @@ const DigitalTwinPanel = {
     if (isReady) {
       pill.className = 'status-pill connected';
       pill.innerHTML = `
-        <span class="status-dot"></span>
-        <span>Digital Twin: 3D CAD Synced with Live Telemetry</span>
+        <span class="status-dot" style="width: 6px; height: 6px;"></span>
+        <span>Live CAD Sync</span>
       `;
     } else {
       pill.className = 'status-pill';
       pill.innerHTML = `
-        <span class="status-dot"></span>
-        <span>Digital Twin: Standing By</span>
+        <span class="status-dot" style="width: 6px; height: 6px;"></span>
+        <span>Standing By</span>
       `;
     }
   },

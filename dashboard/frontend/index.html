@@ -302,36 +302,31 @@
       <!-- Panel: 3D Digital Twin Simulation (Three.js WebGL CAD Model) -->
       <main class="content-panel" id="panel-digital-twin">
         
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-          <div>
-            <h3 class="card-title">3D Digital Twin Simulation</h3>
-            <p class="card-subtitle">Real-time 3D CAD visualization synced with physical arm telemetry via WebSockets.</p>
-          </div>
-          <div class="status-pill" id="dtStatusPill">
-            <span class="status-dot"></span>
-            <span>Digital Twin Sync: Loading 3D CAD Geometries...</span>
-          </div>
-        </div>
-
         <div class="dashboard-grid">
           
           <!-- Full-Screen 3D Viewport Box -->
           <div class="card" style="grid-column: span 12;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-              <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">Interactive 3D Viewport (WASD / Arrows: Fly & Pan • Q / E: Elevate • Drag: Orbit • Scroll: Zoom)</span>
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <span id="dtClearanceMeter" style="font-family: var(--font-mono); font-size: 0.75rem; color: #888888; background: rgba(150, 150, 150, 0.12); border: 1px solid rgba(150, 150, 150, 0.25); padding: 4px 10px; border-radius: 4px; font-weight: 600;">Safety: BYPASSED</span>
-                <button class="btn btn-secondary" id="btnDtToggleGeofence" style="font-size: 0.75rem; padding: 4px 12px; background: #555555; border-color: #444444; color: #BBBBBB; font-weight: 600; cursor: pointer;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGeofence()">Table Safety: OFF</button>
-                <button class="btn btn-secondary" id="btnDtTune" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleTunerPanel()">Tune Claws</button>
-                <button class="btn btn-secondary" id="btnDtHome" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setHomePose()">Home Pose (90°)</button>
-                <button class="btn btn-secondary" id="btnDtToggleGrid" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGrid()">Toggle Grid</button>
-                <button class="btn btn-secondary" id="btnDtSetDefaultCamera" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setDefaultCamera()">Set Camera Default</button>
-                <button class="btn btn-secondary" id="btnDtResetCamera" style="font-size: 0.75rem; padding: 4px 10px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.resetCamera()">Reset Camera</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-family: var(--font-heading); font-weight: 700; font-size: 0.88rem; color: var(--text-main); letter-spacing: 0.3px;">Digital Twin</span>
+                <div class="status-pill" id="dtStatusPill" style="padding: 2px 8px; font-size: 0.68rem; height: 22px;">
+                  <span class="status-dot" style="width: 6px; height: 6px;"></span>
+                  <span>Live CAD Sync</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <span id="dtClearanceMeter" style="font-family: var(--font-mono); font-size: 0.72rem; color: #888888; background: rgba(150, 150, 150, 0.12); border: 1px solid rgba(150, 150, 150, 0.25); padding: 3px 8px; border-radius: 4px; font-weight: 600;">Safety: BYPASSED</span>
+                <button class="btn btn-secondary" id="btnDtToggleGeofence" style="font-size: 0.72rem; padding: 3px 10px; background: #555555; border-color: #444444; color: #BBBBBB; font-weight: 600; cursor: pointer;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGeofence()">Table Safety: OFF</button>
+                <button class="btn btn-secondary" id="btnDtTune" style="font-size: 0.72rem; padding: 3px 8px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleTunerPanel()">Tune Claws</button>
+                <button class="btn btn-secondary" id="btnDtHome" style="font-size: 0.72rem; padding: 3px 8px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setHomePose()">Home Pose (90°)</button>
+                <button class="btn btn-secondary" id="btnDtToggleGrid" style="font-size: 0.72rem; padding: 3px 8px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.toggleGrid()">Toggle Grid</button>
+                <button class="btn btn-secondary" id="btnDtSetDefaultCamera" style="font-size: 0.72rem; padding: 3px 8px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.setDefaultCamera()">Set Camera Default</button>
+                <button class="btn btn-secondary" id="btnDtResetCamera" style="font-size: 0.72rem; padding: 3px 8px;" onclick="if(window.DigitalTwinPanel) DigitalTwinPanel.resetCamera()">Reset Camera</button>
               </div>
             </div>
 
             <!-- Large 3D Rendering Canvas Area -->
-            <div id="digitalTwinViewport" style="width: 100%; height: calc(100vh - 220px); min-height: 580px; background: #23201D; border-radius: 8px; border: 1px solid var(--border-card); position: relative; overflow: hidden;">
+            <div id="digitalTwinViewport" style="width: 100%; flex: 1; min-height: 0; background: #23201D; border-radius: 8px; border: 1px solid var(--border-card); position: relative; overflow: hidden;">
               <!-- Populated dynamically by DigitalTwinPanel (Three.js WebGL) -->
               
               <!-- Floating Table Penetration Collision Alert Banner -->
@@ -985,12 +980,12 @@
   <script src="js/libs/STLLoader.js"></script>
 
   <!-- Dashboard JavaScript with Cache Busting -->
-  <script src="js/app.js?v=1.0.60"></script>
+  <script src="js/app.js?v=1.0.63"></script>
   <script src="js/servo_panel.js?v=1.0.60"></script>
   <script src="js/teleop_panel.js?v=1.0.60"></script>
   <script src="js/dataset_panel.js?v=1.0.60"></script>
   <script src="js/autonomous_panel.js?v=1.0.60"></script>
-  <script src="js/digital_twin_panel.js?v=1.0.62"></script>
+  <script src="js/digital_twin_panel.js?v=1.0.63"></script>
   <script src="js/perception_panel.js?v=1.0.60"></script>
 </body>
 </html>

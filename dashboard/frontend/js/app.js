@@ -55,6 +55,12 @@ const App = {
           }
         });
 
+        // Hide top-header on digital twin panel to maximize 3D viewport height with zero scrolling
+        const topHeader = document.querySelector('.top-header');
+        if (topHeader) {
+          topHeader.style.display = (targetPanelId === 'panel-digital-twin') ? 'none' : 'flex';
+        }
+
         // Trigger resize for WebGL digital twin viewport if opened
         if (targetPanelId === 'panel-digital-twin' && window.DigitalTwinPanel) {
           setTimeout(() => {
