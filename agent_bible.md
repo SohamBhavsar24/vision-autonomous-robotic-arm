@@ -237,6 +237,7 @@
 - **Digital Twin & Perception UI Refinements:**
   - Made 3D Digital Twin flight navigation HUD collapsed by default (`+` state) on server reboot and hard refresh.
   - Matched Workspace Radar SVG to exact physical $30\text{ cm} \times 25\text{ cm}$ ($6 : 5$) aspect ratio with high-contrast white mat fill, terracotta border, and balanced 6/6 grid layout.
+- **Supabase Cloud Journal Sync (Entry 17):** Published Log Entry #17 (Decoupled Pick-Only Imitation Learning Architecture, Spatial Obstacle Clearing & Continuous Workspace Radar) directly to the live Supabase PostgreSQL database (`journal_entries` table on `pzewxynfhrylnqbkkeeq.supabase.co`) and synchronized local backend JSON (`dashboard/backend/journal_entries.json`) and PWA seed entries.
 - **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all project files.
 
 ---

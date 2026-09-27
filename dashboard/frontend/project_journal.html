@@ -509,6 +509,17 @@
     // Initial Seed Journal Entries
     const DEFAULT_ENTRIES = [
       {
+        id: "entry-17",
+        date: "Sunday, 27th September 2026",
+        title: "Decoupled Pick-Only Imitation Learning Architecture, Spatial Obstacle Clearing & Continuous Workspace Radar",
+        paragraphs: [
+          "In today's session, we completed a major consolidation of our perception architecture by formally retiring the redundant Camera Feeds panel and elevating our computer vision subsystem into a unified Perception panel (panel-perception). With the wrist/side camera (Camera 2) permanently canceled, all operations are streamlined around our overhead Logitech C270 sensor (Camera 1) running 30 FPS OpenCV ArUco tracking. We engineered an interactive 2D SVG Workspace Radar mapping the continuous 30cm x 25cm manipulation pad in an exact 6:5 (1.20:1) physical aspect ratio, featuring real-time coordinate axes (+X red, +Y green), moving target puck with orientation vector theta, and digital coordinate telemetry cards. In the 3D WebGL Digital Twin, we refined the flight navigation HUD to start collapsed by default upon server boot and hard refresh, keeping the CAD viewport clean.",
+          "During an in-depth review of our first 30 human teleoperation demonstrations, we identified that while visual block acquisition was accurately captured, swinging the arm to the left to drop blocks introduced significant multimodal variance in release positions and heights. In Behavioral Cloning and Action Chunking, this variance leads to trajectory averaging and inconsistent drop heights. To resolve this, we formulated a decoupled task decomposition: the neural policy (BC or ACT) exclusively learns the vision-guided pick sequence (Home -> Approach -> Align theta -> Descend -> Grasp -> Lift to clearance), while the place phase is delegated to a deterministic, zero-jerk Cosine S-Curve trajectory moving to calibrated, persistent drop coordinates (drop_locations.json). For Action Chunking with Transformers (ACT), this reduces trajectory length from ~300 steps down to ~60-90 monotonic steps, eliminating trajectory reversals and accelerating model convergence.",
+          "For multi-block sorting with Block 1 (Tag 0) and Block 2 (Tag 1) simultaneously in the workspace, we devised a proximity-based spatial sweep rule. Because drop containers are positioned outside the workspace to the left (in the +X lateral direction), the autonomous scheduler prioritizes picking the block with the higher X coordinate first. By clearing the downstream object nearest the drop zone first, the subsequent block transfer traverses an entirely vacant table, mathematically eliminating block-on-block collisions without requiring exaggerated clearance heights. Finally, we codified a strict architectural mandate: the Servo Control panel (Servo 5 card) is the sole authoritative source of truth for the dynamic Gripper Open Angle (persisted in localStorage and kinematics_config.json). Hardcoded 140° gripper angles are strictly eliminated; all homing routines, autonomous standbys, and drop pose releases dynamically execute the active user-calibrated openAngle."
+        ],
+        attachment: null
+      },
+      {
         id: "entry-16",
         date: "Saturday, 26th September 2026",
         title: "Continuous Autonomous Mode Redesign (Before vs After) & Three.js 3D Mesh Table Penetration Prevention",
@@ -1034,7 +1045,7 @@
               <div class="entry-date">${highlightText(item.date, query)}</div>
               <div class="entry-actions">
                 <button class="edit-btn" onclick="openEditModal('${item.id}')" title="Edit Entry">Edit</button>
-                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">🗑️</button>
+                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">Delete</button>
               </div>
             </div>
             <h2 class="entry-title">${highlightText(item.title, query)}</h2>
