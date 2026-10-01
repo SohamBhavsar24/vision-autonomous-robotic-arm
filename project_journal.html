@@ -146,56 +146,78 @@
       font-weight: 600;
     }
 
+    .entry-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-card);
+    }
+
+    .entry-footer-left {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .entry-actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
+      margin-left: auto;
     }
 
     .edit-btn {
       font-family: var(--font-mono);
-      font-size: 0.78rem;
-      background: none;
-      border: 1px solid var(--border-subtle, #ccc);
-      border-radius: 4px;
-      padding: 2px 8px;
+      font-size: 0.8rem;
+      background: #FAF7F2;
+      border: 1px solid var(--border-card);
+      border-radius: 6px;
+      padding: 5px 12px;
       cursor: pointer;
-      color: var(--accent-primary, #c4784a);
+      color: var(--accent-primary);
       font-weight: 600;
       transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1.2;
     }
 
     .edit-btn:hover, .edit-btn:active {
       color: #9c582f;
-      background: rgba(196, 120, 74, 0.1);
-      border-color: var(--accent-primary, #c4784a);
+      background: #F4EFE6;
+      border-color: var(--accent-primary);
     }
 
     .delete-btn {
-      font-size: 0.85rem;
-      background: none;
-      border: 1px solid var(--border-subtle, #ccc);
-      border-radius: 4px;
-      padding: 2px 6px;
+      font-size: 0.95rem;
+      background: #FAF7F2;
+      border: 1px solid var(--border-card);
+      border-radius: 6px;
+      padding: 4px 8px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      line-height: 1;
+      line-height: 1.2;
       transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
 
     .delete-btn:hover, .delete-btn:active {
       background: #FDF2F2;
       border-color: var(--accent-danger);
-      transform: scale(1.05);
+      transform: scale(1.08);
     }
 
     .btn-read-more {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-top: 10px;
+      margin-top: 0;
       background: #F4EFE6;
       border: 1px solid var(--border-card);
       border-radius: 6px;
@@ -206,6 +228,7 @@
       color: var(--accent-primary);
       cursor: pointer;
       transition: all 0.15s ease;
+      line-height: 1.2;
     }
 
     .btn-read-more:hover {
@@ -435,7 +458,7 @@
 
     @media print {
       body { background: white; padding: 0; }
-      .header-btns, .search-box, .fab-btn, .modal-overlay, .delete-btn, .edit-btn, .btn-read-more { display: none !important; }
+      .header-btns, .search-box, .fab-btn, .modal-overlay, .delete-btn, .edit-btn, .btn-read-more, .entry-footer { display: none !important; }
       .entry-content-full { display: block !important; }
       .entry-content-preview { display: none !important; }
       .journal-entry { border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; }
@@ -867,7 +890,7 @@
       }
     }
 
-    function renderAttachment(att, entryId) {
+    function renderAttachmentMedia(att, entryId) {
       if (!att) return '';
       let fileName = att.name || 'attachment';
       let fileUrl = att.url || fileName;
@@ -879,13 +902,8 @@
 
       if (isImage) {
         return `
-          <div class="attachment-box" style="margin-top: 12px;">
+          <div class="attachment-box" style="margin-top: 14px; margin-bottom: 8px;">
             <img src="${fileUrl}" alt="${fileName}" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-card); max-height: 400px; object-fit: contain;">
-            <div style="margin-top: 8px;">
-              <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge" style="font-size: 0.8rem; padding: 6px 14px;">
-                ⬇️ Download Image: ${fileName}
-              </button>
-            </div>
           </div>
         `;
       }
@@ -896,14 +914,42 @@
 
       if (isVideo) {
         return `
-          <div class="attachment-box" style="margin-top: 12px;">
+          <div class="attachment-box" style="margin-top: 14px; margin-bottom: 8px;">
             <video controls playsinline src="${fileUrl}" style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-card); max-height: 450px; background: #000; width: 100%;"></video>
-            <div style="margin-top: 8px;">
-              <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge" style="font-size: 0.8rem; padding: 6px 14px;">
-                ⬇️ Download Video: ${fileName}
-              </button>
-            </div>
           </div>
+        `;
+      }
+
+      return '';
+    }
+
+    function renderAttachmentButton(att, entryId) {
+      if (!att) return '';
+      let fileName = att.name || 'attachment';
+      let fileUrl = att.url || fileName;
+      let type = (att.type || '').toLowerCase();
+
+      const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(type) || 
+                      !!fileUrl.match(/\.(png|jpg|jpeg|gif|webp)$/i) ||
+                      (att.name && !!att.name.match(/\.(png|jpg|jpeg|gif|webp)$/i));
+
+      if (isImage) {
+        return `
+          <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge" title="Download Image">
+            ⬇️ Download Image: ${fileName}
+          </button>
+        `;
+      }
+
+      const isVideo = ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv', '3gp', 'quicktime'].includes(type) || 
+                      !!fileUrl.match(/\.(mp4|mov|webm|m4v|avi|mkv|3gp)$/i) ||
+                      (att.name && !!att.name.match(/\.(mp4|mov|webm|m4v|avi|mkv|3gp)$/i));
+
+      if (isVideo) {
+        return `
+          <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge" title="Download Video">
+            ⬇️ Download Video: ${fileName}
+          </button>
         `;
       }
 
@@ -915,11 +961,9 @@
       }
 
       return `
-        <div class="attachment-box">
-          <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge">
-            ${badgeText}
-          </button>
-        </div>
+        <button onclick="triggerDownloadAttachment('${entryId}', '${fileName}', '${fileUrl}')" class="attachment-badge" title="View Document">
+          ${badgeText}
+        </button>
       `;
     }
 
