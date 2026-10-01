@@ -2,7 +2,7 @@
 
 > **Purpose:** This file ensures Antigravity never loses project context across sessions.
 > **Rule:** This file MUST be updated after every significant conversation or decision.
-> **Last Updated:** 2026-09-27 (Session 18 — Supabase Secrets Scrubbing & Server-Side API Proxy Architecture)
+> **Last Updated:** 2026-10-01 (Session 19 — Backend Drop Pose Persistence & Decoupled Transfer API)
 
 ---
 
@@ -41,7 +41,7 @@
 | `dashboard/backend/main.py` | [DONE] Active | FastAPI + WebSockets + Kinematics, Vision, Dataset, Model Training & Autonomous Endpoints |
 | `dashboard/backend/serial_manager.py` | [DONE] Active | Arduino Serial + Bluetooth Port Filtering + Cosine S-Curve Transitions + E-Stop |
 | `dashboard/backend/vision_manager.py` | [DONE] Active | OpenCV 5.0 ArUco tracking (IDs 0, 1, 2) + World Coordinate Transformation |
-| `dashboard/backend/drop_locations.json` | [PLANNED] Next | Persistent JSON storage for Block 1 and Block 2 calibrated drop poses |
+| `dashboard/backend/drop_locations.json` | [DONE] Active | Persistent JSON storage for Block 1, Block 2, and high-clearance transit waypoint calibrated drop poses |
 | `dashboard/frontend/index.html` | [DONE] Active | Master Autonomous Bar, 3D Digital Twin, Teleop, Dataset, Journal, ROS 2 Panels |
 | `dashboard/frontend/js/autonomous_panel.js` | [DONE] Active | Continuous Autonomous UI, Model Selector Dropdown, 1.0s Stability Meter, Live Telemetry |
 | `dashboard/frontend/js/digital_twin_panel.js`| [DONE] Active | Three.js WebGL CAD STL 3D Simulation with live WebSocket joint telemetry syncing |
@@ -249,14 +249,27 @@
 - **Frontend Key Scrubbing:** Removed all hardcoded `SUPABASE_URL` and `SUPABASE_KEY` references from `project_journal.html` and `dashboard/frontend/project_journal.html`. All journal queries, updates, and deletes route strictly through `/api/journal` proxies.
 - **Dashboard UI De-cluttering & Landscape Perception Radar:**
   - Purged top header 'Disconnected (Reconnecting...)', ROS 2 'Target Distribution: ROS 2 Humble Hawksbill', 'ArUco: DICT_4X4_50', Arduino CLI status badge, Activity Log card, Safety Control subtitle, Dataset subtitle, and Autonomous subtitle.
-  - Upgraded Perception 2D Workspace Radar to a true widescreen landscape aspect ratio (1.65:1, pad 330px x 200px, container 420/260) with subtle 5x5 cm interior grid lines, making the 30cm wide x 25cm deep workspace distinctly rectangular.
+  - Upgraded Perception 2D Workspace Radar to a true widescreen landscape aspect ratio (1.65:1, pad 330px x 200px, container 420/260) with clean white background, outer borders, and scale ticks (interior dashed grid lines removed per user design request).
+  - Expanded Camera 1 video feed to span 8 (66.7% width) with min-height 480px, creating a dominant overhead view balanced with the radar and marker registry in span 4.
 - **Strict Zero-Emoji Enforcement:** Verified 0 emoji characters across all modified files.
+
+### Session 19 (2026-10-01) — BACKEND DROP POSE PERSISTENCE (`drop_locations.json`) & DECOUPLED TRANSFER API
+- **Persistent Drop Target Storage (`drop_locations.json`):** Created persistent storage for the 5 arm kinematic joint angles `[θ1..θ5]` defining:
+  1. `block_1`: Calibrated drop target for Block 1 (ArUco ID 0) left bin (`[140, 80, 85, 90, 90]`).
+  2. `block_2`: Calibrated drop target for Block 2 (ArUco ID 1) outer left bin (`[155, 80, 85, 90, 90]`).
+  3. `transit_waypoint`: Elevated high-clearance transit pose (`[90, 70, 65, 90, 90]`) clearing the manipulation table before swinging leftward to the bins.
+- **Backend Endpoints (`main.py`):**
+  - `GET /api/drop_locations`: Fetches active calibrated drop targets.
+  - `POST /api/drop_locations`: Updates single target or bulk configurations, enforcing 5-joint kinematic angle clamping `[0, 180]` and strictly omitting gripper angles to satisfy Decision #37.
+  - `POST /api/drop_locations/test/{target_id}`: Executes a smooth zero-jerk Cosine S-Curve test transition to the specified drop pose, dynamically fetching the live `openAngle` from `serial_manager.gripper_open`.
+  - `POST /api/drop_locations/test_sequence/{target_id}`: Executes the full decoupled transfer sequence: current pose -> transit waypoint -> target bin -> release gripper (`openAngle`) -> transit waypoint -> Home (`[90, 90, 90, 90, 90, openAngle]`).
+- **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all files.
 
 ---
 
 ## 5. Next Steps
 
-1. **Backend Drop Pose Persistence (`drop_locations.json`):** Create endpoint `/api/drop_locations` in `main.py` with GET and POST handlers to save and load calibrated joint poses for Block 1 and Block 2.
+1. **[DONE] Backend Drop Pose Persistence (`drop_locations.json`):** Implemented in `main.py` with GET, POST, `/test/{target_id}`, and `/test_sequence/{target_id}` handlers.
 2. **Teleoperation Panel Drop Pose UI & PS5 D-Pad Mapping:** Add Drop Target Manager card on `panel-teleop` and map Gamepad `buttons[12]` (D-Pad Up) and `buttons[13]` (D-Pad Down) to save/trigger drop poses.
 3. **Autonomous Runner Decoupled Pipeline:** Update `autonomous_runner.py` to stop policy inference once the pick lift phase completes, seamlessly chaining into the smooth Cosine S-Curve drop trajectory to the active block's saved target.
 4. **Proximity-Based Spatial Ordering Logic:** Implement higher-$X$ priority sorting when both Tag 0 and Tag 1 are simultaneously detected on the table.

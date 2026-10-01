@@ -149,6 +149,7 @@ CLAW_CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "claw
 CAMERA_CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "camera_config.json"))
 JOURNAL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "journal_entries.json"))
 DATASET_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "dataset_episodes.json"))
+DROP_LOCATIONS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "drop_locations.json"))
 DATASETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "datasets"))
 os.makedirs(DATASETS_DIR, exist_ok=True)
 
@@ -174,6 +175,13 @@ class JournalEntriesRequest(BaseModel):
 
 class DatasetEpisodesRequest(BaseModel):
     episodes: List[Dict[str, Any]]
+
+class DropLocationsSaveRequest(BaseModel):
+    target_id: Optional[str] = None
+    name: Optional[str] = None
+    angles: Optional[List[int]] = None
+    description: Optional[str] = None
+    locations: Optional[Dict[str, Any]] = None
 
 class AutonomousStartRequest(BaseModel):
     model_id: str = "v1"
@@ -386,6 +394,159 @@ async def save_camera_default(config: dict):
     except Exception as e:
         logger.error(f"Error saving camera_config.json: {e}")
         return {"status": "error", "message": str(e)}
+
+
+def load_drop_locations_dict() -> Dict[str, Any]:
+    """Loads drop_locations.json or returns and initializes default locations."""
+    if os.path.exists(DROP_LOCATIONS_PATH):
+        try:
+            with open(DROP_LOCATIONS_PATH, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error loading drop_locations.json: {e}")
+    default_locs = {
+        "block_1": {
+            "name": "Block 1 Drop Target (Tag 0)",
+            "angles": [140, 80, 85, 90, 90],
+            "description": "Calibrated drop target for Block 1 (ArUco ID 0) left bin"
+        },
+        "block_2": {
+            "name": "Block 2 Drop Target (Tag 1)",
+            "angles": [155, 80, 85, 90, 90],
+            "description": "Calibrated drop target for Block 2 (ArUco ID 1) outer left bin"
+        },
+        "transit_waypoint": {
+            "name": "High-Clearance Transit Waypoint",
+            "angles": [90, 70, 65, 90, 90],
+            "description": "Elevated transit waypoint ensuring high table clearance before swinging to drop bins"
+        }
+    }
+    try:
+        with open(DROP_LOCATIONS_PATH, "w") as f:
+            json.dump(default_locs, f, indent=2)
+    except Exception as e:
+        logger.error(f"Error initializing drop_locations.json: {e}")
+    return default_locs
+
+
+@app.get("/api/drop_locations")
+async def get_drop_locations():
+    """Returns persistent calibrated drop targets for Block 1, Block 2, and high-clearance transit waypoint."""
+    data = load_drop_locations_dict()
+    return {"status": "success", "locations": data}
+
+
+@app.post("/api/drop_locations")
+async def save_drop_locations(req: DropLocationsSaveRequest):
+    """
+    Saves updated drop target coordinates.
+    Supports single-target updates (target_id + angles) or bulk updates (locations dict).
+    Stores only the 5 arm kinematic joint angles [θ1..θ5], strictly adhering to Decision #37.
+    """
+    current_data = load_drop_locations_dict()
+
+    if req.target_id and req.angles is not None:
+        clamped_angles = [max(0, min(180, int(round(a)))) for a in req.angles[:5]]
+        if len(clamped_angles) < 5:
+            raise HTTPException(status_code=400, detail="Drop location must specify 5 arm joint angles [θ1..θ5].")
+        target_info = current_data.get(req.target_id, {})
+        target_info["angles"] = clamped_angles
+        if req.name:
+            target_info["name"] = req.name
+        if req.description:
+            target_info["description"] = req.description
+        current_data[req.target_id] = target_info
+
+    elif req.locations:
+        for tid, tinfo in req.locations.items():
+            if isinstance(tinfo, dict) and "angles" in tinfo:
+                clamped_angles = [max(0, min(180, int(round(a)))) for a in tinfo["angles"][:5]]
+                if len(clamped_angles) == 5:
+                    target_entry = current_data.get(tid, {})
+                    target_entry["angles"] = clamped_angles
+                    if "name" in tinfo:
+                        target_entry["name"] = tinfo["name"]
+                    if "description" in tinfo:
+                        target_entry["description"] = tinfo["description"]
+                    current_data[tid] = target_entry
+
+    try:
+        with open(DROP_LOCATIONS_PATH, "w") as f:
+            json.dump(current_data, f, indent=2)
+        return {"status": "saved", "locations": current_data}
+    except Exception as e:
+        logger.error(f"Error saving drop_locations.json: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/drop_locations/test/{target_id}")
+async def test_drop_location_pose(target_id: str):
+    """
+    Executes a smooth zero-jerk Cosine S-Curve test transition to the specified calibrated drop pose.
+    Dynamically loads the live open gripper angle from serial_manager (Decision #37).
+    """
+    locations = load_drop_locations_dict()
+    if target_id not in locations:
+        raise HTTPException(status_code=404, detail=f"Target drop location '{target_id}' not found.")
+
+    target_angles_5 = locations[target_id]["angles"][:5]
+    open_angle = getattr(serial_manager, "gripper_open", 140)
+    target_angles_6 = target_angles_5 + [open_angle]
+
+    success, msg = await serial_manager.smooth_transition_to_angles(
+        target_angles_6,
+        duration_sec=1.5
+    )
+    return {
+        "status": "success" if success else "error",
+        "message": msg,
+        "target_id": target_id,
+        "angles": target_angles_6
+    }
+
+
+@app.post("/api/drop_locations/test_sequence/{target_id}")
+async def test_drop_location_sequence(target_id: str):
+    """
+    Executes complete decoupled transfer test sequence:
+    1. Smooth S-Curve to high-clearance transit waypoint
+    2. Smooth S-Curve to target drop pose
+    3. Momentarily commands calibrated open angle (Decision #37)
+    4. Smooth S-Curve return to Home position
+    """
+    locations = load_drop_locations_dict()
+    if target_id not in locations:
+        raise HTTPException(status_code=404, detail=f"Target drop location '{target_id}' not found.")
+
+    transit_angles_5 = locations.get("transit_waypoint", {}).get("angles", [90, 70, 65, 90, 90])[:5]
+    target_angles_5 = locations[target_id]["angles"][:5]
+    open_angle = getattr(serial_manager, "gripper_open", 140)
+    closed_angle = getattr(serial_manager, "gripper_closed", 85)
+
+    # 1. Waypoint (keep gripper closed to simulate holding a block)
+    wp_angles = transit_angles_5 + [closed_angle]
+    ok, msg = await serial_manager.smooth_transition_to_angles(wp_angles, duration_sec=1.2)
+    if not ok:
+        return {"status": "error", "message": f"Transit waypoint failed: {msg}"}
+
+    # 2. Target Drop Bin (holding block)
+    drop_angles = target_angles_5 + [closed_angle]
+    ok, msg = await serial_manager.smooth_transition_to_angles(drop_angles, duration_sec=1.2)
+    if not ok:
+        return {"status": "error", "message": f"Drop pose failed: {msg}"}
+
+    # 3. Release gripper (dynamically use open angle)
+    release_angles = target_angles_5 + [open_angle]
+    ok, msg = await serial_manager.smooth_transition_to_angles(release_angles, duration_sec=0.5)
+    await asyncio.sleep(0.3)
+
+    # 4. Return to high-clearance transit waypoint (open gripper)
+    wp_open = transit_angles_5 + [open_angle]
+    ok, msg = await serial_manager.smooth_transition_to_angles(wp_open, duration_sec=1.0)
+
+    # 5. Return smoothly to Home
+    ok, msg = await serial_manager.move_to_home()
+    return {"status": "success", "message": f"Drop sequence for '{target_id}' completed successfully."}
 
 
 @app.post("/api/ik/solve")
