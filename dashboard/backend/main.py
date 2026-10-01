@@ -191,6 +191,7 @@ class TrainModelRequest(BaseModel):
     version_id: str = "v1"
     model_name: str = "v1 (30 Demos)"
     epochs: int = 80
+    include_theta: Optional[bool] = None
 
 
 from dataset_formatter import save_compact_dataset_file, save_individual_episodes, load_individual_episodes
@@ -673,7 +674,7 @@ async def get_models():
 async def train_new_model(req: TrainModelRequest):
     """Triggers policy training on recorded dataset episodes."""
     from train_policy_engine import train_model
-    meta = train_model(version_id=req.version_id, model_name=req.model_name, epochs=req.epochs)
+    meta = train_model(version_id=req.version_id, model_name=req.model_name, epochs=req.epochs, include_theta=req.include_theta)
     await broadcast_status()
     return {"status": "trained", "model": meta}
 

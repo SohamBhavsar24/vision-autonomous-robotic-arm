@@ -1,5 +1,17 @@
 [
   {
+    "id": "excluding_block_theta",
+    "name": "Excluding Block Theta",
+    "filename": "excluding_block_theta_policy.npz",
+    "episodes_count": 30,
+    "transitions_count": 10934,
+    "loss": 0.3668,
+    "duration_sec": 3.61,
+    "created_at": "2026-10-01 11:02:44",
+    "status": "Ready",
+    "description": "Behavior Cloning policy trained on 30 human teleoperation demonstrations (without block theta)."
+  },
+  {
     "id": "v1",
     "name": "v1 (30 Demos - Pick Only)",
     "filename": "v1_policy.npz",

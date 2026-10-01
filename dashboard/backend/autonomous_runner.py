@@ -92,6 +92,11 @@ class AutonomousRunner:
         """Loads trained Deep Multi-Layer Perceptron (MLP) Behavior Cloning policy weights."""
         model_file = os.path.join(MODELS_DIR, f"{model_id}_policy.npz")
         if not os.path.exists(model_file):
+            if model_id in ["excluding_theta", "no_theta", "v4"]:
+                alias_file = os.path.join(MODELS_DIR, "excluding_block_theta_policy.npz")
+                if os.path.exists(alias_file):
+                    model_file = alias_file
+        if not os.path.exists(model_file):
             return None
         try:
             return dict(np.load(model_file))
@@ -368,7 +373,7 @@ class AutonomousRunner:
                 return False, "Alignment aborted."
 
             # Phase 2: Autonomous 30Hz policy execution
-            is_pick_only = (model_id == "v1")
+            is_pick_only = (model_id not in ["v2", "v3"])
             dt = 0.033 # 33ms step rate (~30Hz)
             for idx, frame in enumerate(trajectory):
                 if self.is_aborted or (not self.is_running and not self.is_loop_active):

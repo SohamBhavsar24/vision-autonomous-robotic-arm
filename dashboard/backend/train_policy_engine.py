@@ -149,11 +149,14 @@ def load_all_episodes():
     return episodes
 
 
-def prepare_training_dataset(episodes):
+def prepare_training_dataset(episodes, include_theta=True):
     """
-    Extracts 9-dim observation and 6-dim action vectors from episodes.
-    Observation: [θ1..θ5, gripper, block_x, block_y, block_theta]
-    Action: [θ1'..θ5', gripper']
+    Extracts observation and action vectors from episodes.
+    If include_theta=True:
+        Observation: [θ1..θ5, gripper, block_x, block_y, block_theta] (9 dims)
+    If include_theta=False:
+        Observation: [θ1..θ5, gripper, block_x, block_y] (8 dims)
+    Action: [θ1'..θ5', gripper'] (6 dims)
     """
     all_obs = []
     all_acts = []
@@ -197,9 +200,10 @@ def prepare_training_dataset(episodes):
                 curr_j[4] / 180.0,
                 curr_g,
                 bx / 30.0,
-                by / 25.0,
-                bth / 180.0
+                by / 25.0
             ]
+            if include_theta:
+                obs.append(bth / 180.0)
             
             # Action: next primary joint targets + next gripper state
             act = list(next_j) + [next_g]
@@ -210,19 +214,27 @@ def prepare_training_dataset(episodes):
     return np.array(all_obs, dtype=np.float32), np.array(all_acts, dtype=np.float32), demo_profiles
 
 
-def train_model(version_id="v1", model_name="v1 (30 Demos)", epochs=80, batch_size=64, base_lr=2e-3):
+def train_model(version_id="v1", model_name="v1 (30 Demos)", epochs=80, batch_size=64, base_lr=2e-3, include_theta=None):
     """Trains the Behavior Cloning policy on all available episodes and registers the model."""
     os.makedirs(MODELS_DIR, exist_ok=True)
-    
-    print(f"--- Training Autonomous Policy: {model_name} ({version_id}) ---")
+
+    if include_theta is None:
+        lower_str = f"{version_id} {model_name}".lower()
+        if "exclud" in lower_str or "exclus" in lower_str or "no_theta" in lower_str or "without_theta" in lower_str or "no theta" in lower_str or "without theta" in lower_str:
+            include_theta = False
+        else:
+            include_theta = True
+
+    print(f"--- Training Autonomous Policy: {model_name} ({version_id}) [include_theta={include_theta}] ---")
     episodes = load_all_episodes()
     if not episodes:
         raise ValueError(f"No demonstration episodes found in {DATASETS_DIR}")
         
     print(f"Loaded {len(episodes)} demonstration episodes.")
-    X, Y, demo_profiles = prepare_training_dataset(episodes)
+    X, Y, demo_profiles = prepare_training_dataset(episodes, include_theta=include_theta)
     num_samples = len(X)
-    print(f"Total state-action transitions: {num_samples} (Obs: {X.shape[1]} dims, Act: {Y.shape[1]} dims)")
+    in_dim = X.shape[1]
+    print(f"Total state-action transitions: {num_samples} (Obs: {in_dim} dims, Act: {Y.shape[1]} dims)")
     
     # Shuffle dataset
     indices = np.arange(num_samples)
@@ -231,7 +243,7 @@ def train_model(version_id="v1", model_name="v1 (30 Demos)", epochs=80, batch_si
     Y = Y[indices]
     
     # Initialize Network
-    model = NumPyPolicyNet(in_dim=9, h1_dim=128, h2_dim=128, joint_dim=5)
+    model = NumPyPolicyNet(in_dim=in_dim, h1_dim=128, h2_dim=128, joint_dim=5)
     
     start_time = time.time()
     best_loss = float("inf")
@@ -296,7 +308,9 @@ def train_model(version_id="v1", model_name="v1 (30 Demos)", epochs=80, batch_si
         model_name=model_name,
         num_episodes=len(episodes),
         num_transitions=num_samples,
-        best_loss=best_loss
+        best_loss=best_loss,
+        in_dim=in_dim,
+        include_theta=include_theta
     )
     print(f"Model saved to: {model_path}")
     
@@ -310,6 +324,7 @@ def train_model(version_id="v1", model_name="v1 (30 Demos)", epochs=80, batch_si
             registry = []
             
     # Upsert model entry
+    theta_desc = "with" if include_theta else "without"
     model_meta = {
         "id": version_id,
         "name": model_name,
@@ -320,7 +335,7 @@ def train_model(version_id="v1", model_name="v1 (30 Demos)", epochs=80, batch_si
         "duration_sec": training_duration,
         "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "status": "Ready",
-        "description": f"Behavior Cloning policy trained on {len(episodes)} human teleoperation demonstrations."
+        "description": f"Behavior Cloning policy trained on {len(episodes)} human teleoperation demonstrations ({theta_desc} block theta)."
     }
     
     registry = [m for m in registry if m.get("id") != version_id]
