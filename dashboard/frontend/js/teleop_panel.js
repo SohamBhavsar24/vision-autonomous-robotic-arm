@@ -29,6 +29,10 @@ const TeleopPanel = {
   L4: 14.0,
   integratedAngles: [90, 90, 90, 90, 90, 140], // Continuous Velocity-Based Integrator
   smoothedAngles: [90, 90, 90, 90, 90, 140],   // EMA Low-Pass Filter State
+  dropLocations: null,
+  wasDpadUp: false,
+  wasDpadDown: false,
+  wasDpadLeft: false,
 
   buttonNames: [
     'Cross (×)', 'Circle (○)', 'Square (□)', 'Triangle (△)',
@@ -45,6 +49,7 @@ const TeleopPanel = {
     this.startLoop();
     this.loadKinematicsConfig();
     this.updateModeUI();
+    this.loadDropLocations();
   },
 
   cacheDOM() {
@@ -65,6 +70,22 @@ const TeleopPanel = {
     this.buttonsGrid = document.getElementById('ps5ButtonsGrid');
     this.axesList = document.getElementById('ps5AxesList');
     this.btnSaveKinematics = document.getElementById('btnSaveKinematics');
+
+    // Drop Target Calibration DOM elements
+    this.dropValBlock1 = document.getElementById('dropValBlock1');
+    this.dropValBlock2 = document.getElementById('dropValBlock2');
+    this.dropValWaypoint = document.getElementById('dropValWaypoint');
+    this.dropCalibStatusBadge = document.getElementById('dropCalibStatusBadge');
+    this.dropCalibStatusDot = document.getElementById('dropCalibStatusDot');
+    this.dropCalibStatusText = document.getElementById('dropCalibStatusText');
+    this.btnSaveDropBlock1 = document.getElementById('btnSaveDropBlock1');
+    this.btnTestPoseBlock1 = document.getElementById('btnTestPoseBlock1');
+    this.btnTestSeqBlock1 = document.getElementById('btnTestSeqBlock1');
+    this.btnSaveDropBlock2 = document.getElementById('btnSaveDropBlock2');
+    this.btnTestPoseBlock2 = document.getElementById('btnTestPoseBlock2');
+    this.btnTestSeqBlock2 = document.getElementById('btnTestSeqBlock2');
+    this.btnSaveDropWaypoint = document.getElementById('btnSaveDropWaypoint');
+    this.btnTestPoseWaypoint = document.getElementById('btnTestPoseWaypoint');
 
     // Teleop Mode Switcher DOM elements
     this.btnToggleMode = document.getElementById('btnToggleTeleopMode');
@@ -93,6 +114,33 @@ const TeleopPanel = {
   bindEvents() {
     if (this.btnSaveKinematics) {
       this.btnSaveKinematics.addEventListener('click', () => this.saveKinematicsConfig());
+    }
+
+    if (this.btnSaveDropBlock1) {
+      this.btnSaveDropBlock1.addEventListener('click', () => this.saveCurrentPoseToDrop('block_1', 'Web UI'));
+    }
+    if (this.btnTestPoseBlock1) {
+      this.btnTestPoseBlock1.addEventListener('click', () => this.testDropPose('block_1'));
+    }
+    if (this.btnTestSeqBlock1) {
+      this.btnTestSeqBlock1.addEventListener('click', () => this.testDropSequence('block_1'));
+    }
+
+    if (this.btnSaveDropBlock2) {
+      this.btnSaveDropBlock2.addEventListener('click', () => this.saveCurrentPoseToDrop('block_2', 'Web UI'));
+    }
+    if (this.btnTestPoseBlock2) {
+      this.btnTestPoseBlock2.addEventListener('click', () => this.testDropPose('block_2'));
+    }
+    if (this.btnTestSeqBlock2) {
+      this.btnTestSeqBlock2.addEventListener('click', () => this.testDropSequence('block_2'));
+    }
+
+    if (this.btnSaveDropWaypoint) {
+      this.btnSaveDropWaypoint.addEventListener('click', () => this.saveCurrentPoseToDrop('transit_waypoint', 'Web UI'));
+    }
+    if (this.btnTestPoseWaypoint) {
+      this.btnTestPoseWaypoint.addEventListener('click', () => this.testDropPose('transit_waypoint'));
     }
 
     window.addEventListener('gamepadconnected', (e) => {
@@ -478,6 +526,9 @@ const TeleopPanel = {
     const r1Pressed = this.isButtonPressed(gp.buttons[5]);     // R1 Bumper -> Wrist Roll CW
     const l2Pressed = this.isButtonPressed(gp.buttons[6]);     // L2 Trigger -> Gripper Lock Toggle
     const optionsPressed = this.isButtonPressed(gp.buttons[9]);// Options (≡) -> Move to Home Position
+    const dpadUp = this.isButtonPressed(gp.buttons[12]);       // D-Pad Up -> Save Block 1 Drop Pose
+    const dpadDown = this.isButtonPressed(gp.buttons[13]);     // D-Pad Down -> Save Block 2 Drop Pose
+    const dpadLeft = this.isButtonPressed(gp.buttons[14]);     // D-Pad Left -> Save Transit Waypoint
     const r2Btn = gp.buttons[7];
     const r2Val = r2Btn ? (r2Btn.value !== undefined ? r2Btn.value : (r2Btn.pressed ? 1 : 0)) : 0;
 
@@ -498,6 +549,24 @@ const TeleopPanel = {
       this.homingStartAngles = [...this.integratedAngles];
     }
     this.wasOptionsPressed = optionsPressed;
+
+    // Handle D-Pad Up (Save Current Pose as Block 1 Drop Target)
+    if (dpadUp && !this.wasDpadUp) {
+      this.saveCurrentPoseToDrop('block_1', 'PS5 D-Pad Up');
+    }
+    this.wasDpadUp = dpadUp;
+
+    // Handle D-Pad Down (Save Current Pose as Block 2 Drop Target)
+    if (dpadDown && !this.wasDpadDown) {
+      this.saveCurrentPoseToDrop('block_2', 'PS5 D-Pad Down');
+    }
+    this.wasDpadDown = dpadDown;
+
+    // Handle D-Pad Left (Save Current Pose as Transit Waypoint)
+    if (dpadLeft && !this.wasDpadLeft) {
+      this.saveCurrentPoseToDrop('transit_waypoint', 'PS5 D-Pad Left');
+    }
+    this.wasDpadLeft = dpadLeft;
 
     // Smooth Cosine S-Curve Homing Interpolation (~1.2 seconds / 72 frames)
     if (this.isHomingSmoothly) {
@@ -636,6 +705,140 @@ const TeleopPanel = {
       if (typeof ServoPanel !== 'undefined' && ServoPanel.setAngles) {
         ServoPanel.setAngles(this.smoothedAngles);
       }
+    }
+  },
+
+  getCurrentArmAngles() {
+    if (this.smoothedAngles && this.smoothedAngles.length >= 5) {
+      return this.smoothedAngles.slice(0, 5);
+    }
+    if (window.ServoPanel && window.ServoPanel.currentAngles && window.ServoPanel.currentAngles.length >= 5) {
+      return window.ServoPanel.currentAngles.slice(0, 5);
+    }
+    return [90, 90, 90, 90, 90];
+  },
+
+  async loadDropLocations() {
+    try {
+      const resp = await fetch('/api/drop_locations');
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && data.locations) {
+          this.dropLocations = data.locations;
+          this.updateDropLocationsUI();
+        }
+      }
+    } catch (e) {
+      console.warn('Error loading drop locations:', e);
+    }
+  },
+
+  updateDropLocationsUI() {
+    if (!this.dropLocations) return;
+    if (this.dropValBlock1 && this.dropLocations.block_1) {
+      const a = this.dropLocations.block_1.angles || [];
+      this.dropValBlock1.textContent = `[${a.map(x => x + '°').join(', ')}]`;
+    }
+    if (this.dropValBlock2 && this.dropLocations.block_2) {
+      const a = this.dropLocations.block_2.angles || [];
+      this.dropValBlock2.textContent = `[${a.map(x => x + '°').join(', ')}]`;
+    }
+    if (this.dropValWaypoint && this.dropLocations.transit_waypoint) {
+      const a = this.dropLocations.transit_waypoint.angles || [];
+      this.dropValWaypoint.textContent = `[${a.map(x => x + '°').join(', ')}]`;
+    }
+  },
+
+  setDropStatus(msg, isSuccess = true) {
+    if (!this.dropCalibStatusText) return;
+    this.dropCalibStatusText.textContent = msg;
+    if (this.dropCalibStatusDot) {
+      this.dropCalibStatusDot.style.background = isSuccess ? '#2E7D32' : '#B53A2E';
+    }
+    if (this.dropCalibStatusBadge) {
+      this.dropCalibStatusBadge.style.background = isSuccess ? 'rgba(46, 125, 50, 0.12)' : 'rgba(181, 58, 46, 0.12)';
+      this.dropCalibStatusBadge.style.color = isSuccess ? '#2E7D32' : '#B53A2E';
+      this.dropCalibStatusBadge.style.borderColor = isSuccess ? 'rgba(46, 125, 50, 0.3)' : 'rgba(181, 58, 46, 0.3)';
+    }
+  },
+
+  async saveCurrentPoseToDrop(targetId, source = 'Web UI') {
+    const currentArm = this.getCurrentArmAngles();
+    const nameMap = {
+      block_1: 'Block 1 Drop Target (Tag 0)',
+      block_2: 'Block 2 Drop Target (Tag 1)',
+      transit_waypoint: 'High-Clearance Transit Waypoint'
+    };
+    const displayName = nameMap[targetId] || targetId;
+
+    try {
+      this.setDropStatus(`Saving ${targetId}...`, true);
+      const resp = await fetch('/api/drop_locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_id: targetId,
+          angles: currentArm
+        })
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && data.locations) {
+          this.dropLocations = data.locations;
+          this.updateDropLocationsUI();
+        }
+        this.setDropStatus(`Saved ${targetId}: [${currentArm.join(', ')}] (${source})`, true);
+        if (window.App && App.log) {
+          App.log(`Action: Saved ${displayName} pose [${currentArm.join(', ')}] via ${source}`);
+        }
+      } else {
+        this.setDropStatus(`Failed saving ${targetId}`, false);
+      }
+    } catch (e) {
+      console.error('Error saving drop location:', e);
+      this.setDropStatus(`Network error saving ${targetId}`, false);
+    }
+  },
+
+  async testDropPose(targetId) {
+    try {
+      this.setDropStatus(`Moving to ${targetId} pose...`, true);
+      if (window.App && App.log) {
+        App.log(`Action: Testing ${targetId} pose transition...`);
+      }
+      const resp = await fetch(`/api/drop_locations/test/${targetId}`, { method: 'POST' });
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success') {
+        this.setDropStatus(`Reached ${targetId} pose`, true);
+      } else {
+        this.setDropStatus(`Test ${targetId} error: ${data.message || 'failed'}`, false);
+      }
+    } catch (e) {
+      console.error(`Error testing drop pose ${targetId}:`, e);
+      this.setDropStatus(`Error testing ${targetId}`, false);
+    }
+  },
+
+  async testDropSequence(targetId) {
+    try {
+      this.setDropStatus(`Running sequence for ${targetId}...`, true);
+      if (window.App && App.log) {
+        App.log(`Action: Executing complete decoupled drop sequence for ${targetId}...`);
+      }
+      const resp = await fetch(`/api/drop_locations/test_sequence/${targetId}`, { method: 'POST' });
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success') {
+        this.setDropStatus(`Sequence completed for ${targetId}`, true);
+        if (window.App && App.log) {
+          App.log(`Action: Drop sequence for ${targetId} completed. Arm returned to Home.`);
+        }
+      } else {
+        this.setDropStatus(`Sequence failed: ${data.message || 'error'}`, false);
+      }
+    } catch (e) {
+      console.error(`Error running drop sequence for ${targetId}:`, e);
+      this.setDropStatus(`Error running sequence: ${targetId}`, false);
     }
   }
 };

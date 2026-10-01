@@ -263,6 +263,7 @@
   - `POST /api/drop_locations`: Updates single target or bulk configurations, enforcing 5-joint kinematic angle clamping `[0, 180]` and strictly omitting gripper angles to satisfy Decision #37.
   - `POST /api/drop_locations/test/{target_id}`: Executes a smooth zero-jerk Cosine S-Curve test transition to the specified drop pose, dynamically fetching the live `openAngle` from `serial_manager.gripper_open`.
   - `POST /api/drop_locations/test_sequence/{target_id}`: Executes the full decoupled transfer sequence: current pose -> transit waypoint -> target bin -> release gripper (`openAngle`) -> transit waypoint -> Home (`[90, 90, 90, 90, 90, openAngle]`).
+- **Teleoperation Panel Drop Target Manager & PS5 D-Pad Controls:** Added dedicated Drop Target Calibration card to `panel-teleop` in `index.html`. In `teleop_panel.js`, mapped live PS5 controller D-Pad shortcuts: D-Pad Up (`buttons[12]`) saves current pose to Block 1 Drop Target, D-Pad Down (`buttons[13]`) saves current pose to Block 2 Drop Target, and D-Pad Left (`buttons[14]`) saves current pose to High-Clearance Transit Waypoint. Integrated 1-click Web UI save buttons, single-pose test buttons, full decoupled sequence test buttons, dynamic status feedback badge, and bumped cache-buster to `v=1.0.67`.
 - **Strict Zero-Emoji Mandate:** Confirmed 0 emoji characters across all files.
 
 ---
@@ -270,7 +271,7 @@
 ## 5. Next Steps
 
 1. **[DONE] Backend Drop Pose Persistence (`drop_locations.json`):** Implemented in `main.py` with GET, POST, `/test/{target_id}`, and `/test_sequence/{target_id}` handlers.
-2. **Teleoperation Panel Drop Pose UI & PS5 D-Pad Mapping:** Add Drop Target Manager card on `panel-teleop` and map Gamepad `buttons[12]` (D-Pad Up) and `buttons[13]` (D-Pad Down) to save/trigger drop poses.
+2. **[DONE] Teleoperation Panel Drop Pose UI & PS5 D-Pad Mapping:** Added Drop Target Calibration card on `panel-teleop` with Web UI 1-click controls, single pose test, sequence execution, and Gamepad `buttons[12]` (D-Pad Up), `buttons[13]` (D-Pad Down), and `buttons[14]` (D-Pad Left) shortcuts.
 3. **Autonomous Runner Decoupled Pipeline:** Update `autonomous_runner.py` to stop policy inference once the pick lift phase completes, seamlessly chaining into the smooth Cosine S-Curve drop trajectory to the active block's saved target.
 4. **Proximity-Based Spatial Ordering Logic:** Implement higher-$X$ priority sorting when both Tag 0 and Tag 1 are simultaneously detected on the table.
 5. **Collect Fresh Pick-Only Demonstrations:** Record 30 clean, consistent pick-only demonstrations across the workspace grid (cutting episode time by ~50%).
