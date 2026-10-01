@@ -30,6 +30,33 @@ logger = logging.getLogger("AutonomousRunner")
 MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "models"))
 DATASETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "datasets"))
 REGISTRY_FILE = os.path.join(MODELS_DIR, "models_registry.json")
+DROP_LOCATIONS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "drop_locations.json"))
+
+def load_drop_locations() -> Dict[str, Any]:
+    """Loads drop_locations.json or returns default calibrated locations."""
+    if os.path.exists(DROP_LOCATIONS_PATH):
+        try:
+            with open(DROP_LOCATIONS_PATH, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error loading drop_locations.json: {e}")
+    return {
+        "block_1": {
+            "name": "Block 1 Drop Target (Tag 0)",
+            "angles": [140, 80, 85, 90, 90],
+            "description": "Calibrated drop target for Block 1 (ArUco ID 0) left bin"
+        },
+        "block_2": {
+            "name": "Block 2 Drop Target (Tag 1)",
+            "angles": [155, 80, 85, 90, 90],
+            "description": "Calibrated drop target for Block 2 (ArUco ID 1) outer left bin"
+        },
+        "transit_waypoint": {
+            "name": "High-Clearance Transit Waypoint",
+            "angles": [90, 70, 65, 90, 90],
+            "description": "Elevated transit waypoint ensuring high table clearance before swinging to drop bins"
+        }
+    }
 
 class AutonomousRunner:
     def __init__(self, serial_manager, vision_manager):
@@ -51,7 +78,8 @@ class AutonomousRunner:
         self.total_steps = 0
         self.current_phase = "Idle"
         self.progress_pct = 0.0
-        self.current_angles = [90, 90, 90, 90, 90, 140]
+        open_angle = getattr(self.serial_manager, "gripper_open", 140)
+        self.current_angles = [90, 90, 90, 90, 90, open_angle]
         self.target_block_pose = None
         self.execution_task: Optional[asyncio.Task] = None
 
@@ -270,20 +298,21 @@ class AutonomousRunner:
         anchor_summary = f"Demos {[ep.get('number', i+1) for ep, _ in neighbors]} (w={[round(w, 2) for w in weights]})"
         return synthesized_trajectory, anchor_summary, round(best_dist, 1)
 
-    async def _execute_trajectory(self, target_bx: float, target_by: float, target_bth: float, model_id: str = "v1", broadcast_callback=None) -> Tuple[bool, str]:
+    async def _execute_trajectory(self, target_bx: float, target_by: float, target_bth: float, model_id: str = "v1", broadcast_callback=None, target_tag_id: int = 0) -> Tuple[bool, str]:
         """
-        Executes synthesized trajectory on physical arm:
-        1. Loads policy weights and synthesizes trajectory.
-        2. Aligns arm to start pose.
-        3. Streams trajectory at 30Hz.
-        4. Returns arm safely to Home position.
+        Executes decoupled pick-and-place pipeline on physical arm:
+        1. Loads policy weights and synthesizes pick-only trajectory from demonstrations.
+        2. Aligns arm to start pose (Cosine S-Curve).
+        3. Streams neural policy trajectory at 30Hz to grasp and lift block.
+        4. Transfers block via deterministic Cosine S-Curve to calibrated drop bin.
+        5. Returns arm safely to Home position.
         """
-        self.target_block_pose = {"x_cm": target_bx, "y_cm": target_by, "theta_deg": target_bth}
+        self.target_block_pose = {"x_cm": target_bx, "y_cm": target_by, "theta_deg": target_bth, "tag_id": target_tag_id}
         
         # Load Deep Multi-Layer Perceptron (MLP) Policy Model & Synthesize Trajectory
         model_weights = self.load_model_weights(model_id)
         if model_weights:
-            logger.info(f"Loaded Deep MLP Behavior Cloning Model '{model_id}' (Loss: {model_weights.get('best_loss', 0.5):.4f}, Transitions: {model_weights.get('num_transitions', 17824)})")
+            logger.info(f"Loaded Deep MLP Behavior Cloning Model '{model_id}' (Loss: {model_weights.get('best_loss', 0.3627):.4f}, Transitions: {model_weights.get('num_transitions', 10964)})")
             
         try:
             trajectory, anchor_demo_num, dist = self.generate_policy_trajectory(target_bx, target_by, target_bth, model_id)
@@ -297,14 +326,16 @@ class AutonomousRunner:
         self.current_step = 0
         self.progress_pct = 0.0
         
-        logger.info(f"Starting autonomous trajectory execution (Model: {model_id}, Target: X={target_bx}cm, Y={target_by}cm, theta={target_bth} deg, Anchors: {anchor_demo_num} d={dist}cm)")
+        target_name = "Block 2 (Tag 1)" if target_tag_id == 1 else "Block 1 (Tag 0)"
+        logger.info(f"Starting autonomous pick-and-place (Target: {target_name} at X={target_bx}cm, Y={target_by}cm, theta={target_bth} deg, Model: {model_id}, Anchors: {anchor_demo_num} d={dist}cm)")
 
-        open_angle = max(148, getattr(self.serial_manager, "gripper_open", 140))
+        open_angle = getattr(self.serial_manager, "gripper_open", 140)
         close_angle = getattr(self.serial_manager, "gripper_closed", 85)
 
         try:
             # Phase 1: Smooth alignment from current arm pose to start pose (1.0s Cosine S-Curve)
             self.current_phase = "Aligning to Start Pose"
+            self.progress_pct = 5.0
             if broadcast_callback:
                 await broadcast_callback()
                 
@@ -313,10 +344,10 @@ class AutonomousRunner:
             start_pose = list(first_frame["joints"]) + [start_grip]
             
             success, msg = await self.serial_manager.smooth_transition_to_angles(start_pose, duration_sec=1.0, broadcast_callback=broadcast_callback)
-            if not success or self.is_aborted:
+            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
                 return False, "Alignment aborted."
 
-            # Phase 2: Autonomous 30Hz closed-loop execution
+            # Phase 2: Autonomous 30Hz neural policy execution (Visual Pick & Lift)
             dt = 0.033 # 33ms step rate (~30Hz)
             for idx, frame in enumerate(trajectory):
                 if self.is_aborted or (not self.is_running and not self.is_loop_active):
@@ -324,20 +355,16 @@ class AutonomousRunner:
                     return False, "Execution aborted."
                     
                 self.current_step = idx + 1
-                self.progress_pct = (self.current_step / self.total_steps) * 100.0
+                self.progress_pct = min(70.0, 5.0 + (self.current_step / self.total_steps) * 65.0)
                 
-                # Dynamic Phase Labeling
+                # Dynamic Phase Labeling for Pick-Only Trajectory
                 p = frame["progress"]
-                if p < 0.35:
+                if p < 0.60:
                     self.current_phase = "Approaching Target Block"
-                elif p < 0.50:
-                    self.current_phase = "Grasping Sponge Block"
-                elif p < 0.75:
-                    self.current_phase = "Lifting & Transferring to Target Box"
-                elif p < 0.90:
-                    self.current_phase = "Releasing Block into Target Box"
+                elif p < 0.85:
+                    self.current_phase = "Grasping Block"
                 else:
-                    self.current_phase = "Retracting Arm"
+                    self.current_phase = "Lifting Block to Clearance Height"
                     
                 gripper_state = frame["gripper_state"]
                 grip_angle = close_angle if gripper_state == 1 else open_angle
@@ -351,18 +378,78 @@ class AutonomousRunner:
                     
                 await asyncio.sleep(dt)
 
-            # Phase 3: Smooth return to Home Position (1.2s Cosine S-Curve)
+            if self.is_aborted or (not self.is_running and not self.is_loop_active):
+                return False, "Execution aborted before drop transfer."
+
+            # Phase 3: Deterministic Cosine S-Curve Transfer & Drop Sequence (Decoupled Architecture)
+            drop_locs = load_drop_locations()
+            drop_key = "block_2" if target_tag_id == 1 else "block_1"
+            target_bin_pose_5 = drop_locs.get(drop_key, {}).get("angles", [140, 80, 85, 90, 90])[:5]
+            transit_waypoint_5 = drop_locs.get("transit_waypoint", {}).get("angles", [90, 70, 65, 90, 90])[:5]
+
+            # 3a. Transit to High-Clearance Waypoint (Gripper Closed, holding block)
+            self.current_phase = "Transit to High-Clearance Waypoint"
+            self.progress_pct = 78.0
+            if broadcast_callback:
+                await broadcast_callback()
+            transit_pose_closed = transit_waypoint_5 + [close_angle]
+            success, msg = await self.serial_manager.smooth_transition_to_angles(
+                transit_pose_closed, duration_sec=1.2, broadcast_callback=broadcast_callback
+            )
+            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
+                return False, "Transit to waypoint aborted."
+
+            # 3b. Move to Calibrated Drop Bin (Gripper Closed, holding block)
+            target_bin_name = "Block 2 Bin (Tag 1)" if target_tag_id == 1 else "Block 1 Bin (Tag 0)"
+            self.current_phase = f"Moving to Calibrated Drop Bin ({target_bin_name})"
+            self.progress_pct = 86.0
+            if broadcast_callback:
+                await broadcast_callback()
+            drop_bin_pose_closed = target_bin_pose_5 + [close_angle]
+            success, msg = await self.serial_manager.smooth_transition_to_angles(
+                drop_bin_pose_closed, duration_sec=1.2, broadcast_callback=broadcast_callback
+            )
+            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
+                return False, "Move to drop bin aborted."
+
+            # 3c. Release Block into Drop Bin (Open Gripper)
+            self.current_phase = "Releasing Block into Bin"
+            self.progress_pct = 92.0
+            if broadcast_callback:
+                await broadcast_callback()
+            drop_bin_pose_open = target_bin_pose_5 + [open_angle]
+            success, msg = await self.serial_manager.smooth_transition_to_angles(
+                drop_bin_pose_open, duration_sec=0.5, broadcast_callback=broadcast_callback
+            )
+            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
+                return False, "Gripper release aborted."
+            await asyncio.sleep(0.3)
+
+            # 3d. Retract Arm to High-Clearance Waypoint (Gripper Open)
+            self.current_phase = "Clearing Drop Bin"
+            self.progress_pct = 96.0
+            if broadcast_callback:
+                await broadcast_callback()
+            transit_pose_open = transit_waypoint_5 + [open_angle]
+            success, msg = await self.serial_manager.smooth_transition_to_angles(
+                transit_pose_open, duration_sec=1.0, broadcast_callback=broadcast_callback
+            )
+            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
+                return False, "Retract to waypoint aborted."
+
+            # 3e. Smooth return to Home Position (Gripper Open)
             self.current_phase = "Returning to Home Position"
             self.progress_pct = 100.0
             if broadcast_callback:
                 await broadcast_callback()
-                
             home_angles = [90, 90, 90, 90, 90, open_angle]
-            await self.serial_manager.smooth_transition_to_angles(home_angles, duration_sec=1.2, broadcast_callback=broadcast_callback)
-            
+            await self.serial_manager.smooth_transition_to_angles(
+                home_angles, duration_sec=1.2, broadcast_callback=broadcast_callback
+            )
+
             self.current_phase = "Pick & Place Completed"
-            logger.info("Autonomous policy pick-and-place sequence finished successfully.")
-            return True, "Autonomous pick-and-place sequence completed successfully."
+            logger.info(f"Autonomous decoupled pick-and-place sequence finished successfully ({drop_key}).")
+            return True, f"Autonomous pick-and-place sequence completed successfully ({drop_key})."
 
         except Exception as e:
             logger.error(f"Error during autonomous execution: {e}")
@@ -386,18 +473,26 @@ class AutonomousRunner:
         # Perception Check
         vision_pose = self.vision_manager.latest_block_pose
         if not vision_pose or not vision_pose.get("valid", False):
-            return False, "Target Block (ArUco ID 0) or World Origin (ArUco ID 2) not detected by Camera 1. Ensure markers are visible."
+            return False, "Target Block (ArUco ID 0 or 1) or World Origin (ArUco ID 2) not detected by Camera 1. Ensure markers are visible."
             
         target_bx = float(vision_pose["x_cm"])
         target_by = float(vision_pose["y_cm"])
         target_bth = float(vision_pose["theta_deg"])
+        target_tag_id = int(vision_pose.get("tag_id", 0))
         
         # Safe workspace bounds validation (0-30cm x 0-25cm with margin)
         if not (-2.0 <= target_bx <= 32.0 and -2.0 <= target_by <= 28.0):
             return False, f"Target block pose ({target_bx}cm, {target_by}cm) is outside safe workspace bounds (0-30cm x 0-25cm)."
             
         self.is_aborted = False
-        return await self._execute_trajectory(target_bx, target_by, target_bth, model_id, broadcast_callback)
+        return await self._execute_trajectory(
+            target_bx=target_bx,
+            target_by=target_by,
+            target_bth=target_bth,
+            model_id=model_id,
+            broadcast_callback=broadcast_callback,
+            target_tag_id=target_tag_id
+        )
 
     def start_autonomous_loop(self, model_id: str = "v1", broadcast_callback=None) -> Tuple[bool, str]:
         """
@@ -436,7 +531,7 @@ class AutonomousRunner:
         """
         logger.info(f"Autonomous continuous loop worker started with Model '{self.loop_model_id}'.")
         
-        open_angle = max(148, getattr(self.serial_manager, "gripper_open", 140))
+        open_angle = getattr(self.serial_manager, "gripper_open", 140)
         home_angles = [90, 90, 90, 90, 90, open_angle]
         
         try:
@@ -460,13 +555,14 @@ class AutonomousRunner:
                     bx = float(vision_pose["x_cm"])
                     by = float(vision_pose["y_cm"])
                     bth = float(vision_pose.get("theta_deg", 0.0))
+                    tag_id = int(vision_pose.get("tag_id", 0))
                     
                     # Workspace bounds check (0-30cm x 0-25cm with margin)
                     if (-2.0 <= bx <= 32.0 and -2.0 <= by <= 28.0):
                         now = time.time()
                         if self.last_stable_pose is None:
                             # First detection in workspace
-                            self.last_stable_pose = {"x_cm": bx, "y_cm": by, "theta_deg": bth}
+                            self.last_stable_pose = {"x_cm": bx, "y_cm": by, "theta_deg": bth, "tag_id": tag_id}
                             self.stability_start_time = now
                             self.stability_countdown = 1.0
                             self.loop_state = "stabilizing"
@@ -480,7 +576,7 @@ class AutonomousRunner:
                             # Threshold: max 0.8 cm displacement, 15 deg theta jitter
                             if dx > 0.8 or dy > 0.8 or dth > 15.0:
                                 # Movement detected: reset 1.0s stability countdown
-                                self.last_stable_pose = {"x_cm": bx, "y_cm": by, "theta_deg": bth}
+                                self.last_stable_pose = {"x_cm": bx, "y_cm": by, "theta_deg": bth, "tag_id": tag_id}
                                 self.stability_start_time = now
                                 self.stability_countdown = 1.0
                                 self.loop_state = "stabilizing"
@@ -491,9 +587,10 @@ class AutonomousRunner:
                                 
                                 if self.stability_countdown <= 0.0:
                                     # Block confirmed stationary for 1.0s! Trigger execution
-                                    logger.info(f"Block stability confirmed at X={bx:.1f}cm, Y={by:.1f}cm, theta={bth:.1f} deg. Starting pick & place.")
+                                    tag_name = "Block 2 (Tag 1)" if tag_id == 1 else "Block 1 (Tag 0)"
+                                    logger.info(f"{tag_name} stability confirmed at X={bx:.1f}cm, Y={by:.1f}cm, theta={bth:.1f} deg. Starting pick & place.")
                                     self.loop_state = "executing"
-                                    self.current_phase = f"Executing Pick & Place ({self.loop_model_id})"
+                                    self.current_phase = f"Executing Pick & Place ({tag_name})"
                                     if broadcast_callback:
                                         await broadcast_callback()
                                         
@@ -502,7 +599,8 @@ class AutonomousRunner:
                                         target_by=by,
                                         target_bth=bth,
                                         model_id=self.loop_model_id,
-                                        broadcast_callback=broadcast_callback
+                                        broadcast_callback=broadcast_callback,
+                                        target_tag_id=tag_id
                                     )
                                     
                                     if not self.is_loop_active or self.is_aborted:

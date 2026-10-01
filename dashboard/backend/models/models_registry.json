@@ -1,5 +1,17 @@
 [
   {
+    "id": "v1",
+    "name": "v1 (30 Demos - Pick Only)",
+    "filename": "v1_policy.npz",
+    "episodes_count": 30,
+    "transitions_count": 10934,
+    "loss": 0.3627,
+    "duration_sec": 3.64,
+    "created_at": "2026-10-01 09:45:29",
+    "status": "Ready",
+    "description": "Behavior Cloning policy trained on 30 human teleoperation demonstrations."
+  },
+  {
     "id": "v3",
     "name": "v3 (30 Demos)",
     "filename": "v3_policy.npz",
@@ -8,18 +20,6 @@
     "loss": 0.5109,
     "duration_sec": 5.83,
     "created_at": "2026-09-09 15:14:22",
-    "status": "Ready",
-    "description": "Behavior Cloning policy trained on 30 human teleoperation demonstrations."
-  },
-  {
-    "id": "v1",
-    "name": "v1 (30 Demos)",
-    "filename": "v1_policy.npz",
-    "episodes_count": 30,
-    "transitions_count": 17824,
-    "loss": 0.5026,
-    "duration_sec": 5.9,
-    "created_at": "2026-09-09 11:45:32",
     "status": "Ready",
     "description": "Behavior Cloning policy trained on 30 human teleoperation demonstrations."
   },

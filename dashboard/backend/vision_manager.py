@@ -205,15 +205,22 @@ class VisionManager:
             cv2.arrowedLine(frame, (int(origin_x), int(origin_y)), (int(origin_x), int(origin_y - axis_len)), (0, 255, 0), 2, tipLength=0.2)
             cv2.putText(frame, "+Y (cm)", (int(origin_x - 18), int(origin_y - axis_len - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
 
-            if 0 in tag_centers:
-                block_x_px, block_y_px = tag_centers[0]
+            detected_tags = [tid for tid in [0, 1] if tid in tag_centers and tid in tag_corners_map]
+            if detected_tags:
+                # If multiple blocks detected, prioritize higher X coordinate (Proximity-Based Spatial Ordering)
+                if len(detected_tags) > 1:
+                    selected_tag = max(detected_tags, key=lambda tid: (tag_centers[tid][0] - origin_x) * cm_per_pixel)
+                else:
+                    selected_tag = detected_tags[0]
+
+                block_x_px, block_y_px = tag_centers[selected_tag]
 
                 # Relative coordinates in centimeters relative to World Origin Tag 2
                 dx_cm = (block_x_px - origin_x) * cm_per_pixel
                 dy_cm = (origin_y - block_y_px) * cm_per_pixel # Inverted Y for image frame
 
                 # Orientation angle relative to horizontal
-                c0, c1 = tag_corners_map[0][0], tag_corners_map[0][1]
+                c0, c1 = tag_corners_map[selected_tag][0], tag_corners_map[selected_tag][1]
                 theta_rad = np.arctan2(c1[1] - c0[1], c1[0] - c0[0])
                 theta_deg = float(np.degrees(theta_rad))
 
@@ -221,6 +228,7 @@ class VisionManager:
                     "x_cm": round(dx_cm, 1),
                     "y_cm": round(dy_cm, 1),
                     "theta_deg": round(theta_deg, 1),
+                    "tag_id": selected_tag,
                     "valid": True
                 }
             else:
@@ -235,8 +243,10 @@ class VisionManager:
             cv2.putText(frame, status_str, (20, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 102), 2, cv2.LINE_AA)
 
             if self.latest_block_pose["valid"]:
-                pose_str = f"Block Pose: X={self.latest_block_pose['x_cm']}cm Y={self.latest_block_pose['y_cm']}cm θ={self.latest_block_pose['theta_deg']}°"
-                cv2.rectangle(frame, (10, 46), (450, 78), (20, 18, 17), -1)
+                tag_id = self.latest_block_pose.get("tag_id", 0)
+                tag_label = "Block 2 (ID 1)" if tag_id == 1 else "Block 1 (ID 0)"
+                pose_str = f"{tag_label}: X={self.latest_block_pose['x_cm']}cm Y={self.latest_block_pose['y_cm']}cm θ={self.latest_block_pose['theta_deg']}°"
+                cv2.rectangle(frame, (10, 46), (460, 78), (20, 18, 17), -1)
                 cv2.putText(frame, pose_str, (20, 68), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 153, 0), 2, cv2.LINE_AA)
             elif 0 in tag_centers:
                 # Show orientation theta even before Tag 2 (World Origin) is placed

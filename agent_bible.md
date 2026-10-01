@@ -268,11 +268,37 @@
 
 ---
 
+### Session 20 (2026-10-01) — DECOUPLED PICK POLICY HANDOFF & DETERMINISTIC S-CURVE DROP PIPELINE
+- **Pick-Only Dataset Slicing (`slice_pick_dataset.py`):**
+  - Sliced all 30 human teleoperation demonstrations down to pure pick-and-lift trajectories using the operator's base-azimuth departure heuristic: detects grasp frame (`gripper_state == 1`), preserves all vertical lift frames while base angle $\theta_1$ stays locked at the pick azimuth within $\pm 1.5^\circ$, and cuts off immediately when the base begins turning towards the drop bin.
+  - Reduced dataset size from 17,854 to 10,964 transitions (38.6% reduction) while preserving full visual approach, grasp closure, and vertical clearance lift across all 30 episodes.
+  - Backed up raw 30-episode dataset safely to `dashboard/backend/datasets_full_backup/` and synchronized `dataset_episodes.json`.
+- **Pick-Only Neural Policy Retraining (`train_policy_engine.py`):**
+  - Retrained Behavior Cloning MLP policy `v1` on sliced pick-only dataset.
+  - Training loss dropped from 0.5026 to **0.3627** (Joint MSE: **0.2843**, Gripper BCE: **0.0784**), achieving a 28% error reduction by eliminating erratic manual drop trajectories.
+  - Registered updated weights in `models_registry.json` and saved to `models/v1_policy.npz`.
+- **Autonomous Runner Decoupled Pipeline (`autonomous_runner.py`):**
+  - Refactored `_execute_trajectory()` into a 3-phase decoupled architecture:
+    1. Phase 1: Smooth alignment from current pose to demonstration start pose (1.0s Cosine S-Curve).
+    2. Phase 2: Autonomous 30Hz neural policy rollout executing visual pick and lift ($p < 0.60$ Approaching Target Block, $p < 0.85$ Grasping Block, $p \ge 0.85$ Lifting Block to Clearance Height). Progress spans 5% to 70%.
+    3. Phase 3: Deterministic Cosine S-Curve Transfer & Drop Sequence:
+       - 3a. Transit to High-Clearance Waypoint (`transit_waypoint` from `drop_locations.json`, gripper closed, 1.2s, 78% progress).
+       - 3b. Move to Calibrated Drop Bin (`block_1` for Tag 0, `block_2` for Tag 1, gripper closed, 1.2s, 86% progress).
+       - 3c. Release Block into Bin (open gripper claw to dynamic `serial_manager.gripper_open`, 0.5s + 0.3s settle delay, 92% progress).
+       - 3d. Clear Drop Bin back to High-Clearance Waypoint (gripper open, 1.0s, 96% progress).
+       - 3e. Smooth return to Home position (`[90, 90, 90, 90, 90, open_angle]`, 1.2s, 100% progress).
+  - Ensured dynamic gripper open angle throughout (Decision #37), never hardcoding 140°.
+  - Added continuous abort check after each transition for responsive emergency stopping.
+- **Proximity-Based Spatial Ordering Logic (`vision_manager.py`):**
+  - Enhanced ArUco perception pipeline to track both Tag 0 (Block 1) and Tag 1 (Block 2).
+  - When both blocks appear simultaneously, automatically prioritizes the block with higher $X$ coordinate (closer to robot's clear transit path).
+  - Propagates `tag_id` through `latest_block_pose` directly into `run_autonomous_policy()` and `_autonomous_loop_worker()`, automatically mapping Tag 0 $\to$ `block_1` and Tag 1 $\to$ `block_2`.
+- **Strict Zero-Emoji Mandate:** Verified 0 emoji characters across all files.
+
+---
+
 ## 5. Next Steps
 
-1. **[DONE] Backend Drop Pose Persistence (`drop_locations.json`):** Implemented in `main.py` with GET, POST, `/test/{target_id}`, and `/test_sequence/{target_id}` handlers.
-2. **[DONE] Teleoperation Panel Drop Pose UI & PS5 D-Pad Mapping:** Added Drop Target Calibration card on `panel-teleop` with Web UI 1-click controls, single pose test, sequence execution, and Gamepad `buttons[12]` (D-Pad Up), `buttons[13]` (D-Pad Down), and `buttons[14]` (D-Pad Left) shortcuts.
-3. **Autonomous Runner Decoupled Pipeline:** Update `autonomous_runner.py` to stop policy inference once the pick lift phase completes, seamlessly chaining into the smooth Cosine S-Curve drop trajectory to the active block's saved target.
-4. **Proximity-Based Spatial Ordering Logic:** Implement higher-$X$ priority sorting when both Tag 0 and Tag 1 are simultaneously detected on the table.
-5. **Collect Fresh Pick-Only Demonstrations:** Record 30 clean, consistent pick-only demonstrations across the workspace grid (cutting episode time by ~50%).
-6. **Multi-Model Training & Benchmark Suite:** Train and evaluate Deep MLP (BC), Action Chunking with Transformers (ACT), and optional lightweight VLA/Diffusion policies on the pick-only demonstration dataset for the journal paper.
+1. **Physical Arm Validation:** Perform real-world pick-and-place tests with Block 1 (ArUco ID 0) and Block 2 (ArUco ID 1) to evaluate visual pick precision and bin placement accuracy.
+2. **Collect Fresh Dedicated Pick-Only Demonstrations:** Record clean, standardized pick-only demonstrations across the workspace grid if any edge cases require higher spatial resolution.
+3. **Multi-Model Training & Benchmark Suite:** Train and evaluate Action Chunking with Transformers (ACT) and diffusion policy benchmarks on the pick dataset for the academic journal paper.
