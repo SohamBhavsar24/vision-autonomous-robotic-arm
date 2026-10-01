@@ -183,13 +183,18 @@ class AutonomousRunner:
         """Stops the continuous autonomous loop and safely returns arm to Home."""
         return self.abort()
 
-    def find_k_nearest_demonstrations(self, target_bx: float, target_by: float, k: int = 3):
+    def find_k_nearest_demonstrations(self, target_bx: float, target_by: float, k: int = 3, model_id: str = "v1"):
         """
-        Finds the k nearest human demonstrations from the 30 grid demonstration episodes
-        based on Euclidean distance to (target_bx, target_by).
+        Finds the k nearest human demonstrations based on Euclidean distance to (target_bx, target_by).
+        Routes to datasets_full_backup/ for v2/v3 models, and datasets/ for v1 (pick-only).
         Returns a list of tuples: [(episode_data, distance), ...]
         """
-        files = sorted(glob.glob(os.path.join(DATASETS_DIR, "episode_*.json")))
+        if model_id in ["v2", "v3"]:
+            datasets_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "datasets_full_backup"))
+        else:
+            datasets_path = DATASETS_DIR
+
+        files = sorted(glob.glob(os.path.join(datasets_path, "episode_*.json")))
         candidates = []
         
         for fpath in files:
@@ -211,7 +216,7 @@ class AutonomousRunner:
                 pass
                 
         if not candidates:
-            raise ValueError("No demonstration datasets available to synthesize trajectory.")
+            raise ValueError(f"No demonstration datasets available in {datasets_path} to synthesize trajectory.")
             
         candidates.sort(key=lambda x: x[1])
         return candidates[:k]
@@ -222,14 +227,15 @@ class AutonomousRunner:
         blending in joint space without Inverse Kinematics or synthetic angle overrides.
         All 5 joints [θ1, θ2, θ3, θ4, θ5] are taken 100% directly from demonstrated data.
         
-        Uses Tri-Anchor Joint-Space Trajectory Blending:
+        Uses Two-Stage Phase-Aligned Tri-Anchor Joint-Space Trajectory Blending:
         1. Selects k=3 nearest human demonstrations enclosing or adjacent to the target point.
         2. Computes normalized Inverse Distance Weights (IDW): w_i = (1 / (d_i + eps)^2) / sum(...)
-        3. Resamples the joint trajectories across normalized execution time [0, 1].
-        4. Blends the joint angles directly in joint space: theta(t) = sum(w_i * theta_i(t)).
-        5. Synchronizes gripper grasping and block orientation theta compensation.
+        3. Separates Phase A (Approach to Grasp) and Phase B (Lift & Retract) at the exact grasp frame.
+        4. Resamples each phase independently, guaranteeing 100% synchronized grasp pose alignment.
+        5. Blends the joint angles directly in joint space: theta(t) = sum(w_i * theta_i(t)).
+        6. Synchronizes gripper grasping following the primary nearest demonstration.
         """
-        neighbors = self.find_k_nearest_demonstrations(target_bx, target_by, k=3)
+        neighbors = self.find_k_nearest_demonstrations(target_bx, target_by, k=3, model_id=model_id)
         best_ep, best_dist = neighbors[0]
         
         # If the target is practically on top of a demonstration point (< 0.2cm), use it directly
@@ -242,54 +248,73 @@ class AutonomousRunner:
             total_w = sum(raw_weights)
             weights = [w / total_w for w in raw_weights]
             
-        # Target trajectory length from nearest demo
-        target_len = len(best_ep["trajectory"])
-        time_target = np.linspace(0.0, 1.0, target_len)
-        
-        # Resample all k trajectories to target_len in joint space
+        # Target trajectory length and grasp timing from nearest demo
+        traj_best = best_ep["trajectory"]
+        g_best = [int(f.get("gripper_state", 0)) for f in traj_best]
+        c_best_list = [i for i, v in enumerate(g_best) if v == 1]
+        c_best = c_best_list[0] if c_best_list else len(traj_best) - 1
+
+        len_phase1 = c_best + 1
+        len_phase2 = len(traj_best) - len_phase1
+
+        t_target1 = np.linspace(0.0, 1.0, len_phase1)
+        t_target2 = np.linspace(0.0, 1.0, len_phase2) if len_phase2 > 0 else np.array([])
+
+        # Resample all k trajectories with phase-aligned grasp synchronization
         resampled_joints = []
-        
         for ep, _ in neighbors:
             traj = ep["trajectory"]
-            m = len(traj)
-            time_source = np.linspace(0.0, 1.0, m)
-            
-            j_arr = np.array([f.get("joints", [90, 90, 90, 90, 90])[:5] for f in traj], dtype=np.float32)
-            
-            # Interpolate each joint dimension directly from demonstrated angles
-            interp_j = np.zeros((target_len, 5), dtype=np.float32)
-            for j_idx in range(5):
-                interp_j[:, j_idx] = np.interp(time_target, time_source, j_arr[:, j_idx])
-            
-            resampled_joints.append(interp_j)
-            
+            g = [int(f.get("gripper_state", 0)) for f in traj]
+            c_list = [i for i, v in enumerate(g) if v == 1]
+            c = c_list[0] if c_list else len(traj) - 1
+
+            # Phase A: Approach (from start to grasp frame)
+            j_arr1 = np.array([f.get("joints", [90, 90, 90, 90, 90])[:5] for f in traj[:c+1]], dtype=np.float32)
+            t_src1 = np.linspace(0.0, 1.0, len(j_arr1))
+            interp1 = np.zeros((len_phase1, 5), dtype=np.float32)
+            for j in range(5):
+                interp1[:, j] = np.interp(t_target1, t_src1, j_arr1[:, j])
+
+            # Phase B: Lift / Retract (from grasp frame to end)
+            if len_phase2 > 0 and len(traj) > c + 1:
+                j_arr2 = np.array([f.get("joints", [90, 90, 90, 90, 90])[:5] for f in traj[c+1:]], dtype=np.float32)
+                t_src2 = np.linspace(0.0, 1.0, len(j_arr2))
+                interp2 = np.zeros((len_phase2, 5), dtype=np.float32)
+                for j in range(5):
+                    interp2[:, j] = np.interp(t_target2, t_src2, j_arr2[:, j])
+                combined = np.vstack([interp1, interp2])
+            else:
+                combined = interp1
+            resampled_joints.append(combined)
+
         # Perform Tri-Anchor Joint Blending across all 5 demonstrated joints
+        target_len = len(traj_best)
         blended_joints = np.zeros((target_len, 5), dtype=np.float32)
         for i, w in enumerate(weights):
             blended_joints += w * resampled_joints[i]
-            
+
         # Gripper state: follow closest demonstration sequence
         primary_gripper = [int(f.get("gripper_state", 0)) for f in best_ep["trajectory"]]
-        
+
         synthesized_trajectory = []
         for idx in range(target_len):
             progress = idx / max(1, target_len - 1)
-                
+
             # 100% pure demonstrated joint angles - zero artificial roll or theta offsets
             corr_j0 = int(np.clip(np.round(blended_joints[idx, 0]), 15, 165))
             corr_j1 = int(np.clip(np.round(blended_joints[idx, 1]), 15, 165))
             corr_j2 = int(np.clip(np.round(blended_joints[idx, 2]), 15, 165))
             corr_j3 = int(np.clip(np.round(blended_joints[idx, 3]), 15, 165))
             corr_j4 = int(np.clip(np.round(blended_joints[idx, 4]), 15, 165))
-            
+
             grip_st = primary_gripper[idx]
-            
+
             synthesized_trajectory.append({
                 "joints": [corr_j0, corr_j1, corr_j2, corr_j3, corr_j4],
                 "gripper_state": grip_st,
                 "progress": progress
             })
-            
+
         anchor_summary = f"Demos {[ep.get('number', i+1) for ep, _ in neighbors]} (w={[round(w, 2) for w in weights]})"
         return synthesized_trajectory, anchor_summary, round(best_dist, 1)
 
@@ -342,7 +367,8 @@ class AutonomousRunner:
             if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
                 return False, "Alignment aborted."
 
-            # Phase 2: Autonomous 30Hz neural policy execution (Visual Pick & Lift)
+            # Phase 2: Autonomous 30Hz policy execution
+            is_pick_only = (model_id == "v1")
             dt = 0.033 # 33ms step rate (~30Hz)
             for idx, frame in enumerate(trajectory):
                 if self.is_aborted or (not self.is_running and not self.is_loop_active):
@@ -350,16 +376,28 @@ class AutonomousRunner:
                     return False, "Execution aborted."
                     
                 self.current_step = idx + 1
-                self.progress_pct = min(70.0, 5.0 + (self.current_step / self.total_steps) * 65.0)
-                
-                # Dynamic Phase Labeling for Pick-Only Trajectory
-                p = frame["progress"]
-                if p < 0.60:
-                    self.current_phase = "Approaching Target Block"
-                elif p < 0.85:
-                    self.current_phase = "Grasping Block"
+                if is_pick_only:
+                    self.progress_pct = min(70.0, 5.0 + (self.current_step / self.total_steps) * 65.0)
+                    p = frame["progress"]
+                    if p < 0.60:
+                        self.current_phase = "Approaching Target Block"
+                    elif p < 0.85:
+                        self.current_phase = "Grasping Block"
+                    else:
+                        self.current_phase = "Lifting Block to Clearance Height"
                 else:
-                    self.current_phase = "Lifting Block to Clearance Height"
+                    self.progress_pct = (self.current_step / self.total_steps) * 100.0
+                    p = frame["progress"]
+                    if p < 0.35:
+                        self.current_phase = "Approaching Target Block"
+                    elif p < 0.50:
+                        self.current_phase = "Grasping Block"
+                    elif p < 0.75:
+                        self.current_phase = "Lifting & Transferring to Target Box"
+                    elif p < 0.90:
+                        self.current_phase = "Releasing Block into Target Box"
+                    else:
+                        self.current_phase = "Retracting Arm"
                     
                 gripper_state = frame["gripper_state"]
                 grip_angle = close_angle if gripper_state == 1 else open_angle
@@ -374,40 +412,44 @@ class AutonomousRunner:
                 await asyncio.sleep(dt)
 
             if self.is_aborted or (not self.is_running and not self.is_loop_active):
-                return False, "Execution aborted before drop transfer."
+                return False, "Execution aborted before completion."
 
-            # Phase 3: Deterministic Cosine S-Curve Drop Transfer (Decoupled Architecture - Decision #36)
-            drop_locs = load_drop_locations()
-            drop_key = "block_2" if target_tag_id == 1 else "block_1"
-            target_bin_pose_5 = drop_locs.get(drop_key, {}).get("angles", [140, 80, 85, 90, 90])[:5]
+            if is_pick_only:
+                # Settle delay for physical grip confirmation
+                await asyncio.sleep(0.35)
 
-            # 3a. Move directly from lifted pick pose to Calibrated Drop Bin (holding block, gripper closed)
-            target_bin_name = "Block 2 Bin (Tag 1)" if target_tag_id == 1 else "Block 1 Bin (Tag 0)"
-            self.current_phase = f"Transferring to Drop Bin ({target_bin_name})"
-            self.progress_pct = 85.0
-            if broadcast_callback:
-                await broadcast_callback()
-            drop_bin_pose_closed = target_bin_pose_5 + [close_angle]
-            success, msg = await self.serial_manager.smooth_transition_to_angles(
-                drop_bin_pose_closed, duration_sec=1.2, broadcast_callback=broadcast_callback
-            )
-            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
-                return False, "Move to drop bin aborted."
+                # Phase 3: Deterministic Cosine S-Curve Drop Transfer (Decoupled Architecture - Decision #36)
+                drop_locs = load_drop_locations()
+                drop_key = "block_2" if target_tag_id == 1 else "block_1"
+                target_bin_pose_5 = drop_locs.get(drop_key, {}).get("angles", [140, 80, 85, 90, 90])[:5]
 
-            # 3b. Release Block into Drop Bin (Open Gripper)
-            self.current_phase = "Releasing Block into Bin"
-            self.progress_pct = 92.0
-            if broadcast_callback:
-                await broadcast_callback()
-            drop_bin_pose_open = target_bin_pose_5 + [open_angle]
-            success, msg = await self.serial_manager.smooth_transition_to_angles(
-                drop_bin_pose_open, duration_sec=0.5, broadcast_callback=broadcast_callback
-            )
-            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
-                return False, "Gripper release aborted."
-            await asyncio.sleep(0.3)
+                # 3a. Move directly from lifted pick pose to Calibrated Drop Bin (holding block, gripper closed)
+                target_bin_name = "Block 2 Bin (Tag 1)" if target_tag_id == 1 else "Block 1 Bin (Tag 0)"
+                self.current_phase = f"Transferring to Drop Bin ({target_bin_name})"
+                self.progress_pct = 85.0
+                if broadcast_callback:
+                    await broadcast_callback()
+                drop_bin_pose_closed = target_bin_pose_5 + [close_angle]
+                success, msg = await self.serial_manager.smooth_transition_to_angles(
+                    drop_bin_pose_closed, duration_sec=1.2, broadcast_callback=broadcast_callback
+                )
+                if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
+                    return False, "Move to drop bin aborted."
 
-            # 3c. Smooth return directly from Drop Bin to Home Position (Gripper Open)
+                # 3b. Release Block into Drop Bin (Open Gripper)
+                self.current_phase = "Releasing Block into Bin"
+                self.progress_pct = 92.0
+                if broadcast_callback:
+                    await broadcast_callback()
+                drop_bin_pose_open = target_bin_pose_5 + [open_angle]
+                success, msg = await self.serial_manager.smooth_transition_to_angles(
+                    drop_bin_pose_open, duration_sec=0.5, broadcast_callback=broadcast_callback
+                )
+                if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
+                    return False, "Gripper release aborted."
+                await asyncio.sleep(0.3)
+
+            # Smooth return directly to Home Position (Gripper Open)
             self.current_phase = "Returning to Home Position"
             self.progress_pct = 100.0
             if broadcast_callback:
@@ -418,8 +460,8 @@ class AutonomousRunner:
             )
 
             self.current_phase = "Pick & Place Completed"
-            logger.info(f"Autonomous decoupled pick-and-place sequence finished successfully ({drop_key}).")
-            return True, f"Autonomous pick-and-place sequence completed successfully ({drop_key})."
+            logger.info(f"Autonomous pick-and-place sequence finished successfully (Model: {model_id}).")
+            return True, f"Autonomous pick-and-place sequence completed successfully (Model: {model_id})."
 
         except Exception as e:
             logger.error(f"Error during autonomous execution: {e}")
