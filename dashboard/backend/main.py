@@ -192,6 +192,7 @@ class TrainModelRequest(BaseModel):
     model_name: str = "v1 (30 Demos)"
     epochs: int = 80
     include_theta: Optional[bool] = None
+    architecture: str = "mlp"
 
 
 from dataset_formatter import save_compact_dataset_file, save_individual_episodes, load_individual_episodes
@@ -673,8 +674,17 @@ async def get_models():
 @app.post("/api/models/train")
 async def train_new_model(req: TrainModelRequest):
     """Triggers policy training on recorded dataset episodes."""
-    from train_policy_engine import train_model
-    meta = train_model(version_id=req.version_id, model_name=req.model_name, epochs=req.epochs, include_theta=req.include_theta)
+    if req.architecture.lower() == "act" or req.version_id.startswith("act_") or "act" in req.model_name.lower():
+        from train_act_engine import train_act_model
+        meta = train_act_model(
+            version_id=req.version_id,
+            model_name=req.model_name,
+            epochs=req.epochs or 30,
+            include_theta=req.include_theta
+        )
+    else:
+        from train_policy_engine import train_model
+        meta = train_model(version_id=req.version_id, model_name=req.model_name, epochs=req.epochs, include_theta=req.include_theta)
     await broadcast_status()
     return {"status": "trained", "model": meta}
 

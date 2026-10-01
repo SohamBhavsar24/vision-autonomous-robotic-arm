@@ -22,6 +22,11 @@ import json
 import time
 import asyncio
 import numpy as np
+import sys
+backend_dir = os.path.abspath(os.path.dirname(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 import logging
 from typing import Dict, Any, Optional, Tuple, List
 
@@ -240,6 +245,19 @@ class AutonomousRunner:
         5. Blends the joint angles directly in joint space: theta(t) = sum(w_i * theta_i(t)).
         6. Synchronizes gripper grasping following the primary nearest demonstration.
         """
+        # Check if model is an Action Chunking with Transformers (ACT) policy
+        model_weights = self.load_model_weights(model_id)
+        if model_weights and (str(model_weights.get("architecture", "")).lower() == "act" or model_id.startswith("act_")):
+            from train_act_engine import rollout_act_trajectory
+            synthesized_trajectory = rollout_act_trajectory(
+                model_weights,
+                target_bx=target_bx,
+                target_by=target_by,
+                target_bth=target_bth
+            )
+            anchor_summary = f"ACT Transformer Rollout (Chunk H={model_weights.get('chunk_size', 24)}, Ensembling m=0.05)"
+            return synthesized_trajectory, anchor_summary, 0.0
+
         neighbors = self.find_k_nearest_demonstrations(target_bx, target_by, k=3, model_id=model_id)
         best_ep, best_dist = neighbors[0]
         
