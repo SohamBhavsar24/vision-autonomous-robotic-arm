@@ -146,29 +146,23 @@
       font-weight: 600;
     }
 
-    .entry-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 16px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border-card);
-    }
-
-    .entry-footer-left {
+    .entry-actions-row {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 8px;
+      margin-top: 10px;
     }
 
-    .entry-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
+    .entry-actions-row .edit-btn,
+    .entry-actions-row .delete-btn {
       margin-left: auto;
+    }
+    .entry-actions-row .edit-btn {
+      margin-left: auto;
+    }
+    .entry-actions-row .delete-btn {
+      margin-left: 0;
     }
 
     .edit-btn {
@@ -458,7 +452,7 @@
 
     @media print {
       body { background: white; padding: 0; }
-      .header-btns, .search-box, .fab-btn, .modal-overlay, .delete-btn, .edit-btn, .btn-read-more, .entry-footer { display: none !important; }
+      .header-btns, .search-box, .fab-btn, .modal-overlay, .delete-btn, .edit-btn, .btn-read-more, .entry-actions-row { display: none !important; }
       .entry-content-full { display: block !important; }
       .entry-content-preview { display: none !important; }
       .journal-entry { border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; }
@@ -1070,9 +1064,6 @@
               <div class="entry-content-full" id="full-${item.id}" style="display: ${isExpanded ? 'block' : 'none'};">
                 ${item.paragraphs.map(p => `<p>${highlightText(p, query)}</p>`).join('')}
               </div>
-              <button type="button" class="btn-read-more" id="btnExpand-${item.id}" onclick="toggleEntryExpand('${item.id}')">
-                ${isExpanded ? 'Read Less &#9652;' : 'Read More &#9662;'}
-              </button>
             </div>
           `;
         }
@@ -1085,12 +1076,11 @@
             <h2 class="entry-title">${highlightText(item.title, query)}</h2>
             ${contentBlock}
             ${renderAttachmentMedia(item.attachment, item.id)}
-            <div class="entry-footer">
+            <div class="entry-actions-row">
+              ${isLong ? `<button type="button" class="btn-read-more" id="btnExpand-${item.id}" onclick="toggleEntryExpand('${item.id}')">${isExpanded ? 'Read Less &#9652;' : 'Read More &#9662;'}</button>` : ''}
               ${renderAttachmentButton(item.attachment, item.id)}
-              <div class="entry-actions">
-                <button class="edit-btn" onclick="openEditModal('${item.id}')" title="Edit Entry">Edit</button>
-                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">🗑️ Delete</button>
-              </div>
+              <button class="edit-btn" onclick="openEditModal('${item.id}')" title="Edit Entry">Edit</button>
+              <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">🗑️</button>
             </div>
           </article>
         `;
