@@ -281,12 +281,11 @@
   - Refactored `_execute_trajectory()` into a 3-phase decoupled architecture:
     1. Phase 1: Smooth alignment from current pose to demonstration start pose (1.0s Cosine S-Curve).
     2. Phase 2: Autonomous 30Hz neural policy rollout executing visual pick and lift ($p < 0.60$ Approaching Target Block, $p < 0.85$ Grasping Block, $p \ge 0.85$ Lifting Block to Clearance Height). Progress spans 5% to 70%.
-    3. Phase 3: Deterministic Cosine S-Curve Transfer & Drop Sequence:
-       - 3a. Transit to High-Clearance Waypoint (`transit_waypoint` from `drop_locations.json`, gripper closed, 1.2s, 78% progress).
-       - 3b. Move to Calibrated Drop Bin (`block_1` for Tag 0, `block_2` for Tag 1, gripper closed, 1.2s, 86% progress).
-       - 3c. Release Block into Bin (open gripper claw to dynamic `serial_manager.gripper_open`, 0.5s + 0.3s settle delay, 92% progress).
-       - 3d. Clear Drop Bin back to High-Clearance Waypoint (gripper open, 1.0s, 96% progress).
-       - 3e. Smooth return to Home position (`[90, 90, 90, 90, 90, open_angle]`, 1.2s, 100% progress).
+    3. Phase 3: Deterministic Cosine S-Curve Direct Drop Transfer (Decision #36):
+       - 3a. Transfer directly from lifted pick pose to Calibrated Drop Bin (`block_1` for Tag 0, `block_2` for Tag 1, gripper closed, 1.2s, 85% progress).
+       - 3b. Release Block into Bin (open gripper claw to dynamic `serial_manager.gripper_open`, 0.5s + 0.3s settle delay, 92% progress).
+       - 3c. Smooth return directly from Drop Bin to Home position (`[90, 90, 90, 90, 90, open_angle]`, 1.2s, 100% progress).
+       - Eliminated intermediate transit waypoint detours: because the neural policy lifts the block vertically at pick azimuth and Decision #36 always clears the downstream (higher $X$ / leftwards) block first, the path between the lifted block and the drop bin is guaranteed completely clear of obstacles.
   - Ensured dynamic gripper open angle throughout (Decision #37), never hardcoding 140°.
   - Added continuous abort check after each transition for responsive emergency stopping.
 - **Proximity-Based Spatial Ordering Logic (`vision_manager.py`):**

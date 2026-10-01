@@ -84,8 +84,6 @@ const TeleopPanel = {
     this.btnSaveDropBlock2 = document.getElementById('btnSaveDropBlock2');
     this.btnTestPoseBlock2 = document.getElementById('btnTestPoseBlock2');
     this.btnTestSeqBlock2 = document.getElementById('btnTestSeqBlock2');
-    this.btnSaveDropWaypoint = document.getElementById('btnSaveDropWaypoint');
-    this.btnTestPoseWaypoint = document.getElementById('btnTestPoseWaypoint');
 
     // Teleop Mode Switcher DOM elements
     this.btnToggleMode = document.getElementById('btnToggleTeleopMode');
@@ -134,13 +132,6 @@ const TeleopPanel = {
     }
     if (this.btnTestSeqBlock2) {
       this.btnTestSeqBlock2.addEventListener('click', () => this.testDropSequence('block_2'));
-    }
-
-    if (this.btnSaveDropWaypoint) {
-      this.btnSaveDropWaypoint.addEventListener('click', () => this.saveCurrentPoseToDrop('transit_waypoint', 'Web UI'));
-    }
-    if (this.btnTestPoseWaypoint) {
-      this.btnTestPoseWaypoint.addEventListener('click', () => this.testDropPose('transit_waypoint'));
     }
 
     window.addEventListener('gamepadconnected', (e) => {
@@ -562,12 +553,6 @@ const TeleopPanel = {
     }
     this.wasDpadDown = dpadDown;
 
-    // Handle D-Pad Left (Save Current Pose as Transit Waypoint)
-    if (dpadLeft && !this.wasDpadLeft) {
-      this.saveCurrentPoseToDrop('transit_waypoint', 'PS5 D-Pad Left');
-    }
-    this.wasDpadLeft = dpadLeft;
-
     // Smooth Cosine S-Curve Homing Interpolation (~1.2 seconds / 72 frames)
     if (this.isHomingSmoothly) {
       this.homingProgress += 1.0 / 72.0;
@@ -743,10 +728,6 @@ const TeleopPanel = {
       const a = this.dropLocations.block_2.angles || [];
       this.dropValBlock2.textContent = `[${a.map(x => x + '°').join(', ')}]`;
     }
-    if (this.dropValWaypoint && this.dropLocations.transit_waypoint) {
-      const a = this.dropLocations.transit_waypoint.angles || [];
-      this.dropValWaypoint.textContent = `[${a.map(x => x + '°').join(', ')}]`;
-    }
   },
 
   setDropStatus(msg, isSuccess = true) {
@@ -766,8 +747,7 @@ const TeleopPanel = {
     const currentArm = this.getCurrentArmAngles();
     const nameMap = {
       block_1: 'Block 1 Drop Target (Tag 0)',
-      block_2: 'Block 2 Drop Target (Tag 1)',
-      transit_waypoint: 'High-Clearance Transit Waypoint'
+      block_2: 'Block 2 Drop Target (Tag 1)'
     };
     const displayName = nameMap[targetId] || targetId;
 

@@ -50,11 +50,6 @@ def load_drop_locations() -> Dict[str, Any]:
             "name": "Block 2 Drop Target (Tag 1)",
             "angles": [155, 80, 85, 90, 90],
             "description": "Calibrated drop target for Block 2 (ArUco ID 1) outer left bin"
-        },
-        "transit_waypoint": {
-            "name": "High-Clearance Transit Waypoint",
-            "angles": [90, 70, 65, 90, 90],
-            "description": "Elevated transit waypoint ensuring high table clearance before swinging to drop bins"
         }
     }
 
@@ -381,28 +376,15 @@ class AutonomousRunner:
             if self.is_aborted or (not self.is_running and not self.is_loop_active):
                 return False, "Execution aborted before drop transfer."
 
-            # Phase 3: Deterministic Cosine S-Curve Transfer & Drop Sequence (Decoupled Architecture)
+            # Phase 3: Deterministic Cosine S-Curve Drop Transfer (Decoupled Architecture - Decision #36)
             drop_locs = load_drop_locations()
             drop_key = "block_2" if target_tag_id == 1 else "block_1"
             target_bin_pose_5 = drop_locs.get(drop_key, {}).get("angles", [140, 80, 85, 90, 90])[:5]
-            transit_waypoint_5 = drop_locs.get("transit_waypoint", {}).get("angles", [90, 70, 65, 90, 90])[:5]
 
-            # 3a. Transit to High-Clearance Waypoint (Gripper Closed, holding block)
-            self.current_phase = "Transit to High-Clearance Waypoint"
-            self.progress_pct = 78.0
-            if broadcast_callback:
-                await broadcast_callback()
-            transit_pose_closed = transit_waypoint_5 + [close_angle]
-            success, msg = await self.serial_manager.smooth_transition_to_angles(
-                transit_pose_closed, duration_sec=1.2, broadcast_callback=broadcast_callback
-            )
-            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
-                return False, "Transit to waypoint aborted."
-
-            # 3b. Move to Calibrated Drop Bin (Gripper Closed, holding block)
+            # 3a. Move directly from lifted pick pose to Calibrated Drop Bin (holding block, gripper closed)
             target_bin_name = "Block 2 Bin (Tag 1)" if target_tag_id == 1 else "Block 1 Bin (Tag 0)"
-            self.current_phase = f"Moving to Calibrated Drop Bin ({target_bin_name})"
-            self.progress_pct = 86.0
+            self.current_phase = f"Transferring to Drop Bin ({target_bin_name})"
+            self.progress_pct = 85.0
             if broadcast_callback:
                 await broadcast_callback()
             drop_bin_pose_closed = target_bin_pose_5 + [close_angle]
@@ -412,7 +394,7 @@ class AutonomousRunner:
             if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
                 return False, "Move to drop bin aborted."
 
-            # 3c. Release Block into Drop Bin (Open Gripper)
+            # 3b. Release Block into Drop Bin (Open Gripper)
             self.current_phase = "Releasing Block into Bin"
             self.progress_pct = 92.0
             if broadcast_callback:
@@ -425,19 +407,7 @@ class AutonomousRunner:
                 return False, "Gripper release aborted."
             await asyncio.sleep(0.3)
 
-            # 3d. Retract Arm to High-Clearance Waypoint (Gripper Open)
-            self.current_phase = "Clearing Drop Bin"
-            self.progress_pct = 96.0
-            if broadcast_callback:
-                await broadcast_callback()
-            transit_pose_open = transit_waypoint_5 + [open_angle]
-            success, msg = await self.serial_manager.smooth_transition_to_angles(
-                transit_pose_open, duration_sec=1.0, broadcast_callback=broadcast_callback
-            )
-            if not success or self.is_aborted or (not self.is_running and not self.is_loop_active):
-                return False, "Retract to waypoint aborted."
-
-            # 3e. Smooth return to Home Position (Gripper Open)
+            # 3c. Smooth return directly from Drop Bin to Home Position (Gripper Open)
             self.current_phase = "Returning to Home Position"
             self.progress_pct = 100.0
             if broadcast_callback:

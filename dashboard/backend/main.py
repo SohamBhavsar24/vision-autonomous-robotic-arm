@@ -414,11 +414,6 @@ def load_drop_locations_dict() -> Dict[str, Any]:
             "name": "Block 2 Drop Target (Tag 1)",
             "angles": [155, 80, 85, 90, 90],
             "description": "Calibrated drop target for Block 2 (ArUco ID 1) outer left bin"
-        },
-        "transit_waypoint": {
-            "name": "High-Clearance Transit Waypoint",
-            "angles": [90, 70, 65, 90, 90],
-            "description": "Elevated transit waypoint ensuring high table clearance before swinging to drop bins"
         }
     }
     try:
@@ -509,42 +504,30 @@ async def test_drop_location_pose(target_id: str):
 async def test_drop_location_sequence(target_id: str):
     """
     Executes complete decoupled transfer test sequence:
-    1. Smooth S-Curve to high-clearance transit waypoint
-    2. Smooth S-Curve to target drop pose
-    3. Momentarily commands calibrated open angle (Decision #37)
-    4. Smooth S-Curve return to Home position
+    1. Smooth S-Curve directly to target drop pose (holding block)
+    2. Momentarily commands calibrated open angle to release (Decision #37)
+    3. Smooth S-Curve return directly to Home position
     """
     locations = load_drop_locations_dict()
     if target_id not in locations:
         raise HTTPException(status_code=404, detail=f"Target drop location '{target_id}' not found.")
 
-    transit_angles_5 = locations.get("transit_waypoint", {}).get("angles", [90, 70, 65, 90, 90])[:5]
     target_angles_5 = locations[target_id]["angles"][:5]
     open_angle = getattr(serial_manager, "gripper_open", 140)
     closed_angle = getattr(serial_manager, "gripper_closed", 85)
 
-    # 1. Waypoint (keep gripper closed to simulate holding a block)
-    wp_angles = transit_angles_5 + [closed_angle]
-    ok, msg = await serial_manager.smooth_transition_to_angles(wp_angles, duration_sec=1.2)
-    if not ok:
-        return {"status": "error", "message": f"Transit waypoint failed: {msg}"}
-
-    # 2. Target Drop Bin (holding block)
+    # 1. Target Drop Bin (holding block)
     drop_angles = target_angles_5 + [closed_angle]
     ok, msg = await serial_manager.smooth_transition_to_angles(drop_angles, duration_sec=1.2)
     if not ok:
         return {"status": "error", "message": f"Drop pose failed: {msg}"}
 
-    # 3. Release gripper (dynamically use open angle)
+    # 2. Release gripper (dynamically use open angle)
     release_angles = target_angles_5 + [open_angle]
     ok, msg = await serial_manager.smooth_transition_to_angles(release_angles, duration_sec=0.5)
     await asyncio.sleep(0.3)
 
-    # 4. Return to high-clearance transit waypoint (open gripper)
-    wp_open = transit_angles_5 + [open_angle]
-    ok, msg = await serial_manager.smooth_transition_to_angles(wp_open, duration_sec=1.0)
-
-    # 5. Return smoothly to Home
+    # 3. Return smoothly directly to Home
     ok, msg = await serial_manager.move_to_home()
     return {"status": "success", "message": f"Drop sequence for '{target_id}' completed successfully."}
 
