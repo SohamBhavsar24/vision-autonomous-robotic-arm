@@ -2,10 +2,10 @@
   "block_1": {
     "name": "Block 1 Drop Target (Tag 0)",
     "angles": [
-      140,
+      165,
       80,
-      85,
-      90,
+      162,
+      95,
       90
     ],
     "description": "Calibrated drop target for Block 1 (ArUco ID 0) left bin"
