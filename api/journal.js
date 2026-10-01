@@ -1,8 +1,8 @@
 // Vercel Serverless API Endpoint with Supabase PostgreSQL Persistence
 // Path: api/journal.js
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pzewxynfhrylnqbkkeeq.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_5OpuR0lsXoop77YXHtP01g_owDDLGe_';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
