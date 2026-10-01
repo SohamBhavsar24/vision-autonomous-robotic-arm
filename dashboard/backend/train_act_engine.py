@@ -491,6 +491,10 @@ def rollout_act_trajectory(
     j_curr = np.array([90.0, 90.0, 90.0, 90.0, 90.0], dtype=np.float32)
     g_curr = 0.0
 
+    grip_closed = False
+    closed_step = -1
+    elbow_prev = 90.0
+
     for t in range(max_steps):
         obs = [
             j_curr[0] / 180.0,
@@ -533,7 +537,16 @@ def rollout_act_trajectory(
         corr_j3 = int(np.clip(np.round(blended_j[3]), 15, 165))
         corr_j4 = int(np.clip(np.round(blended_j[4]), 15, 165))
 
-        grip_state = 1 if blended_g >= 0.5 else 0
+        # Grasp Trigger: Detect when arm reaches block descent apex
+        elbow_curr = corr_j2
+        if not grip_closed and t >= 35:
+            # Trigger grasp when arm reaches downward dip (elbow >= 154 deg or rate of descent stabilizes at depth)
+            if elbow_curr >= 154.0 or (elbow_curr >= 144.0 and abs(elbow_curr - elbow_prev) < 0.25) or blended_g >= 0.15:
+                grip_closed = True
+                closed_step = t
+
+        elbow_prev = elbow_curr
+        grip_state = 1 if grip_closed else 0
 
         trajectory.append({
             "joints": [corr_j0, corr_j1, corr_j2, corr_j3, corr_j4],
@@ -544,11 +557,9 @@ def rollout_act_trajectory(
         j_curr = np.array([corr_j0, corr_j1, corr_j2, corr_j3, corr_j4], dtype=np.float32)
         g_curr = float(grip_state)
 
-        # Termination criterion: grasp closed and lifted to clearance for at least 25 frames
-        if grip_state == 1:
-            closed_frames = sum(1 for f in trajectory if f["gripper_state"] == 1)
-            if closed_frames >= 30:
-                break
+        # After holding grip for 30 frames (securing block and lifting), pick sequence finishes
+        if grip_closed and (t - closed_step) >= 30:
+            break
 
     # Assign normalized progress
     total_len = len(trajectory)
