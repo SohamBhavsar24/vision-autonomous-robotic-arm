@@ -966,6 +966,10 @@
         </button>
       `;
     }
+    function renderAttachment(att, entryId) {
+      if (!att) return '';
+      return renderAttachmentMedia(att, entryId) + renderAttachmentButton(att, entryId);
+    }
 
     function highlightText(text, query) {
       if (!query || !text) return text;
@@ -1077,14 +1081,17 @@
           <article class="journal-entry" id="card-${item.id}">
             <div class="entry-header-row">
               <div class="entry-date">${highlightText(item.date, query)}</div>
-              <div class="entry-actions">
-                <button class="edit-btn" onclick="openEditModal('${item.id}')" title="Edit Entry">Edit</button>
-                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">Delete</button>
-              </div>
             </div>
             <h2 class="entry-title">${highlightText(item.title, query)}</h2>
             ${contentBlock}
-            ${renderAttachment(item.attachment, item.id)}
+            ${renderAttachmentMedia(item.attachment, item.id)}
+            <div class="entry-footer">
+              ${renderAttachmentButton(item.attachment, item.id)}
+              <div class="entry-actions">
+                <button class="edit-btn" onclick="openEditModal('${item.id}')" title="Edit Entry">Edit</button>
+                <button class="delete-btn" onclick="deleteEntry('${item.id}')" title="Delete Entry">🗑️ Delete</button>
+              </div>
+            </div>
           </article>
         `;
       }).join('');
