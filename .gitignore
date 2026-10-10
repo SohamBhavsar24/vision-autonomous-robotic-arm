@@ -57,3 +57,6 @@ TOSHAL_INSTRUCTION.md
 *.env
 .env.*
 .env.local
+
+# Standalone dissertation repository (tracked in SohamBhavsar24/black-book)
+black_book/

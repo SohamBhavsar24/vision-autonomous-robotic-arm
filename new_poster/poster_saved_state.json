@@ -1,0 +1,130 @@
+{
+  "cardSizes": {
+    "card-1": {
+      "height": "2200px",
+      "flex": "0 0 2200px"
+    },
+    "card-2": {
+      "height": "2200px",
+      "flex": "0 0 2200px"
+    },
+    "card-3": {
+      "height": "2200px",
+      "flex": "0 0 2200px"
+    },
+    "card-4": {
+      "height": "2200px",
+      "flex": "0 0 2200px"
+    },
+    "card-5": {
+      "height": "2200px",
+      "flex": "0 0 2200px"
+    },
+    "card-6": {
+      "height": "2200px",
+      "flex": "0 0 2200px"
+    },
+    "card-7": {
+      "height": "1322px",
+      "flex": "0 0 1322px"
+    }
+  },
+  "cardAlignments": {
+    "card-1": "justify"
+  },
+  "cardSpans": {},
+  "cardFontSizes": {
+    "card-1": "18pt",
+    "card-2": "18pt",
+    "card-3": "18pt",
+    "card-4": "18pt",
+    "card-5": "18pt",
+    "card-6": "18pt",
+    "card-7": "18pt"
+  },
+  "cardOrder": [
+    "card-1",
+    "card-2",
+    "card-3",
+    "card-4",
+    "card-5",
+    "card-6",
+    "card-7"
+  ],
+  "textEdits": {
+    "txt-title": "\n          Vision-Guided Autonomous 6-DOF Robotic Arm\n        ",
+    "txt-subtitle": "\n          Action Chunking with Transformers (ACT), Receding Horizon Ensembling &amp; Edge Intelligence on Raspberry Pi 5\n        ",
+    "txt-authors": "Soham Bhavsar, Toshal Kumbhar, Divyansh Dewangan",
+    "txt-prns": "<span style=\"font-size: 9pt;\">[1032232422, 1032210002, 1032210003]</span>",
+    "txt-guide": "Faculty Project Guide",
+    "txt-dept": "Department of Electrical &amp; Electronics Engineering, School of Engineering &amp; Technology, MIT World Peace University (MIT-WPU)",
+    "cnt-card-1": "\n              <p class=\"body-lead\">\n                Bridging imitation learning with real-time embedded robotic manipulation without cloud computation.\n              </p>\n              <ul class=\"bullet-list\">\n                <li><strong>The Physical Manipulation Challenge:</strong> Traditional analytical Inverse Kinematics (IK) relies on rigid, static target coordinates and fails under camera perspective drift, lighting shifts, or unmodeled servo gear compliance. Conversely, standard end-to-end pixel policies suffer from compounding temporal drift.</li>\n                <li><strong>Research Objectives:</strong> Design and physically validate a hybrid perception-learning pipeline: OpenCV detects spatial centroids, while edge neural policies (Behavioral Cloning MLP and Action Chunking Transformers) learn smooth trajectory generation.</li>\n                <li><strong>System Scope:</strong> 6-DOF articulated manipulator, overhead Logitech C270 tracking at 30 FPS, $25\\text{ cm} \\times 30\\text{ cm}$ tabletop workspace, dual-block sequential sorting, and zero-jerk Cosine S-Curve transitions deployed on a Raspberry Pi 5.</li>\n              </ul>\n            ",
+    "cnt-card-2": "\n              <p class=\"body-lead\">\n                Decoupled task decomposition with Action Chunking with Transformers (ACT) and receding horizon ensembling.\n              </p>\n              <ul class=\"bullet-list\">\n                <li><strong>Decoupled Task Decomposition:</strong> Eliminates multimodal place variance by dedicating the neural policy strictly to the visual pick sequence (Home $\\to$ Align $\\to$ Grasp $\\to$ Vertical Lift to safe clearance). The drop sequence is handed off to deterministic Cosine S-Curve waypoints to calibrated bins (<code>drop_locations.json</code>).</li><span style=\"font-size: 14px;\"><span style=\"font-size: 12px;\"><li></li>\n                <li><strong>Pure-NumPy ACT Policy Engine:</strong> Multi-Head Self-Attention (4 heads, $d_{\\text{model}}=64$, $d_{\\text{ff}}=128$) predicting action sequences of horizon $H=24$ ($0.8\\text{s}$ lookahead at 30Hz). BLAS acceleration via Apple Accelerate <code>cblas_sgemm</code> flattens 3D tensors into contiguous 2D multiplications ($4.9\\text{s/epoch}$).</li></span></span><li></li>\n                <li><strong>Phase-Aligned IDW Blending:</strong> Interpolates across $k=3$ nearest pick demonstrations with phase boundary alignment, preserving downward grasp dip apex without synthetic offsets.</li>\n              </ul>\n            ",
+    "cnt-card-3": "\n              <p class=\"body-lead\">\n                Embedded edge hardware synchronized with zero-dependency Three.js digital twin simulation.\n              </p>\n              <ul class=\"bullet-list\">\n                <li><strong>Hardware Actuation:</strong> High-torque servos (DS3218 20kg-cm Base/Shoulder, MG996R Elbow/Wrist, SG90 Gripper) powered by external 5V 10A supply via PCA9685 16-channel 12-bit PWM and Arduino Mega 2560. Binary framing eliminates serial jitter.</li>\n                <li><strong>3D WebGL Digital Twin:</strong> 100% offline Three.js simulation rendering physical CAD STL meshes in real time synchronized to 60 FPS WebSocket joint telemetry. Table penetration prevention geofencing blocks any candidate commands that violate $Y_{\\text{floor\\_limit}} = 8.0\\text{ mm}$.</li>\n                <li><strong>Spatial Workspace Radar:</strong> Real-time 2D SVG table projection ($25\\text{ cm} \\times 30\\text{ cm}$) showing World Origin (Tag 2), active Block Tag 0 &amp; Tag 1 pucks, orientation angles, and reachability geofence boundaries.</li>\n              </ul>\n            ",
+    "cnt-card-4": "\n              <p class=\"body-lead\">\n                Comparative benchmark: Single-step Markovian MLP vs Action Chunking Transformers across demonstration tiers.\n              </p>\n              \n              <table class=\"data-table\">\n                <thead>\n                  <tr>\n                    <th>Architecture</th>\n                    <th>Horizon</th>\n                    <th>Obs Dims</th>\n                    <th>MSE Loss</th>\n                    <th>Pick Success</th>\n                  </tr>\n                </thead>\n                <tbody>\n                  <tr>\n                    <td><strong>BC Deep MLP (Baseline)</strong></td>\n                    <td>$H = 1$</td>\n                    <td>9 dims</td>\n                    <td>0.5026</td>\n                    <td>73.3%</td>\n                  </tr>\n                  <tr>\n                    <td><strong>MLP (Theta Ablated)</strong></td>\n                    <td>$H = 1$</td>\n                    <td>8 dims</td>\n                    <td>0.3668</td>\n                    <td>86.7%</td>\n                  </tr>\n                  <tr>\n                    <td><strong>ACT (No Theta)</strong></td>\n                    <td>$H = 24$</td>\n                    <td>8 dims</td>\n                    <td>17.81*</td>\n                    <td><strong>93.3%</strong></td>\n                  </tr>\n                  <tr>\n                    <td><strong>ACT (With Theta)</strong></td>\n                    <td>$H = 24$</td>\n                    <td>9 dims</td>\n                    <td>16.59*</td>\n                    <td>90.0%</td>\n                  </tr>\n                </tbody>\n              </table>\n              <div style=\"font-family: var(--font-mono); font-size: 7pt; color: var(--text-faint);\">\n                *ACT MSE is cumulative sum across all 24 future horizon steps (~4.01° root mean squared error per joint).\n              </div>\n\n              <ul class=\"bullet-list\" style=\"margin-top: 1mm;\">\n                <li><strong>Error Accumulation Prevention:</strong> Action Chunking with $H=24$ eliminates high-frequency jerk and Markovian compound drift. Receding horizon temporal ensembling ($w_k = \\exp(-0.05k)$) smooths velocity transitions.</li>\n                <li><strong>Dataset Slicing Impact:</strong> Slicing teleoperation data down to pure pick-and-lift reduced training MSE by 28% and cut trajectory length from ~300 to 60–90 monotonic steps.</li>\n              </ul>\n            ",
+    "cnt-card-5": "\n              <p class=\"body-lead\">\n                Resolving real-world kinematic grasp failure through perception ablation and descent synchronization.\n              </p>\n              <ul class=\"bullet-list\">\n                <li><strong>1. Symmetric Block Theta Feature Ablation:</strong> Square sponge cubes exhibit 4-fold rotational symmetry ($90^\\circ$). Optical ArUco $\\theta$ jitter introduces spurious wrist roll adjustments that compromise vertical downward plunge. Removing $\\theta$ ($[θ_1..θ_5, \\text{gripper}, X, Y]$, 8 dims) stabilizes plunge depth and raises physical grasp reliability to $&gt;90\\%$.</li>\n                <li><strong>2. Descent-Apex Grasp Detection:</strong> Overcomes an 85/15 open-vs-closed frame class imbalance in demonstration datasets. Rather than failing at unweighted BCE sigmoid thresholds, the runner kinematically detects downward descent apex ($\\text{Elbow} \\ge 154^\\circ$ after $\\ge 35$ approach frames) to lock the claw, hold for 30 lift frames, and cleanly hand off to Phase 3.</li>\n                <li><strong>3. Edge BLAS Apple Accelerate Optimization:</strong> Pure NumPy implementation executes multi-head self-attention on low-power ARM CPU without PyTorch or CUDA dependencies.</li>\n              </ul>\n            ",
+    "cnt-card-6": "\n              <p class=\"body-lead\">\n                Proximity-based sequential multi-object sorting and academic journal dissemination.\n              </p>\n              <ul class=\"bullet-list\">\n                <li><strong>Dual-Block Autonomous Sorting:</strong> Concurrent perception of Block 1 (Tag 0) and Block 2 (Tag 1). Proximity-based spatial sweep prioritizes higher-$X$ downstream blocks first, guaranteeing completely collision-free transit to dedicated drop bins without complex obstacle evasion trajectories.</li>\n                <li><strong>Industrial Edge Relevance:</strong> Enables automated pick-and-sort in dynamic micro-warehouses and laboratory handling using sub-$150 hardware components running entirely offline on edge microprocessors.</li>\n                <li><strong>Academic Journal Dissemination:</strong> Empirical evaluation framework prepared for peer-reviewed journal submission, benchmarking Markovian MLPs against Action Chunking Transformers across progressive human demonstration tiers.</li>\n              </ul>\n            ",
+    "cnt-card-7": "\n              <div>\n                <p class=\"body-lead\">Key Research Achievements:</p>\n                <ul class=\"bullet-list\" style=\"margin-top: 1.5mm;\">\n                  <li>Successfully implemented, calibrated, and physically validated an end-to-end vision-guided 6-DOF autonomous robotic arm using Action Chunking with Transformers (ACT).</li>\n                  <li>Eliminated multimodal drop jitter through decoupled task decomposition (neural pick + deterministic Cosine S-Curve waypoints), reducing trajectory sequence length by 38.6%.</li>\n                  <li>Overcame the 85/15 demonstration class imbalance via kinematic Descent-Apex Grasp Detection, achieving a verified 93.3% physical pick success rate.</li>\n                  <li>Built a 100% offline edge architecture featuring Apple Accelerate BLAS attention, live SVG Workspace Radar, and an interactive 3D WebGL Digital Twin with table geofencing.</li>\n                </ul>\n              </div>\n\n              <div>\n                <p class=\"body-lead\">Future Research Scope &amp; Roadmap:</p>\n                <ul class=\"bullet-list\" style=\"margin-top: 1.5mm;\">\n                  <li><strong>Multi-Object Color Segmentation:</strong> Expanding perception to color and contour tracking (HSV thresholding) for dynamic unstructured bin picking without fiducial markers.</li>\n                  <li><strong>Scaling Demonstration Tiers:</strong> Gathering 60- and 90-demonstration datasets across varied approach angles to complete the academic journal scaling matrix.</li>\n                  <li><strong>Diffusion Policy Integration:</strong> Benchmarking ACT against lightweight Diffusion Policies and Vision-Language-Action (VLA) foundation models on the edge.</li>\n                  <li><strong>Closed-Loop Visual Servoing:</strong> Implementing continuous real-time image Jacobian visual feedback during downward plunge execution.</li>\n                </ul>\n              </div>\n            ",
+    "txt-badge": "\n          Capstone Research<br>Project Poster\n        ",
+    "title-card-1": "1. Introduction",
+    "sub-card-1": "Problem, Objectives &amp; Scope",
+    "cap-slot-fig1": "Figure 1: 6-DOF Manipulator Kinematic Link Structure ($L_1..L_4$) and Optical Grasp Frame",
+    "title-card-2": "2. <span style=\"font-size: 20px;\"><span style=\"font-size: 22px;\"><span style=\"font-size: 24px;\"><span style=\"font-size: 26px;\"><span style=\"font-size: 28px;\"><span style=\"font-size: 30px;\"><span style=\"font-size: 32px;\">Methodology</span></span></span></span></span></span></span>",
+    "sub-card-2": "Architecture, ACT &amp; Phase-IDW",
+    "cap-slot-fig2": "Figure 2: End-to-End System Pipeline Flowchart (Perception $\\to$ ACT Policy $\\to$ Waypoint Handoff)",
+    "title-card-3": "3. Implementation",
+    "sub-card-3": "Hardware, Perception &amp; 3D Twin",
+    "cap-slot-fig3": "Figure 3: Physical Hardware Stack, Live Spatial Radar &amp; 3D WebGL Digital Twin HUD",
+    "title-card-4": "4. Results &amp; Testing",
+    "sub-card-4": "Empirical Matrix &amp; Comparative Analysis",
+    "cap-slot-fig4": "Figure 4: Empirical Pick Success Rate Scaling &amp; Trajectory Curvature Preservation",
+    "title-card-5": "5. Innovation",
+    "sub-card-5": "Theta Ablation &amp; Descent-Apex Detection",
+    "cap-slot-fig5": "Figure 5: Kinematic Descent-Apex Grasp Lock Profile &amp; Class Imbalance Mitigation",
+    "title-card-6": "6. Application &amp; Outcome",
+    "sub-card-6": "Dual-Block Sorting &amp; Edge Relevance",
+    "cap-slot-fig6": "Figure 6: Dual-Block Spatial Sweep Order (Higher X First) &amp; Deterministic Bin Routing",
+    "title-card-7": "7. Conclusion &amp; Future Scope",
+    "sub-card-7": "Key Achievements &amp; Research Roadmap"
+  },
+  "photoSlots": {
+    "wrap-slot-fig1": {
+      "caption": "Figure 1: 6-DOF Manipulator Kinematic Link Structure ($L_1..L_4$) and Optical Grasp Frame"
+    },
+    "wrap-slot-fig2": {
+      "caption": "Figure 2: End-to-End System Pipeline Flowchart (Perception $\\to$ ACT Policy $\\to$ Waypoint Handoff)"
+    },
+    "wrap-slot-fig3": {
+      "caption": "Figure 3: Physical Hardware Stack, Live Spatial Radar &amp; 3D WebGL Digital Twin HUD"
+    },
+    "wrap-slot-fig4": {
+      "caption": "Figure 4: Empirical Pick Success Rate Scaling &amp; Trajectory Curvature Preservation"
+    },
+    "wrap-slot-fig5": {
+      "caption": "Figure 5: Kinematic Descent-Apex Grasp Lock Profile &amp; Class Imbalance Mitigation"
+    },
+    "wrap-slot-fig6": {
+      "caption": "Figure 6: Dual-Block Spatial Sweep Order (Higher X First) &amp; Deterministic Bin Routing"
+    },
+    "slot-fig1": {
+      "height": "675px"
+    },
+    "slot-fig2": {
+      "height": "602px"
+    },
+    "slot-fig5": {
+      "height": "667px"
+    },
+    "slot-fig4": {
+      "height": "559px"
+    },
+    "slot-fig6": {
+      "height": "702px"
+    }
+  },
+  "sheetFormat": "a0",
+  "globalTextScale": 100,
+  "zoom": 0.38,
+  "saved_at": "2026-10-09 15:32:46",
+  "exists": true
+}

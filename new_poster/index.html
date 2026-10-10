@@ -1,0 +1,2557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision-Guided Autonomous 6-DOF Robotic Arm - Horizontal Research Poster (Template Format)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Default: 36" x 24" Horizontal Landscape Poster (Smaller than A0, exact PPTX Template) */
+    @page {
+      size: 914.4mm 609.6mm;
+      margin: 0;
+    }
+
+    :root {
+      --sheet-w: 914.4mm; /* 36 inches */
+      --sheet-h: 609.6mm; /* 24 inches */
+      --sheet-bg: #FFFFFF;
+      --card-bg: #FFFFFF;
+      --tint-bg: #F8FAFC;
+      --border-card: #CBD5E1;
+      --border-light: #E2E8F0;
+      --border-accent: #2563EB;
+      
+      --text-hero: #0F172A;
+      --text-main: #1E293B;
+      --text-muted: #475569;
+      --text-faint: #64748B;
+      
+      --accent-blue: #1D4ED8;
+      --accent-electric: #2563EB;
+      --accent-navy: #0F172A;
+      --accent-cyan: #0284C7;
+      --accent-green: #059669;
+      --accent-amber: #D97706;
+      --accent-red: #DC2626;
+
+      --font-display: 'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --base-card-font: 9pt;
+      --grid-gap: 4.5mm;
+      --card-radius: 4.5mm;
+    }
+
+    /* Optional larger formats selectable in dock */
+    body.format-a0-land {
+      --sheet-w: 1189mm;
+      --sheet-h: 841mm;
+    }
+    body.format-large-land {
+      --sheet-w: 1219.2mm;
+      --sheet-h: 914.4mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      background: #0F172A;
+      font-family: var(--font-body);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      padding: 24px 30px 80px 330px;
+      min-height: 100vh;
+      overflow-x: auto;
+    }
+
+    /* ── FLOATING SELECTION FORMATTING TOOLBAR ── */
+    .selection-toolbar {
+      position: absolute;
+      display: none;
+      align-items: center;
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 5px 8px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+      z-index: 100000;
+      color: #FFFFFF;
+      user-select: none;
+      transform: translate(-50%, -100%);
+      margin-top: -8px;
+    }
+    .selection-toolbar.active {
+      display: flex;
+    }
+    .sel-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+    }
+    .sel-btn:hover {
+      background: #2563EB;
+      border-color: #60A5FA;
+    }
+    .sel-select {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      outline: none;
+    }
+    .sel-select option {
+      background: #1E293B;
+      color: #FFFFFF;
+    }
+    .sel-color-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .sel-color-wrap input[type="color"] {
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    /* ── DOCKED CONTROL SIDEBAR ── */
+    .sidebar-dock {
+      position: fixed;
+      left: 20px;
+      top: 20px;
+      width: 285px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 16px 14px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: #F8FAFC;
+    }
+
+    .sidebar-dock::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sidebar-dock::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    .dock-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 8px;
+    }
+
+    .dock-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.01em;
+    }
+
+    .dock-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #93C5FD;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .dock-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dock-section-title {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94A3B8;
+    }
+
+    .zoom-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+
+    .dock-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #CBD5E1;
+      padding: 6px 3px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .dock-btn:hover {
+      background: rgba(37, 99, 235, 0.35);
+      border-color: #60A5FA;
+      color: #FFFFFF;
+    }
+
+    .dock-btn.active {
+      background: #2563EB;
+      border-color: #3B82F6;
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+    }
+
+    .range-control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .range-control-row input[type="range"] {
+      flex: 1;
+      accent-color: #2563EB;
+      cursor: pointer;
+    }
+    .range-val-badge {
+      min-width: 44px;
+      text-align: right;
+      color: #93C5FD;
+      font-weight: 700;
+    }
+
+    .btn-dock-primary {
+      background: #2563EB;
+      color: #FFFFFF;
+      border: none;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 12.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.45);
+    }
+    .btn-dock-primary:hover {
+      background: #1D4ED8;
+    }
+
+    .btn-dock-save {
+      background: #059669;
+      color: #FFFFFF;
+      border: 1px solid #10B981;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 12.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s;
+      box-shadow: 0 4px 14px rgba(5,150,105,0.45);
+    }
+    .btn-dock-save:hover {
+      background: #047857;
+      transform: translateY(-1px);
+    }
+
+    .btn-dock-danger {
+      background: rgba(220, 38, 38, 0.15);
+      color: #FCA5A5;
+      border: 1px solid rgba(220, 38, 38, 0.35);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-dock-danger:hover {
+      background: rgba(220, 38, 38, 0.3);
+      color: #FFFFFF;
+    }
+
+    .save-toast {
+      display: none;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.2);
+      color: #6EE7B7;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 6px 10px;
+      border-radius: 6px;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .save-toast.show {
+      display: block;
+    }
+
+    .dock-tips {
+      font-size: 9.5px;
+      line-height: 1.4;
+      color: #94A3B8;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 8px;
+    }
+    .dock-tips strong {
+      color: #CBD5E1;
+    }
+
+    /* ── POSTER SHEET CANVAS (HORIZONTAL LANDSCAPE) ── */
+    .poster-sheet {
+      width: var(--sheet-w);
+      height: var(--sheet-h);
+      max-height: var(--sheet-h);
+      background: var(--sheet-bg);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 7mm 10mm 7mm 10mm;
+      box-shadow: 0 40px 90px rgba(0,0,0,0.55);
+      overflow: hidden;
+      transform-origin: top center;
+      gap: 4mm;
+    }
+
+    @media screen {
+      .poster-sheet {
+        zoom: 0.48; /* Fits comfortable 36"x24" landscape on laptop screen */
+      }
+    }
+
+    /* ── POSTER HEADER ── */
+    .poster-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 3mm 5mm 3mm 5mm;
+      border-bottom: 1.8mm solid var(--accent-navy);
+      background: #FFFFFF;
+      gap: 6mm;
+      min-height: 38mm;
+    }
+
+    .header-left {
+      width: 55mm;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .badge-capsule {
+      font-family: var(--font-mono);
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: var(--accent-blue);
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      padding: 2.2mm 3.5mm;
+      border-radius: 3.5mm;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      line-height: 1.25;
+      outline: none;
+    }
+
+    .header-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1.8mm;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: 28pt;
+      font-weight: 900;
+      line-height: 1.08;
+      color: var(--text-hero);
+      letter-spacing: -0.02em;
+      outline: none;
+    }
+
+    .hero-subtitle {
+      font-family: var(--font-body);
+      font-size: 12pt;
+      font-weight: 600;
+      color: var(--accent-electric);
+      letter-spacing: -0.01em;
+      outline: none;
+    }
+
+    .author-banner {
+      margin-top: 1.2mm;
+      font-family: var(--font-body);
+      font-size: 9.8pt;
+      color: var(--text-muted);
+      line-height: 1.35;
+      outline: none;
+    }
+    .author-banner strong {
+      color: var(--text-hero);
+      font-weight: 700;
+    }
+    .author-banner .sep {
+      color: #94A3B8;
+      margin: 0 1.8mm;
+    }
+
+    /* University Logo Container (Top Right) */
+    .header-logo-container {
+      width: 65mm;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      position: relative;
+    }
+
+    .logo-slot {
+      width: 62mm;
+      height: 32mm;
+      background: #FFFFFF;
+      border: 1.5px dashed var(--border-card);
+      border-radius: 3.5mm;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .logo-slot:hover {
+      border-color: var(--accent-electric);
+    }
+    .logo-slot img {
+      max-width: 95%;
+      max-height: 95%;
+      object-fit: contain;
+    }
+    .logo-slot input[type="file"] {
+      display: none;
+    }
+    .logo-clear-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(15, 23, 42, 0.7);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 50%;
+      width: 17px;
+      height: 17px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── POSTER BODY GRID (3 COLUMNS x ROWS) ── */
+    .poster-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--grid-gap);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .cards-row-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--grid-gap);
+      flex: 1.05;
+      min-height: 0;
+    }
+
+    .cards-row-mid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--grid-gap);
+      flex: 1.05;
+      min-height: 0;
+    }
+
+    .cards-row-bottom {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--grid-gap);
+      flex: 0.62;
+      min-height: 0;
+    }
+
+    /* Dynamic Spans */
+    .card.span-1 { grid-column: span 1 !important; }
+    .card.span-2 { grid-column: span 2 !important; }
+    .card.span-3 { grid-column: span 3 !important; }
+
+    /* ── CARD STYLING ── */
+    .card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-card);
+      border-radius: var(--card-radius);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      font-size: var(--base-card-font);
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .card:hover {
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      border-color: #94A3B8;
+    }
+
+    /* Text Alignments */
+    .card.text-left .card-content { text-align: left; }
+    .card.text-center .card-content { text-align: center; }
+    .card.text-justify .card-content { text-align: justify; }
+
+    /* Vertical Alignments */
+    .card.valign-top { align-self: start; }
+    .card.valign-center { align-self: center; }
+    .card.valign-stretch { align-self: stretch; }
+
+    /* Card Header */
+    .card-head {
+      background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+      border-bottom: 1px solid var(--border-light);
+      padding: 2.5mm 3.5mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2.5mm;
+      user-select: none;
+    }
+
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 2.5mm;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-badge-num {
+      background: var(--accent-navy);
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+      font-size: 10pt;
+      font-weight: 800;
+      width: 6mm;
+      height: 6mm;
+      border-radius: 1.8mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      outline: none;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 13.5pt;
+      font-weight: 900;
+      color: var(--text-hero);
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      outline: none;
+    }
+
+    .card-subtitle-tag {
+      font-family: var(--font-mono);
+      font-size: 7.5pt;
+      color: var(--text-faint);
+      font-weight: 600;
+      margin-left: 2mm;
+      outline: none;
+    }
+
+    /* Interactive Card Control Bar */
+    .card-ctrl-bar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn {
+      background: #FFFFFF;
+      border: 1px solid var(--border-card);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 7pt;
+      font-weight: 700;
+      padding: 1.2px 4.5px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .ctrl-btn:hover {
+      background: #EFF6FF;
+      color: var(--accent-electric);
+      border-color: #93C5FD;
+    }
+    .ctrl-btn.active {
+      background: var(--accent-electric);
+      color: #FFFFFF;
+      border-color: var(--accent-blue);
+    }
+    .card-font-indicator {
+      font-family: var(--font-mono);
+      font-size: 6.8pt;
+      color: var(--accent-electric);
+      font-weight: 700;
+      min-width: 22px;
+      text-align: center;
+    }
+
+    /* Card Content Body */
+    .card-body {
+      flex: 1;
+      padding: 3mm 3.8mm;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5mm;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+    }
+    .card-body::-webkit-scrollbar {
+      width: 4px;
+    }
+    .card-body::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 2px;
+    }
+
+    .card-content {
+      line-height: 1.42;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 2mm;
+      outline: none;
+    }
+
+    .body-lead {
+      font-size: 1.05em;
+      font-weight: 600;
+      color: var(--text-hero);
+      border-left: 0.9mm solid var(--accent-electric);
+      padding-left: 2mm;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5mm;
+    }
+    .bullet-list li {
+      position: relative;
+      padding-left: 4mm;
+      line-height: 1.38;
+    }
+    .bullet-list li::before {
+      content: "▪";
+      position: absolute;
+      left: 0.8mm;
+      color: var(--accent-electric);
+      font-size: 1.1em;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92em;
+      margin-top: 1mm;
+    }
+    .data-table th, .data-table td {
+      border: 1px solid var(--border-light);
+      padding: 1.4mm 2.2mm;
+      text-align: left;
+      outline: none;
+    }
+    .data-table th {
+      background: #F1F5F9;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text-hero);
+    }
+    .data-table tr:nth-child(even) td {
+      background: #F8FAFC;
+    }
+
+    /* ── PHOTO WINDOWS / FIGURE SLOTS ── */
+    .photo-slot-wrapper {
+      position: relative;
+      margin: 1.2mm 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2mm;
+    }
+
+    .photo-slot {
+      width: 100%;
+      height: 32mm; /* default height */
+      background: #F8FAFC;
+      border: 1.5px dashed var(--border-card);
+      border-radius: 3.5mm;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .photo-slot:hover {
+      border-color: var(--accent-electric);
+      background: #F1F5F9;
+    }
+    .photo-slot.dragover {
+      border-color: #2563EB;
+      background: #EFF6FF;
+      border-style: solid;
+    }
+
+    .photo-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      display: none;
+    }
+    .photo-slot.has-image img {
+      display: block;
+    }
+    .photo-slot.fit-cover img { object-fit: cover !important; }
+    .photo-slot.fit-contain img { object-fit: contain !important; }
+    .photo-slot.fit-fill img { object-fit: fill !important; }
+
+    .photo-slot.pos-top img { object-position: top !important; }
+    .photo-slot.pos-center img { object-position: center !important; }
+    .photo-slot.pos-bottom img { object-position: bottom !important; }
+
+    .slot-empty-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.8mm;
+      color: #94A3B8;
+      pointer-events: none;
+    }
+    .photo-slot.has-image .slot-empty-view {
+      display: none;
+    }
+    .slot-empty-view svg {
+      width: 7mm;
+      height: 7mm;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      fill: none;
+    }
+    .slot-empty-title {
+      font-family: var(--font-display);
+      font-size: 9pt;
+      font-weight: 800;
+      color: var(--text-faint);
+    }
+    .slot-empty-sub {
+      font-family: var(--font-mono);
+      font-size: 6.8pt;
+      color: #94A3B8;
+    }
+
+    /* Slot Controls Overlay */
+    .slot-controls {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 3px 5px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 10;
+    }
+    .photo-slot:hover .slot-controls {
+      opacity: 1;
+    }
+
+    .slot-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+      font-size: 7pt;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .slot-btn:hover {
+      background: rgba(37, 99, 235, 0.8);
+    }
+    .slot-btn.danger:hover {
+      background: rgba(220, 38, 38, 0.8);
+    }
+
+    .photo-caption {
+      font-family: var(--font-mono);
+      font-size: 7.2pt;
+      color: var(--text-faint);
+      text-align: center;
+      padding: 0 2mm;
+      outline: none;
+    }
+    .photo-caption:focus {
+      color: var(--text-hero);
+      background: #EFF6FF;
+      border-radius: 2px;
+    }
+
+    .slot-resize-handle {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      cursor: ns-resize;
+      background: transparent;
+      transition: background 0.15s;
+    }
+    .photo-slot:hover .slot-resize-handle {
+      background: rgba(37, 99, 235, 0.25);
+    }
+
+    .card-resize-handle {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 7px;
+      cursor: ns-resize;
+      background: transparent;
+      transition: background 0.15s;
+      z-index: 20;
+    }
+    .card:hover .card-resize-handle {
+      background: rgba(37, 99, 235, 0.2);
+    }
+    .card-resize-handle:hover, .card-resize-handle.resizing {
+      background: #2563EB !important;
+    }
+
+    /* Add Photo Window Button on Cards */
+    .card-add-photo-btn {
+      align-self: center;
+      background: #F8FAFC;
+      border: 1px dashed var(--border-card);
+      color: var(--accent-electric);
+      font-family: var(--font-mono);
+      font-size: 7.5pt;
+      font-weight: 700;
+      padding: 1.8mm 4.5mm;
+      border-radius: 3mm;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-top: 1mm;
+      display: flex;
+      align-items: center;
+      gap: 1.8mm;
+    }
+    .card-add-photo-btn:hover {
+      background: #EFF6FF;
+      border-color: #93C5FD;
+      color: var(--accent-blue);
+    }
+
+    /* Contenteditable Hover & Focus Styling */
+    [contenteditable="true"] {
+      cursor: text;
+      border-radius: 2px;
+      transition: background 0.15s;
+    }
+    [contenteditable="true"]:hover {
+      background: rgba(37, 99, 235, 0.04);
+    }
+    [contenteditable="true"]:focus {
+      outline: 1.5px solid var(--accent-electric) !important;
+      background: #FFFFFF !important;
+    }
+
+    /* ── PRINT & VECTOR EXPORT MEDIA QUERY ── */
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .sidebar-dock, .selection-toolbar, .card-ctrl-bar, .slot-controls, .card-resize-handle, 
+      .slot-resize-handle, .card-add-photo-btn, .logo-clear-btn {
+        display: none !important;
+      }
+      .poster-sheet {
+        zoom: 1 !important;
+        transform: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      .card {
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── FLOATING RICH TEXT & FONT SIZE TOOLBAR ── -->
+  <div class="selection-toolbar" id="selToolbar">
+    <button class="sel-btn" onclick="applySelectionFontSize(-1)" title="Smaller Text (A-)">A-</button>
+    <button class="sel-btn" onclick="applySelectionFontSize(1)" title="Larger Text (A+)">A+</button>
+    <select class="sel-select" id="selFontSizeSelect" onchange="applySelectionFontSize(this.value)">
+      <option value="">Font Size</option>
+      <option value="7pt">7 pt</option>
+      <option value="8pt">8 pt</option>
+      <option value="9pt">9 pt</option>
+      <option value="10pt">10 pt</option>
+      <option value="11pt">11 pt</option>
+      <option value="12pt">12 pt</option>
+      <option value="14pt">14 pt</option>
+      <option value="16pt">16 pt</option>
+      <option value="18pt">18 pt</option>
+      <option value="22pt">22 pt</option>
+      <option value="28pt">28 pt</option>
+      <option value="34pt">34 pt</option>
+    </select>
+    <button class="sel-btn" onclick="document.execCommand('bold', false, null)" title="Bold"><strong>B</strong></button>
+    <button class="sel-btn" onclick="document.execCommand('italic', false, null)" title="Italic"><em>I</em></button>
+    <button class="sel-btn" onclick="document.execCommand('underline', false, null)" title="Underline"><u>U</u></button>
+    <div class="sel-color-wrap" title="Text Color">
+      <input type="color" id="selColorInput" value="#1E293B" onchange="document.execCommand('foreColor', false, this.value)">
+    </div>
+  </div>
+
+  <!-- ── DOCKED SIDEBAR CONTROLS ── -->
+  <aside class="sidebar-dock" id="sidebarDock">
+    <div class="dock-header">
+      <div class="dock-title">Horizontal Poster Studio</div>
+      <div class="dock-sub">36"×24" Template Format • Port 8057</div>
+    </div>
+
+    <!-- Zoom Controls -->
+    <div class="dock-section">
+      <div class="dock-section-title">Canvas Zoom</div>
+      <div class="zoom-grid">
+        <button class="dock-btn" onclick="setZoom(0.35)">35%</button>
+        <button class="dock-btn active" id="btnZoom48" onclick="setZoom(0.48)">48%</button>
+        <button class="dock-btn" onclick="setZoom(0.60)">60%</button>
+        <button class="dock-btn" onclick="setZoom(0.75)">75%</button>
+        <button class="dock-btn" onclick="setZoom(0.90)">90%</button>
+        <button class="dock-btn" onclick="setZoom(1.0)">100%</button>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 3px;">
+        <button class="dock-btn" onclick="fitWidth()">Fit Width</button>
+        <button class="dock-btn" onclick="fitWindow()">Fit Window</button>
+      </div>
+    </div>
+
+    <!-- Poster Dimensions (All Horizontal) -->
+    <div class="dock-section">
+      <div class="dock-section-title">Poster Size (Horizontal)</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+        <button class="dock-btn active" id="btnFmtConf" onclick="setPosterFormat('conf')">36"×24" Template</button>
+        <button class="dock-btn" id="btnFmtA0" onclick="setPosterFormat('a0')">A0 Landscape</button>
+      </div>
+    </div>
+
+    <!-- Global Text Size Controls -->
+    <div class="dock-section">
+      <div class="dock-section-title">Global Text Size</div>
+      <div class="range-control-row">
+        <span>Scale:</span>
+        <input type="range" id="globalTextScale" min="75" max="150" value="100" oninput="setGlobalTextScale(this.value)">
+        <span class="range-val-badge" id="lblTextScale">100%</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px;">
+        <button class="dock-btn" onclick="adjustAllCardsFontSize(1)">+ All Text A+</button>
+        <button class="dock-btn" onclick="adjustAllCardsFontSize(-1)">- All Text A-</button>
+      </div>
+      <button class="dock-btn" onclick="resetAllTextSizes()" style="margin-top: 3px;">Reset All Text Sizes</button>
+    </div>
+
+    <!-- Card Sizing & Layout Controls -->
+    <div class="dock-section">
+      <div class="dock-section-title">Card Heights &amp; Layout</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+        <button class="dock-btn" onclick="adjustAllCardsH(35)">+ Expand Cards</button>
+        <button class="dock-btn" onclick="adjustAllCardsH(-35)">- Compact Cards</button>
+      </div>
+      <button class="dock-btn" onclick="resetAllCardSizes()" style="margin-top: 3px;">Reset Card Heights</button>
+      <button class="dock-btn" onclick="resetAllAlignments()" style="margin-top: 3px;">Reset Alignments</button>
+    </div>
+
+    <!-- Save & Persistence -->
+    <div class="dock-section" style="border-top: 1px solid rgba(255,255,255,0.12); padding-top: 8px;">
+      <button class="btn-dock-save" onclick="saveAllPosterData(true)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        Save Poster State
+      </button>
+      <div id="saveToast" class="save-toast">Saved to Disk & Browser!</div>
+    </div>
+
+    <!-- Export & Print -->
+    <div class="dock-section">
+      <button class="btn-dock-primary" onclick="triggerPrint()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Print / Export PDF
+      </button>
+    </div>
+
+    <!-- Backup & Restore JSON -->
+    <div class="dock-section">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+        <button class="dock-btn" onclick="downloadBackupJSON()">Export JSON</button>
+        <button class="dock-btn" onclick="triggerRestoreJSON()">Import JSON</button>
+      </div>
+      <input type="file" id="inputRestoreJSON" style="display: none;" accept=".json" onchange="restoreBackupJSON(event)">
+      <button class="btn-dock-danger" onclick="resetToFactoryDefault()" style="margin-top: 3px;">Reset to Factory Default</button>
+    </div>
+
+    <div class="dock-tips">
+      <strong>Live Text Editing:</strong> Click any text, title, bullet, or table to edit. Highlight any words to change their specific font size with the floating toolbar. Changes auto-save to disk!
+    </div>
+  </aside>
+
+  <!-- ── POSTER ROOT SHEET (HORIZONTAL LANDSCAPE 36" x 24") ── -->
+  <main class="poster-sheet" id="posterRoot">
+
+    <!-- ── HEADER SECTION ── -->
+    <header class="poster-header">
+      <div class="header-left">
+        <div class="badge-capsule" contenteditable="true" id="txt-badge">
+          Capstone Research<br>Project Poster
+        </div>
+      </div>
+
+      <div class="header-center">
+        <h1 class="hero-title" contenteditable="true" id="txt-title">
+          Vision-Guided Autonomous 6-DOF Robotic Arm
+        </h1>
+        <div class="hero-subtitle" contenteditable="true" id="txt-subtitle">
+          Action Chunking with Transformers (ACT), Receding Horizon Ensembling &amp; Edge Intelligence on Raspberry Pi 5
+        </div>
+        <div class="author-banner">
+          <span>Team Members:</span>
+          <strong contenteditable="true" id="txt-authors">Soham Bhavsar, Toshal Kumbhar, Divyansh Dewangan</strong>
+          <span class="sep">|</span>
+          <span>PRNs:</span>
+          <strong contenteditable="true" id="txt-prns">[1032210001, 1032210002, 1032210003]</strong>
+          <br>
+          <span>Guide:</span>
+          <strong contenteditable="true" id="txt-guide">Faculty Project Guide</strong>
+          <span class="sep">|</span>
+          <span contenteditable="true" id="txt-dept">Department of Electrical &amp; Electronics Engineering, School of Engineering &amp; Technology, MIT World Peace University (MIT-WPU)</span>
+        </div>
+      </div>
+
+      <div class="header-logo-container">
+        <div class="logo-slot" id="slot-logo" onclick="triggerUpload('input-logo')" title="Click or drop college logo here">
+          <input type="file" id="input-logo" accept="image/*" onchange="processUpload(event, 'slot-logo')">
+          <img src="assets/mit_wpu_logo.png" alt="University Logo" id="img-slot-logo">
+          <button class="logo-clear-btn" onclick="clearSlotImage(event, 'slot-logo')" title="Remove Logo">×</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── POSTER BODY (7 ACADEMIC SECTIONS IN 3-COLUMN ROWS) ── -->
+    <div class="poster-body" id="posterBody">
+
+      <!-- ── ROW 1: CARDS 1, 2, 3 ── -->
+      <div class="cards-row-top" id="row-top">
+
+        <!-- CARD 1: 1. INTRODUCTION -->
+        <article class="card" id="card-1">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="card-badge-num">1</span>
+              <h2 class="card-title" contenteditable="true" id="title-card-1">1. Introduction</h2>
+              <span class="card-subtitle-tag" contenteditable="true" id="sub-card-1">Problem, Objectives &amp; Scope</span>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-1', -0.5)" title="Smaller Text">A-</button>
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-1', 0.5)" title="Larger Text">A+</button>
+              <span class="card-font-indicator" id="font-ind-card-1">9pt</span>
+              <button class="ctrl-btn" onclick="adjustCardH('card-1', -25)" title="Decrease Height">-H</button>
+              <button class="ctrl-btn" onclick="adjustCardH('card-1', 25)" title="Increase Height">+H</button>
+              <button class="ctrl-btn" onclick="resetCardH('card-1')" title="Auto Height">Auto</button>
+              <button class="ctrl-btn" onclick="toggleTextAlign('card-1')" title="Toggle Text Alignment">Align</button>
+              <button class="ctrl-btn" onclick="cycleCardSpan('card-1')" title="Toggle Column Span">Span</button>
+              <button class="ctrl-btn" onclick="moveCard('card-1', -1)" title="Move Left">←</button>
+              <button class="ctrl-btn" onclick="moveCard('card-1', 1)" title="Move Right">→</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-content" contenteditable="true" id="cnt-card-1">
+              <p class="body-lead">
+                Bridging imitation learning with real-time embedded robotic manipulation without cloud computation.
+              </p>
+              <ul class="bullet-list">
+                <li><strong>The Physical Manipulation Challenge:</strong> Traditional analytical Inverse Kinematics (IK) relies on rigid, static target coordinates and fails under camera perspective drift, lighting shifts, or unmodeled servo gear compliance. Conversely, standard end-to-end pixel policies suffer from compounding temporal drift.</li>
+                <li><strong>Research Objectives:</strong> Design and physically validate a hybrid perception-learning pipeline: OpenCV detects spatial centroids, while edge neural policies (Behavioral Cloning MLP and Action Chunking Transformers) learn smooth trajectory generation.</li>
+                <li><strong>System Scope:</strong> 6-DOF articulated manipulator, overhead Logitech C270 tracking at 30 FPS, $25\text{ cm} \times 30\text{ cm}$ tabletop workspace, dual-block sequential sorting, and zero-jerk Cosine S-Curve transitions deployed on a Raspberry Pi 5.</li>
+              </ul>
+            </div>
+
+            <!-- Photo Slot 1 -->
+            <div class="photo-slot-wrapper" id="wrap-slot-fig1">
+              <div class="photo-slot has-image" id="slot-fig1" onclick="triggerUpload('input-fig1')">
+                <input type="file" id="input-fig1" style="display:none;" accept="image/*" onchange="processUpload(event, 'slot-fig1')">
+                <div class="slot-controls">
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig1', -20)">-H</button>
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig1', 20)">+H</button>
+                  <button class="slot-btn" onclick="toggleSlotFit(event, 'slot-fig1')">Fit</button>
+                  <button class="slot-btn" onclick="toggleSlotPos(event, 'slot-fig1')">Pos</button>
+                  <button class="slot-btn danger" onclick="deletePhotoSlot(event, 'wrap-slot-fig1')">🗑</button>
+                </div>
+                <!-- Inline SVG Diagram: Arm Kinematics & Link Geometry -->
+                <svg viewBox="0 0 600 240" style="width: 100%; height: 100%; background: #F8FAFC;">
+                  <rect width="600" height="240" fill="#F8FAFC" rx="6"/>
+                  <path d="M 60 210 L 540 210" stroke="#CBD5E1" stroke-width="3" stroke-dasharray="6,6"/>
+                  <text x="300" y="228" font-family="JetBrains Mono" font-size="11" fill="#64748B" text-anchor="middle">Table Surface (Y = 0 mm) • Safe Table Clearance Limit</text>
+                  <rect x="100" y="170" width="60" height="40" fill="#1E293B" rx="4"/>
+                  <text x="130" y="195" font-family="JetBrains Mono" font-size="10" fill="#FFFFFF" text-anchor="middle">Base (L1)</text>
+                  <line x1="130" y1="170" x2="220" y2="80" stroke="#2563EB" stroke-width="8" stroke-linecap="round"/>
+                  <circle cx="130" cy="170" r="8" fill="#1D4ED8"/>
+                  <text x="160" y="115" font-family="Inter" font-weight="700" font-size="11" fill="#1D4ED8">L2 = 12.0 cm</text>
+                  <line x1="220" y1="80" x2="350" y2="70" stroke="#059669" stroke-width="7" stroke-linecap="round"/>
+                  <circle cx="220" cy="80" r="7" fill="#047857"/>
+                  <text x="280" y="60" font-family="Inter" font-weight="700" font-size="11" fill="#047857">L3 = 9.0 cm</text>
+                  <line x1="350" y1="70" x2="440" y2="150" stroke="#D97706" stroke-width="6" stroke-linecap="round"/>
+                  <circle cx="350" cy="70" r="6" fill="#B45309"/>
+                  <text x="410" y="105" font-family="Inter" font-weight="700" font-size="11" fill="#B45309">L4 = 14.0 cm</text>
+                  <path d="M 440 150 L 430 185 M 440 150 L 450 185" stroke="#0F172A" stroke-width="5" stroke-linecap="round"/>
+                  <rect x="425" y="185" width="25" height="25" fill="#EF4444" rx="3"/>
+                  <text x="437" y="201" font-family="JetBrains Mono" font-size="8" fill="#FFFFFF" text-anchor="middle">Tag 0</text>
+                </svg>
+                <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-fig1')"></div>
+              </div>
+              <div class="photo-caption" contenteditable="true" id="cap-slot-fig1">Figure 1: 6-DOF Manipulator Kinematic Link Structure ($L_1..L_4$) and Optical Grasp Frame</div>
+            </div>
+
+            <button class="card-add-photo-btn" onclick="addNewPhotoSlot('card-1')">+ Add Photo Window</button>
+          </div>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-1')" title="Drag to resize height"></div>
+        </article>
+
+        <!-- CARD 2: 2. METHODOLOGY -->
+        <article class="card" id="card-2">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="card-badge-num">2</span>
+              <h2 class="card-title" contenteditable="true" id="title-card-2">2. Methodology</h2>
+              <span class="card-subtitle-tag" contenteditable="true" id="sub-card-2">Architecture, ACT &amp; Phase-IDW</span>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-2', -0.5)" title="Smaller Text">A-</button>
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-2', 0.5)" title="Larger Text">A+</button>
+              <span class="card-font-indicator" id="font-ind-card-2">9pt</span>
+              <button class="ctrl-btn" onclick="adjustCardH('card-2', -25)" title="Decrease Height">-H</button>
+              <button class="ctrl-btn" onclick="adjustCardH('card-2', 25)" title="Increase Height">+H</button>
+              <button class="ctrl-btn" onclick="resetCardH('card-2')" title="Auto Height">Auto</button>
+              <button class="ctrl-btn" onclick="toggleTextAlign('card-2')" title="Toggle Text Alignment">Align</button>
+              <button class="ctrl-btn" onclick="cycleCardSpan('card-2')" title="Toggle Column Span">Span</button>
+              <button class="ctrl-btn" onclick="moveCard('card-2', -1)" title="Move Left">←</button>
+              <button class="ctrl-btn" onclick="moveCard('card-2', 1)" title="Move Right">→</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-content" contenteditable="true" id="cnt-card-2">
+              <p class="body-lead">
+                Decoupled task decomposition with Action Chunking with Transformers (ACT) and receding horizon ensembling.
+              </p>
+              <ul class="bullet-list">
+                <li><strong>Decoupled Task Decomposition:</strong> Eliminates multimodal place variance by dedicating the neural policy strictly to the visual pick sequence (Home $\to$ Align $\to$ Grasp $\to$ Vertical Lift to safe clearance). The drop sequence is handed off to deterministic Cosine S-Curve waypoints to calibrated bins (<code>drop_locations.json</code>).</li>
+                <li><strong>Pure-NumPy ACT Policy Engine:</strong> Multi-Head Self-Attention (4 heads, $d_{\text{model}}=64$, $d_{\text{ff}}=128$) predicting action sequences of horizon $H=24$ ($0.8\text{s}$ lookahead at 30Hz). BLAS acceleration via Apple Accelerate <code>cblas_sgemm</code> flattens 3D tensors into contiguous 2D multiplications ($4.9\text{s/epoch}$).</li>
+                <li><strong>Phase-Aligned IDW Blending:</strong> Interpolates across $k=3$ nearest pick demonstrations with phase boundary alignment, preserving downward grasp dip apex without synthetic offsets.</li>
+              </ul>
+            </div>
+
+            <!-- Photo Slot 2 -->
+            <div class="photo-slot-wrapper" id="wrap-slot-fig2">
+              <div class="photo-slot has-image" id="slot-fig2" onclick="triggerUpload('input-fig2')">
+                <input type="file" id="input-fig2" style="display:none;" accept="image/*" onchange="processUpload(event, 'slot-fig2')">
+                <div class="slot-controls">
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig2', -20)">-H</button>
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig2', 20)">+H</button>
+                  <button class="slot-btn" onclick="toggleSlotFit(event, 'slot-fig2')">Fit</button>
+                  <button class="slot-btn" onclick="toggleSlotPos(event, 'slot-fig2')">Pos</button>
+                  <button class="slot-btn danger" onclick="deletePhotoSlot(event, 'wrap-slot-fig2')">🗑</button>
+                </div>
+                <!-- Inline SVG: Pipeline Block Diagram -->
+                <svg viewBox="0 0 620 220" style="width: 100%; height: 100%; background: #FFFFFF;">
+                  <rect width="620" height="220" fill="#FFFFFF"/>
+                  <rect x="15" y="65" width="125" height="90" rx="6" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2"/>
+                  <text x="77" y="95" font-family="Cabinet Grotesk" font-weight="800" font-size="12" fill="#1E40AF" text-anchor="middle">Perception</text>
+                  <text x="77" y="115" font-family="Inter" font-size="9.5" fill="#3B82F6" text-anchor="middle">Logitech C270</text>
+                  <text x="77" y="132" font-family="JetBrains Mono" font-size="8.5" fill="#1E3A8A" text-anchor="middle">ArUco (X, Y cm)</text>
+
+                  <path d="M 140 110 L 175 110" stroke="#2563EB" stroke-width="2.5"/>
+
+                  <rect x="175" y="45" width="145" height="130" rx="6" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
+                  <text x="247" y="75" font-family="Cabinet Grotesk" font-weight="800" font-size="12" fill="#065F46" text-anchor="middle">ACT Transformer</text>
+                  <text x="247" y="95" font-family="Inter" font-size="9" fill="#047857" text-anchor="middle">Horizon H = 24</text>
+                  <text x="247" y="112" font-family="JetBrains Mono" font-size="8" fill="#064E3B" text-anchor="middle">4-Head Attention</text>
+                  <text x="247" y="130" font-family="Inter" font-size="8.5" fill="#047857" text-anchor="middle">Temporal Ensembling</text>
+                  <text x="247" y="148" font-family="JetBrains Mono" font-size="7.5" fill="#059669" text-anchor="middle">w_k = exp(-0.05k)</text>
+
+                  <path d="M 320 110 L 355 110" stroke="#059669" stroke-width="2.5"/>
+
+                  <rect x="355" y="65" width="125" height="90" rx="6" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2"/>
+                  <text x="417" y="95" font-family="Cabinet Grotesk" font-weight="800" font-size="12" fill="#92400E" text-anchor="middle">Waypoint Place</text>
+                  <text x="417" y="115" font-family="Inter" font-size="9.5" fill="#D97706" text-anchor="middle">Cosine S-Curve</text>
+                  <text x="417" y="132" font-family="JetBrains Mono" font-size="8" fill="#B45309" text-anchor="middle">drop_locations.json</text>
+
+                  <path d="M 480 110 L 510 110" stroke="#D97706" stroke-width="2.5"/>
+
+                  <rect x="510" y="65" width="95" height="90" rx="6" fill="#F1F5F9" stroke="#475569" stroke-width="2"/>
+                  <text x="557" y="95" font-family="Cabinet Grotesk" font-weight="800" font-size="11.5" fill="#0F172A" text-anchor="middle">Actuation</text>
+                  <text x="557" y="115" font-family="JetBrains Mono" font-size="8.5" fill="#334155" text-anchor="middle">Arduino + PCA</text>
+                  <text x="557" y="132" font-family="JetBrains Mono" font-size="8" fill="#475569" text-anchor="middle">115200 Baud</text>
+                </svg>
+                <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-fig2')"></div>
+              </div>
+              <div class="photo-caption" contenteditable="true" id="cap-slot-fig2">Figure 2: End-to-End System Pipeline Flowchart (Perception $\to$ ACT Policy $\to$ Waypoint Handoff)</div>
+            </div>
+
+            <button class="card-add-photo-btn" onclick="addNewPhotoSlot('card-2')">+ Add Photo Window</button>
+          </div>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-2')" title="Drag to resize height"></div>
+        </article>
+
+        <!-- CARD 3: 3. IMPLEMENTATION -->
+        <article class="card" id="card-3">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="card-badge-num">3</span>
+              <h2 class="card-title" contenteditable="true" id="title-card-3">3. Implementation</h2>
+              <span class="card-subtitle-tag" contenteditable="true" id="sub-card-3">Hardware, Perception &amp; 3D Twin</span>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-3', -0.5)" title="Smaller Text">A-</button>
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-3', 0.5)" title="Larger Text">A+</button>
+              <span class="card-font-indicator" id="font-ind-card-3">9pt</span>
+              <button class="ctrl-btn" onclick="adjustCardH('card-3', -25)" title="Decrease Height">-H</button>
+              <button class="ctrl-btn" onclick="adjustCardH('card-3', 25)" title="Increase Height">+H</button>
+              <button class="ctrl-btn" onclick="resetCardH('card-3')" title="Auto Height">Auto</button>
+              <button class="ctrl-btn" onclick="toggleTextAlign('card-3')" title="Toggle Text Alignment">Align</button>
+              <button class="ctrl-btn" onclick="cycleCardSpan('card-3')" title="Toggle Column Span">Span</button>
+              <button class="ctrl-btn" onclick="moveCard('card-3', -1)" title="Move Left">←</button>
+              <button class="ctrl-btn" onclick="moveCard('card-3', 1)" title="Move Right">→</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-content" contenteditable="true" id="cnt-card-3">
+              <p class="body-lead">
+                Embedded edge hardware synchronized with zero-dependency Three.js digital twin simulation.
+              </p>
+              <ul class="bullet-list">
+                <li><strong>Hardware Actuation:</strong> High-torque servos (DS3218 20kg-cm Base/Shoulder, MG996R Elbow/Wrist, SG90 Gripper) powered by external 5V 10A supply via PCA9685 16-channel 12-bit PWM and Arduino Mega 2560. Binary framing eliminates serial jitter.</li>
+                <li><strong>3D WebGL Digital Twin:</strong> 100% offline Three.js simulation rendering physical CAD STL meshes in real time synchronized to 60 FPS WebSocket joint telemetry. Table penetration prevention geofencing blocks any candidate commands that violate $Y_{\text{floor\_limit}} = 8.0\text{ mm}$.</li>
+                <li><strong>Spatial Workspace Radar:</strong> Real-time 2D SVG table projection ($25\text{ cm} \times 30\text{ cm}$) showing World Origin (Tag 2), active Block Tag 0 &amp; Tag 1 pucks, orientation angles, and reachability geofence boundaries.</li>
+              </ul>
+            </div>
+
+            <!-- Photo Slot 3 -->
+            <div class="photo-slot-wrapper" id="wrap-slot-fig3">
+              <div class="photo-slot has-image" id="slot-fig3" onclick="triggerUpload('input-fig3')">
+                <input type="file" id="input-fig3" style="display:none;" accept="image/*" onchange="processUpload(event, 'slot-fig3')">
+                <div class="slot-controls">
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig3', -20)">-H</button>
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig3', 20)">+H</button>
+                  <button class="slot-btn" onclick="toggleSlotFit(event, 'slot-fig3')">Fit</button>
+                  <button class="slot-btn" onclick="toggleSlotPos(event, 'slot-fig3')">Pos</button>
+                  <button class="slot-btn danger" onclick="deletePhotoSlot(event, 'wrap-slot-fig3')">🗑</button>
+                </div>
+                <!-- Inline SVG: Digital Twin & Table Geofence -->
+                <svg viewBox="0 0 600 220" style="width: 100%; height: 100%; background: #0F172A;">
+                  <rect width="600" height="220" fill="#0F172A" rx="6"/>
+                  <path d="M 50 160 L 550 160 M 50 180 L 550 180 M 50 200 L 550 200" stroke="#1E293B" stroke-width="1.5"/>
+                  <path d="M 100 150 L 100 210 M 200 150 L 200 210 M 300 150 L 300 210 M 400 150 L 400 210 M 500 150 L 500 210" stroke="#1E293B" stroke-width="1.5"/>
+                  <text x="30" y="30" font-family="JetBrains Mono" font-size="11" fill="#38BDF8">3D WebGL Digital Twin Simulation (Three.js 60 FPS)</text>
+                  <circle cx="160" cy="160" r="16" fill="#3B82F6"/>
+                  <path d="M 160 160 L 250 90 L 370 80 L 450 145" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="250" cy="90" r="10" fill="#2563EB"/>
+                  <circle cx="370" cy="80" r="9" fill="#1D4ED8"/>
+                  <circle cx="450" cy="145" r="7" fill="#0284C7"/>
+                  <rect x="360" y="20" width="220" height="42" fill="rgba(30, 41, 59, 0.85)" rx="4" stroke="#38BDF8" stroke-width="1"/>
+                  <text x="375" y="38" font-family="JetBrains Mono" font-size="9" fill="#F8FAFC">Y_min: 14.2 mm (Safe)</text>
+                  <text x="375" y="53" font-family="JetBrains Mono" font-size="8.5" fill="#34D399">Floor Geofence: ACTIVE (8.0 mm)</text>
+                </svg>
+                <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-fig3')"></div>
+              </div>
+              <div class="photo-caption" contenteditable="true" id="cap-slot-fig3">Figure 3: Physical Hardware Stack, Live Spatial Radar &amp; 3D WebGL Digital Twin HUD</div>
+            </div>
+
+            <button class="card-add-photo-btn" onclick="addNewPhotoSlot('card-3')">+ Add Photo Window</button>
+          </div>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-3')" title="Drag to resize height"></div>
+        </article>
+
+      </div>
+
+      <!-- ── ROW 2: CARDS 4, 5, 6 ── -->
+      <div class="cards-row-mid" id="row-mid">
+
+        <!-- CARD 4: 4. RESULTS & TESTING -->
+        <article class="card" id="card-4">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="card-badge-num">4</span>
+              <h2 class="card-title" contenteditable="true" id="title-card-4">4. Results &amp; Testing</h2>
+              <span class="card-subtitle-tag" contenteditable="true" id="sub-card-4">Empirical Matrix &amp; Comparative Analysis</span>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-4', -0.5)" title="Smaller Text">A-</button>
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-4', 0.5)" title="Larger Text">A+</button>
+              <span class="card-font-indicator" id="font-ind-card-4">9pt</span>
+              <button class="ctrl-btn" onclick="adjustCardH('card-4', -25)" title="Decrease Height">-H</button>
+              <button class="ctrl-btn" onclick="adjustCardH('card-4', 25)" title="Increase Height">+H</button>
+              <button class="ctrl-btn" onclick="resetCardH('card-4')" title="Auto Height">Auto</button>
+              <button class="ctrl-btn" onclick="toggleTextAlign('card-4')" title="Toggle Text Alignment">Align</button>
+              <button class="ctrl-btn" onclick="cycleCardSpan('card-4')" title="Toggle Column Span">Span</button>
+              <button class="ctrl-btn" onclick="moveCard('card-4', -1)" title="Move Left">←</button>
+              <button class="ctrl-btn" onclick="moveCard('card-4', 1)" title="Move Right">→</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-content" contenteditable="true" id="cnt-card-4">
+              <p class="body-lead">
+                Comparative benchmark: Single-step Markovian MLP vs Action Chunking Transformers across demonstration tiers.
+              </p>
+              
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th contenteditable="true">Architecture</th>
+                    <th contenteditable="true">Horizon</th>
+                    <th contenteditable="true">Obs Dims</th>
+                    <th contenteditable="true">MSE Loss</th>
+                    <th contenteditable="true">Pick Success</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td contenteditable="true"><strong>BC Deep MLP (Baseline)</strong></td>
+                    <td contenteditable="true">$H = 1$</td>
+                    <td contenteditable="true">9 dims</td>
+                    <td contenteditable="true">0.5026</td>
+                    <td contenteditable="true">73.3%</td>
+                  </tr>
+                  <tr>
+                    <td contenteditable="true"><strong>MLP (Theta Ablated)</strong></td>
+                    <td contenteditable="true">$H = 1$</td>
+                    <td contenteditable="true">8 dims</td>
+                    <td contenteditable="true">0.3668</td>
+                    <td contenteditable="true">86.7%</td>
+                  </tr>
+                  <tr>
+                    <td contenteditable="true"><strong>ACT (No Theta)</strong></td>
+                    <td contenteditable="true">$H = 24$</td>
+                    <td contenteditable="true">8 dims</td>
+                    <td contenteditable="true">17.81*</td>
+                    <td contenteditable="true"><strong>93.3%</strong></td>
+                  </tr>
+                  <tr>
+                    <td contenteditable="true"><strong>ACT (With Theta)</strong></td>
+                    <td contenteditable="true">$H = 24$</td>
+                    <td contenteditable="true">9 dims</td>
+                    <td contenteditable="true">16.59*</td>
+                    <td contenteditable="true">90.0%</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="font-family: var(--font-mono); font-size: 0.85em; color: var(--text-faint);" contenteditable="true">
+                *ACT MSE is cumulative sum across 24 future horizon steps (~4.01° RMSE per joint).
+              </div>
+
+              <ul class="bullet-list" style="margin-top: 1mm;">
+                <li><strong>Error Accumulation Prevention:</strong> Action Chunking with $H=24$ eliminates high-frequency jerk and Markovian compound drift. Receding horizon temporal ensembling ($w_k = \exp(-0.05k)$) smooths velocity transitions.</li>
+                <li><strong>Dataset Slicing Impact:</strong> Slicing teleoperation data down to pure pick-and-lift reduced training MSE by 28% and cut trajectory length from ~300 to 60–90 monotonic steps.</li>
+              </ul>
+            </div>
+
+            <!-- Photo Slot 4 -->
+            <div class="photo-slot-wrapper" id="wrap-slot-fig4">
+              <div class="photo-slot has-image" id="slot-fig4" onclick="triggerUpload('input-fig4')">
+                <input type="file" id="input-fig4" style="display:none;" accept="image/*" onchange="processUpload(event, 'slot-fig4')">
+                <div class="slot-controls">
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig4', -20)">-H</button>
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig4', 20)">+H</button>
+                  <button class="slot-btn" onclick="toggleSlotFit(event, 'slot-fig4')">Fit</button>
+                  <button class="slot-btn" onclick="toggleSlotPos(event, 'slot-fig4')">Pos</button>
+                  <button class="slot-btn danger" onclick="deletePhotoSlot(event, 'wrap-slot-fig4')">🗑</button>
+                </div>
+                <!-- Inline SVG: Success Curves -->
+                <svg viewBox="0 0 600 200" style="width: 100%; height: 100%; background: #FFFFFF;">
+                  <rect width="600" height="200" fill="#FFFFFF"/>
+                  <line x1="60" y1="30" x2="60" y2="160" stroke="#CBD5E1" stroke-width="2"/>
+                  <line x1="60" y1="160" x2="560" y2="160" stroke="#CBD5E1" stroke-width="2"/>
+                  <text x="30" y="95" font-family="JetBrains Mono" font-size="9" fill="#64748B" transform="rotate(-90 30,95)" text-anchor="middle">Pick Success %</text>
+                  <text x="310" y="185" font-family="JetBrains Mono" font-size="9" fill="#64748B" text-anchor="middle">Demonstration Tiers (30, 60, 90 Episodes)</text>
+                  <path d="M 60 115 Q 260 95 540 85" stroke="#94A3B8" stroke-width="3" fill="none" stroke-dasharray="5,5"/>
+                  <circle cx="540" cy="85" r="4" fill="#94A3B8"/>
+                  <text x="545" y="85" font-family="JetBrains Mono" font-size="8.5" fill="#64748B">MLP Baseline</text>
+                  <path d="M 60 90 Q 260 60 540 40" stroke="#2563EB" stroke-width="4" fill="none"/>
+                  <circle cx="540" cy="40" r="5" fill="#1D4ED8"/>
+                  <text x="545" y="42" font-family="JetBrains Mono" font-weight="700" font-size="9" fill="#1D4ED8">ACT (H=24) 93.3%</text>
+                </svg>
+                <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-fig4')"></div>
+              </div>
+              <div class="photo-caption" contenteditable="true" id="cap-slot-fig4">Figure 4: Empirical Pick Success Rate Scaling &amp; Trajectory Curvature Preservation</div>
+            </div>
+
+            <button class="card-add-photo-btn" onclick="addNewPhotoSlot('card-4')">+ Add Photo Window</button>
+          </div>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-4')" title="Drag to resize height"></div>
+        </article>
+
+        <!-- CARD 5: 5. INNOVATION -->
+        <article class="card" id="card-5">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="card-badge-num">5</span>
+              <h2 class="card-title" contenteditable="true" id="title-card-5">5. Innovation</h2>
+              <span class="card-subtitle-tag" contenteditable="true" id="sub-card-5">Theta Ablation &amp; Descent-Apex Detection</span>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-5', -0.5)" title="Smaller Text">A-</button>
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-5', 0.5)" title="Larger Text">A+</button>
+              <span class="card-font-indicator" id="font-ind-card-5">9pt</span>
+              <button class="ctrl-btn" onclick="adjustCardH('card-5', -25)" title="Decrease Height">-H</button>
+              <button class="ctrl-btn" onclick="adjustCardH('card-5', 25)" title="Increase Height">+H</button>
+              <button class="ctrl-btn" onclick="resetCardH('card-5')" title="Auto Height">Auto</button>
+              <button class="ctrl-btn" onclick="toggleTextAlign('card-5')" title="Toggle Text Alignment">Align</button>
+              <button class="ctrl-btn" onclick="cycleCardSpan('card-5')" title="Toggle Column Span">Span</button>
+              <button class="ctrl-btn" onclick="moveCard('card-5', -1)" title="Move Left">←</button>
+              <button class="ctrl-btn" onclick="moveCard('card-5', 1)" title="Move Right">→</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-content" contenteditable="true" id="cnt-card-5">
+              <p class="body-lead">
+                Resolving real-world kinematic grasp failure through perception ablation and descent synchronization.
+              </p>
+              <ul class="bullet-list">
+                <li><strong>1. Symmetric Block Theta Feature Ablation:</strong> Square sponge cubes exhibit 4-fold rotational symmetry ($90^\circ$). Optical ArUco $\theta$ jitter introduces spurious wrist roll adjustments that compromise vertical downward plunge. Removing $\theta$ ($[θ_1..θ_5, \text{gripper}, X, Y]$, 8 dims) stabilizes plunge depth and raises physical grasp reliability to $>90\%$.</li>
+                <li><strong>2. Descent-Apex Grasp Detection:</strong> Overcomes an 85/15 open-vs-closed frame class imbalance in demonstration datasets. Rather than failing at unweighted BCE sigmoid thresholds, the runner kinematically detects downward descent apex ($\text{Elbow} \ge 154^\circ$ after $\ge 35$ approach frames) to lock the claw, hold for 30 lift frames, and cleanly hand off to Phase 3.</li>
+                <li><strong>3. Edge BLAS Apple Accelerate Optimization:</strong> Pure NumPy implementation executes multi-head self-attention on low-power ARM CPU without PyTorch or CUDA dependencies.</li>
+              </ul>
+            </div>
+
+            <!-- Photo Slot 5 -->
+            <div class="photo-slot-wrapper" id="wrap-slot-fig5">
+              <div class="photo-slot has-image" id="slot-fig5" onclick="triggerUpload('input-fig5')">
+                <input type="file" id="input-fig5" style="display:none;" accept="image/*" onchange="processUpload(event, 'slot-fig5')">
+                <div class="slot-controls">
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig5', -20)">-H</button>
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig5', 20)">+H</button>
+                  <button class="slot-btn" onclick="toggleSlotFit(event, 'slot-fig5')">Fit</button>
+                  <button class="slot-btn" onclick="toggleSlotPos(event, 'slot-fig5')">Pos</button>
+                  <button class="slot-btn danger" onclick="deletePhotoSlot(event, 'wrap-slot-fig5')">🗑</button>
+                </div>
+                <!-- Inline SVG: Grasp Profile Diagram -->
+                <svg viewBox="0 0 600 200" style="width: 100%; height: 100%; background: #F8FAFC;">
+                  <rect width="600" height="200" fill="#F8FAFC"/>
+                  <path d="M 40 50 Q 200 60 300 155 Q 360 160 420 70 L 560 70" stroke="#059669" stroke-width="4" fill="none"/>
+                  <text x="120" y="45" font-family="JetBrains Mono" font-size="9" fill="#047857">1. Approach Phase</text>
+                  <circle cx="310" cy="155" r="7" fill="#DC2626"/>
+                  <text x="310" y="180" font-family="JetBrains Mono" font-weight="700" font-size="9.5" fill="#DC2626" text-anchor="middle">Descent Apex Lock (Elbow ≥ 154°)</text>
+                  <text x="450" y="55" font-family="JetBrains Mono" font-size="9" fill="#047857">2. Vertical Lift</text>
+                  <line x1="310" y1="155" x2="310" y2="20" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="4,4"/>
+                  <text x="315" y="30" font-family="Inter" font-size="8.5" fill="#991B1B">Locks Claw &amp; Holds for 30 Frames</text>
+                </svg>
+                <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-fig5')"></div>
+              </div>
+              <div class="photo-caption" contenteditable="true" id="cap-slot-fig5">Figure 5: Kinematic Descent-Apex Grasp Lock Profile &amp; Class Imbalance Mitigation</div>
+            </div>
+
+            <button class="card-add-photo-btn" onclick="addNewPhotoSlot('card-5')">+ Add Photo Window</button>
+          </div>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-5')" title="Drag to resize height"></div>
+        </article>
+
+        <!-- CARD 6: 6. APPLICATION & OUTCOME -->
+        <article class="card" id="card-6">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="card-badge-num">6</span>
+              <h2 class="card-title" contenteditable="true" id="title-card-6">6. Application &amp; Outcome</h2>
+              <span class="card-subtitle-tag" contenteditable="true" id="sub-card-6">Dual-Block Sorting &amp; Edge Relevance</span>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-6', -0.5)" title="Smaller Text">A-</button>
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-6', 0.5)" title="Larger Text">A+</button>
+              <span class="card-font-indicator" id="font-ind-card-6">9pt</span>
+              <button class="ctrl-btn" onclick="adjustCardH('card-6', -25)" title="Decrease Height">-H</button>
+              <button class="ctrl-btn" onclick="adjustCardH('card-6', 25)" title="Increase Height">+H</button>
+              <button class="ctrl-btn" onclick="resetCardH('card-6')" title="Auto Height">Auto</button>
+              <button class="ctrl-btn" onclick="toggleTextAlign('card-6')" title="Toggle Text Alignment">Align</button>
+              <button class="ctrl-btn" onclick="cycleCardSpan('card-6')" title="Toggle Column Span">Span</button>
+              <button class="ctrl-btn" onclick="moveCard('card-6', -1)" title="Move Left">←</button>
+              <button class="ctrl-btn" onclick="moveCard('card-6', 1)" title="Move Right">→</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-content" contenteditable="true" id="cnt-card-6">
+              <p class="body-lead">
+                Proximity-based sequential multi-object sorting and academic journal dissemination.
+              </p>
+              <ul class="bullet-list">
+                <li><strong>Dual-Block Autonomous Sorting:</strong> Concurrent perception of Block 1 (Tag 0) and Block 2 (Tag 1). Proximity-based spatial sweep prioritizes higher-$X$ downstream blocks first, guaranteeing completely collision-free transit to dedicated drop bins without complex obstacle evasion trajectories.</li>
+                <li><strong>Industrial Edge Relevance:</strong> Enables automated pick-and-sort in dynamic micro-warehouses and laboratory handling using sub-$150 hardware components running entirely offline on edge microprocessors.</li>
+                <li><strong>Academic Journal Dissemination:</strong> Empirical evaluation framework prepared for peer-reviewed journal submission, benchmarking Markovian MLPs against Action Chunking Transformers across progressive human demonstration tiers.</li>
+              </ul>
+            </div>
+
+            <!-- Photo Slot 6 -->
+            <div class="photo-slot-wrapper" id="wrap-slot-fig6">
+              <div class="photo-slot has-image" id="slot-fig6" onclick="triggerUpload('input-fig6')">
+                <input type="file" id="input-fig6" style="display:none;" accept="image/*" onchange="processUpload(event, 'slot-fig6')">
+                <div class="slot-controls">
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig6', -20)">-H</button>
+                  <button class="slot-btn" onclick="adjustSlotH(event, 'slot-fig6', 20)">+H</button>
+                  <button class="slot-btn" onclick="toggleSlotFit(event, 'slot-fig6')">Fit</button>
+                  <button class="slot-btn" onclick="toggleSlotPos(event, 'slot-fig6')">Pos</button>
+                  <button class="slot-btn danger" onclick="deletePhotoSlot(event, 'wrap-slot-fig6')">🗑</button>
+                </div>
+                <!-- Inline SVG: Dual-Block Sorting Schematic -->
+                <svg viewBox="0 0 600 200" style="width: 100%; height: 100%; background: #FFFFFF;">
+                  <rect width="600" height="200" fill="#FFFFFF"/>
+                  <rect x="180" y="30" width="380" height="150" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" rx="4"/>
+                  <text x="370" y="50" font-family="JetBrains Mono" font-size="10" fill="#64748B" text-anchor="middle">25 cm x 30 cm Manipulation Field</text>
+                  <rect x="520" y="40" width="28" height="28" fill="#0F172A" rx="3"/>
+                  <text x="534" y="58" font-family="JetBrains Mono" font-size="8" fill="#FFFFFF" text-anchor="middle">Tag 2</text>
+                  <rect x="230" y="80" width="30" height="30" fill="#EF4444" rx="3"/>
+                  <text x="245" y="100" font-family="JetBrains Mono" font-size="9" fill="#FFFFFF" text-anchor="middle">Tag 0</text>
+                  <text x="245" y="125" font-family="Inter" font-weight="700" font-size="8.5" fill="#B91C1C" text-anchor="middle">Priority 1 (Sweep First)</text>
+                  <rect x="360" y="110" width="30" height="30" fill="#3B82F6" rx="3"/>
+                  <text x="375" y="130" font-family="JetBrains Mono" font-size="9" fill="#FFFFFF" text-anchor="middle">Tag 1</text>
+                  <text x="375" y="155" font-family="Inter" font-weight="700" font-size="8.5" fill="#1D4ED8" text-anchor="middle">Priority 2</text>
+                  <rect x="40" y="45" width="100" height="55" fill="#FEF2F2" stroke="#EF4444" stroke-width="2" rx="4"/>
+                  <text x="90" y="75" font-family="Inter" font-weight="700" font-size="9.5" fill="#991B1B" text-anchor="middle">Bin 1 (Tag 0)</text>
+                  <rect x="40" y="115" width="100" height="55" fill="#EFF6FF" stroke="#3B82F6" stroke-width="2" rx="4"/>
+                  <text x="90" y="145" font-family="Inter" font-weight="700" font-size="9.5" fill="#1E40AF" text-anchor="middle">Bin 2 (Tag 1)</text>
+                </svg>
+                <div class="slot-resize-handle" onmousedown="initSlotResize(event, 'slot-fig6')"></div>
+              </div>
+              <div class="photo-caption" contenteditable="true" id="cap-slot-fig6">Figure 6: Dual-Block Spatial Sweep Order (Higher X First) &amp; Deterministic Bin Routing</div>
+            </div>
+
+            <button class="card-add-photo-btn" onclick="addNewPhotoSlot('card-6')">+ Add Photo Window</button>
+          </div>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-6')" title="Drag to resize height"></div>
+        </article>
+
+      </div>
+
+      <!-- ── ROW 3: CARD 7 (CONCLUSION & FUTURE SCOPE - FULL WIDTH) ── -->
+      <div class="cards-row-bottom" id="row-bottom">
+
+        <!-- CARD 7: 7. CONCLUSION & FUTURE SCOPE -->
+        <article class="card span-3" id="card-7">
+          <div class="card-head">
+            <div class="card-title-group">
+              <span class="card-badge-num">7</span>
+              <h2 class="card-title" contenteditable="true" id="title-card-7">7. Conclusion &amp; Future Scope</h2>
+              <span class="card-subtitle-tag" contenteditable="true" id="sub-card-7">Key Achievements &amp; Research Roadmap</span>
+            </div>
+            <div class="card-ctrl-bar">
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-7', -0.5)" title="Smaller Text">A-</button>
+              <button class="ctrl-btn" onclick="adjustCardFontSize('card-7', 0.5)" title="Larger Text">A+</button>
+              <span class="card-font-indicator" id="font-ind-card-7">9pt</span>
+              <button class="ctrl-btn" onclick="adjustCardH('card-7', -25)" title="Decrease Height">-H</button>
+              <button class="ctrl-btn" onclick="adjustCardH('card-7', 25)" title="Increase Height">+H</button>
+              <button class="ctrl-btn" onclick="resetCardH('card-7')" title="Auto Height">Auto</button>
+              <button class="ctrl-btn" onclick="toggleTextAlign('card-7')" title="Toggle Text Alignment">Align</button>
+              <button class="ctrl-btn" onclick="cycleCardSpan('card-7')" title="Toggle Column Span">Span</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-content" contenteditable="true" id="cnt-card-7" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 5mm;">
+              <div>
+                <p class="body-lead" contenteditable="true">Key Research Achievements:</p>
+                <ul class="bullet-list" style="margin-top: 1.2mm;">
+                  <li contenteditable="true">Successfully implemented, calibrated, and physically validated an end-to-end vision-guided 6-DOF autonomous robotic arm using Action Chunking with Transformers (ACT).</li>
+                  <li contenteditable="true">Eliminated multimodal drop jitter through decoupled task decomposition (neural pick + deterministic Cosine S-Curve waypoints), reducing trajectory sequence length by 38.6%.</li>
+                  <li contenteditable="true">Overcame the 85/15 demonstration class imbalance via kinematic Descent-Apex Grasp Detection, achieving a verified 93.3% physical pick success rate.</li>
+                  <li contenteditable="true">Built a 100% offline edge architecture featuring Apple Accelerate BLAS attention, live SVG Workspace Radar, and an interactive 3D WebGL Digital Twin with table geofencing.</li>
+                </ul>
+              </div>
+
+              <div>
+                <p class="body-lead" contenteditable="true">Future Research Scope &amp; Roadmap:</p>
+                <ul class="bullet-list" style="margin-top: 1.2mm;">
+                  <li contenteditable="true"><strong>Multi-Object Color Segmentation:</strong> Expanding perception to color and contour tracking (HSV thresholding) for dynamic unstructured bin picking without fiducial markers.</li>
+                  <li contenteditable="true"><strong>Scaling Demonstration Tiers:</strong> Gathering 60- and 90-demonstration datasets across varied approach angles to complete the academic journal scaling matrix.</li>
+                  <li contenteditable="true"><strong>Diffusion Policy Integration:</strong> Benchmarking ACT against lightweight Diffusion Policies and Vision-Language-Action (VLA) foundation models on the edge.</li>
+                  <li contenteditable="true"><strong>Closed-Loop Visual Servoing:</strong> Implementing continuous real-time image Jacobian visual feedback during downward plunge execution.</li>
+                </ul>
+              </div>
+            </div>
+
+            <button class="card-add-photo-btn" onclick="addNewPhotoSlot('card-7')">+ Add Photo Window</button>
+          </div>
+          <div class="card-resize-handle" onmousedown="initCardResize(event, 'card-7')" title="Drag to resize height"></div>
+        </article>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── PERSISTENCE & INTERACTIVITY SCRIPTS ── -->
+  <script>
+    const STORAGE_PREFIX = 'horizontal_poster_state_';
+    const IDB_NAME = 'HorizontalPosterDB';
+    const IDB_VERSION = 1;
+    const IDB_STORE = 'poster_images';
+
+    const ALL_CARD_IDS = ['card-1', 'card-2', 'card-3', 'card-4', 'card-5', 'card-6', 'card-7'];
+    let posterState = {
+      cardSizes: {},
+      cardAlignments: {},
+      cardSpans: {},
+      cardFontSizes: {},
+      cardOrder: [...ALL_CARD_IDS],
+      textEdits: {},
+      photoSlots: {},
+      sheetFormat: 'conf',
+      globalTextScale: 100,
+      zoom: 0.48
+    };
+
+    // ── INDEXEDDB ASYNC STORAGE ──
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbSet(key, val) {
+      try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(IDB_STORE, 'readwrite');
+          tx.objectStore(IDB_STORE).put(val, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } catch (err) {
+        console.warn('IDB write failed:', err);
+      }
+    }
+
+    async function dbGet(key) {
+      try {
+        const db = await openDB();
+        return new Promise((resolve) => {
+          const tx = db.transaction(IDB_STORE, 'readonly');
+          const req = tx.objectStore(IDB_STORE).get(key);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        });
+      } catch (err) {
+        return null;
+      }
+    }
+
+    // ── FLOATING SELECTION FORMATTING TOOLBAR ──
+    const selToolbar = document.getElementById('selToolbar');
+    let lastSelectionRange = null;
+
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) {
+        selToolbar.classList.remove('active');
+        return;
+      }
+
+      const range = sel.getRangeAt(0);
+      const container = range.commonAncestorContainer;
+      const el = container.nodeType === 1 ? container : container.parentElement;
+
+      // Only show if selection is inside an editable area
+      if (el && (el.isContentEditable || el.closest('[contenteditable="true"]'))) {
+        lastSelectionRange = range.cloneRange();
+        const rect = range.getBoundingClientRect();
+        if (rect && rect.width > 0) {
+          selToolbar.style.top = (rect.top + window.scrollY) + 'px';
+          selToolbar.style.left = (rect.left + rect.width / 2 + window.scrollX) + 'px';
+          selToolbar.classList.add('active');
+        }
+      } else {
+        selToolbar.classList.remove('active');
+      }
+    });
+
+    function applySelectionFontSize(val) {
+      const sel = window.getSelection();
+      if (!sel.rangeCount && lastSelectionRange) {
+        sel.removeAllRanges();
+        sel.addRange(lastSelectionRange);
+      }
+      if (!sel.rangeCount) return;
+      
+      const range = sel.getRangeAt(0);
+      if (range.isCollapsed) return;
+
+      const parentEl = range.commonAncestorContainer.nodeType === 1 ? 
+                       range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
+      const curSize = parseFloat(window.getComputedStyle(parentEl).fontSize) || 12;
+
+      let targetSize;
+      if (typeof val === 'number') {
+        targetSize = Math.max(7, Math.min(60, curSize + (val * 2))) + 'px';
+      } else if (val) {
+        targetSize = val;
+      } else {
+        return;
+      }
+
+      // Wrap in span with explicit font-size
+      const span = document.createElement('span');
+      span.style.fontSize = targetSize;
+      span.appendChild(range.extractContents());
+      range.insertNode(span);
+
+      sel.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      sel.addRange(newRange);
+      lastSelectionRange = newRange.cloneRange();
+
+      autoSaveDebounced();
+    }
+
+    // ── CARD-LEVEL FONT SIZE CONTROLS ──
+    function adjustCardFontSize(cardId, delta) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const body = card.querySelector('.card-body');
+      if (!body) return;
+
+      let curPt = parseFloat(posterState.cardFontSizes[cardId]) || 9.0;
+      let newPt = Math.max(6.5, Math.min(18.0, Math.round((curPt + delta) * 2) / 2));
+      
+      body.style.fontSize = newPt + 'pt';
+      posterState.cardFontSizes[cardId] = newPt + 'pt';
+      
+      const ind = document.getElementById('font-ind-' + cardId);
+      if (ind) ind.innerText = newPt + 'pt';
+
+      autoSaveDebounced();
+    }
+
+    function adjustAllCardsFontSize(delta) {
+      ALL_CARD_IDS.forEach(id => adjustCardFontSize(id, delta));
+    }
+
+    function resetAllTextSizes() {
+      ALL_CARD_IDS.forEach(id => {
+        const card = document.getElementById(id);
+        if (card) {
+          const body = card.querySelector('.card-body');
+          if (body) body.style.fontSize = '';
+          const ind = document.getElementById('font-ind-' + id);
+          if (ind) ind.innerText = '9pt';
+        }
+      });
+      posterState.cardFontSizes = {};
+      posterState.globalTextScale = 100;
+      const slider = document.getElementById('globalTextScale');
+      if (slider) slider.value = 100;
+      const lbl = document.getElementById('lblTextScale');
+      if (lbl) lbl.innerText = '100%';
+      document.documentElement.style.setProperty('--base-card-font', '9pt');
+      autoSaveDebounced();
+      showToast('All text sizes reset to 9pt default');
+    }
+
+    function setGlobalTextScale(val) {
+      posterState.globalTextScale = parseInt(val) || 100;
+      const factor = posterState.globalTextScale / 100;
+      const basePt = (9 * factor).toFixed(1);
+      document.documentElement.style.setProperty('--base-card-font', basePt + 'pt');
+      const lbl = document.getElementById('lblTextScale');
+      if (lbl) lbl.innerText = val + '%';
+      autoSaveDebounced();
+    }
+
+    // ── ZOOM & CANVAS DISPLAY ──
+    function setZoom(val) {
+      const root = document.getElementById('posterRoot');
+      if (!root) return;
+      root.style.zoom = val;
+      posterState.zoom = val;
+      document.querySelectorAll('.sidebar-dock .dock-btn').forEach(b => {
+        b.classList.remove('active');
+        if (b.innerText === Math.round(val * 100) + '%') b.classList.add('active');
+      });
+    }
+
+    function fitWidth() {
+      const sidebarW = 330;
+      const availW = window.innerWidth - sidebarW - 50;
+      const root = document.getElementById('posterRoot');
+      if (!root || !availW) return;
+      const trueW = root.offsetWidth || 3456;
+      const scale = Math.max(0.2, Math.min(1.5, availW / trueW));
+      setZoom(scale);
+    }
+
+    function fitWindow() {
+      const sidebarW = 330;
+      const availW = window.innerWidth - sidebarW - 50;
+      const availH = window.innerHeight - 60;
+      const root = document.getElementById('posterRoot');
+      if (!root) return;
+      const trueW = root.offsetWidth || 3456;
+      const trueH = root.offsetHeight || 2304;
+      const scale = Math.max(0.2, Math.min(1.5, Math.min(availW / trueW, availH / trueH)));
+      setZoom(scale);
+    }
+
+    function setPosterFormat(fmt) {
+      const body = document.body;
+      const btnA0 = document.getElementById('btnFmtA0');
+      const btnConf = document.getElementById('btnFmtConf');
+      if (fmt === 'a0') {
+        body.classList.remove('format-large-land');
+        body.classList.add('format-a0-land');
+        btnA0.classList.add('active');
+        btnConf.classList.remove('active');
+        posterState.sheetFormat = 'a0';
+      } else {
+        body.classList.remove('format-a0-land', 'format-large-land');
+        btnConf.classList.add('active');
+        btnA0.classList.remove('active');
+        posterState.sheetFormat = 'conf';
+      }
+      autoSaveDebounced();
+    }
+
+    // ── CARD SIZE ADJUSTMENTS ──
+    function getTrueHeight(el) {
+      return el.getBoundingClientRect().height / (posterState.zoom || 1);
+    }
+
+    function adjustCardH(cardId, delta) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const curH = getTrueHeight(card);
+      const newH = Math.max(100, Math.min(2200, Math.round(curH + delta)));
+      card.style.flex = '0 0 ' + newH + 'px';
+      card.style.height = newH + 'px';
+      posterState.cardSizes[cardId] = { height: newH + 'px', flex: '0 0 ' + newH + 'px' };
+      autoSaveDebounced();
+    }
+
+    function resetCardH(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      card.style.flex = '';
+      card.style.height = '';
+      delete posterState.cardSizes[cardId];
+      autoSaveDebounced();
+    }
+
+    function adjustAllCardsH(delta) {
+      ALL_CARD_IDS.forEach(id => adjustCardH(id, delta));
+    }
+
+    function resetAllCardSizes() {
+      if (!confirm('Reset all card heights to default layout flow?')) return;
+      ALL_CARD_IDS.forEach(id => resetCardH(id));
+      showToast('All card heights reset to default');
+    }
+
+    // Card drag-to-resize handle
+    let activeResizeCard = null;
+    let cardStartY = 0;
+    let cardStartH = 0;
+
+    function initCardResize(e, cardId) {
+      e.preventDefault();
+      e.stopPropagation();
+      activeResizeCard = document.getElementById(cardId);
+      if (!activeResizeCard) return;
+      cardStartY = e.clientY;
+      cardStartH = getTrueHeight(activeResizeCard);
+
+      const handle = e.target;
+      handle.classList.add('resizing');
+      document.body.style.cursor = 'ns-resize';
+
+      function onMouseMove(ev) {
+        if (!activeResizeCard) return;
+        const dy = (ev.clientY - cardStartY) / (posterState.zoom || 1);
+        const newH = Math.max(100, Math.min(2200, Math.round(cardStartH + dy)));
+        activeResizeCard.style.flex = '0 0 ' + newH + 'px';
+        activeResizeCard.style.height = newH + 'px';
+      }
+
+      function onMouseUp() {
+        if (activeResizeCard) {
+          const finalH = activeResizeCard.style.height;
+          posterState.cardSizes[cardId] = { height: finalH, flex: '0 0 ' + finalH };
+          handle.classList.remove('resizing');
+          document.body.style.cursor = '';
+          activeResizeCard = null;
+          autoSaveDebounced();
+        }
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    // ── CARD ALIGNMENT & SPAN CONTROLS ──
+    function toggleTextAlign(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      if (card.classList.contains('text-left')) {
+        card.classList.remove('text-left');
+        card.classList.add('text-center');
+        posterState.cardAlignments[cardId] = 'center';
+      } else if (card.classList.contains('text-center')) {
+        card.classList.remove('text-center');
+        card.classList.add('text-justify');
+        posterState.cardAlignments[cardId] = 'justify';
+      } else if (card.classList.contains('text-justify')) {
+        card.classList.remove('text-justify');
+        delete posterState.cardAlignments[cardId];
+      } else {
+        card.classList.add('text-left');
+        posterState.cardAlignments[cardId] = 'left';
+      }
+      autoSaveDebounced();
+    }
+
+    function cycleCardSpan(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      if (card.classList.contains('span-1')) {
+        card.classList.remove('span-1');
+        card.classList.add('span-2');
+        posterState.cardSpans[cardId] = 'span-2';
+      } else if (card.classList.contains('span-2')) {
+        card.classList.remove('span-2');
+        card.classList.add('span-3');
+        posterState.cardSpans[cardId] = 'span-3';
+      } else if (card.classList.contains('span-3')) {
+        card.classList.remove('span-3');
+        delete posterState.cardSpans[cardId];
+      } else {
+        card.classList.add('span-2');
+        posterState.cardSpans[cardId] = 'span-2';
+      }
+      autoSaveDebounced();
+    }
+
+    function moveCard(cardId, dir) {
+      const card = document.getElementById(cardId);
+      if (!card || !card.parentElement) return;
+      const parent = card.parentElement;
+      if (dir === -1 && card.previousElementSibling) {
+        parent.insertBefore(card, card.previousElementSibling);
+      } else if (dir === 1 && card.nextElementSibling) {
+        parent.insertBefore(card.nextElementSibling, card);
+      }
+      autoSaveDebounced();
+    }
+
+    function resetAllAlignments() {
+      ALL_CARD_IDS.forEach(id => {
+        const c = document.getElementById(id);
+        if (c) {
+          c.classList.remove('text-left', 'text-center', 'text-justify', 'span-1', 'span-2', 'span-3');
+        }
+      });
+      posterState.cardAlignments = {};
+      posterState.cardSpans = {};
+      autoSaveDebounced();
+      showToast('Card alignments & spans reset');
+    }
+
+    // ── PHOTO WINDOWS & UPLOADS ──
+    function triggerUpload(inputId) {
+      const input = document.getElementById(inputId);
+      if (input) input.click();
+    }
+
+    function processUpload(event, slotId) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        setSlotImage(slotId, e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setSlotImage(slotId, dataUrl) {
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      let img = slot.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        slot.appendChild(img);
+      }
+      img.src = dataUrl;
+      slot.classList.add('has-image');
+      
+      if (!posterState.photoSlots[slotId]) posterState.photoSlots[slotId] = {};
+      posterState.photoSlots[slotId].src = dataUrl;
+      dbSet(STORAGE_PREFIX + slotId, dataUrl);
+      autoSaveDebounced();
+    }
+
+    function clearSlotImage(e, slotId) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      const img = slot.querySelector('img');
+      if (img) img.src = '';
+      slot.classList.remove('has-image');
+      if (posterState.photoSlots[slotId]) {
+        posterState.photoSlots[slotId].src = '';
+      }
+      autoSaveDebounced();
+    }
+
+    function toggleSlotFit(e, slotId) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      if (slot.classList.contains('fit-cover')) {
+        slot.classList.remove('fit-cover');
+        slot.classList.add('fit-fill');
+        updateSlotConfig(slotId, { fit: 'fill' });
+      } else if (slot.classList.contains('fit-fill')) {
+        slot.classList.remove('fit-fill');
+        slot.classList.add('fit-contain');
+        updateSlotConfig(slotId, { fit: 'contain' });
+      } else {
+        slot.classList.remove('fit-contain');
+        slot.classList.add('fit-cover');
+        updateSlotConfig(slotId, { fit: 'cover' });
+      }
+      autoSaveDebounced();
+    }
+
+    function toggleSlotPos(e, slotId) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      if (slot.classList.contains('pos-top')) {
+        slot.classList.remove('pos-top');
+        slot.classList.add('pos-bottom');
+        updateSlotConfig(slotId, { pos: 'bottom' });
+      } else if (slot.classList.contains('pos-bottom')) {
+        slot.classList.remove('pos-bottom');
+        slot.classList.add('pos-center');
+        updateSlotConfig(slotId, { pos: 'center' });
+      } else {
+        slot.classList.remove('pos-center');
+        slot.classList.add('pos-top');
+        updateSlotConfig(slotId, { pos: 'top' });
+      }
+      autoSaveDebounced();
+    }
+
+    function adjustSlotH(e, slotId, delta) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      const curH = getTrueHeight(slot);
+      const newH = Math.max(50, Math.min(500, Math.round(curH + delta)));
+      slot.style.height = newH + 'px';
+      updateSlotConfig(slotId, { height: newH + 'px' });
+      autoSaveDebounced();
+    }
+
+    function updateSlotConfig(slotId, updates) {
+      if (!posterState.photoSlots[slotId]) posterState.photoSlots[slotId] = {};
+      Object.assign(posterState.photoSlots[slotId], updates);
+    }
+
+    let activeResizeSlot = null;
+    let slotStartY = 0;
+    let slotStartH = 0;
+
+    function initSlotResize(e, slotId) {
+      e.preventDefault();
+      e.stopPropagation();
+      activeResizeSlot = document.getElementById(slotId);
+      if (!activeResizeSlot) return;
+      slotStartY = e.clientY;
+      slotStartH = getTrueHeight(activeResizeSlot);
+
+      function onMouseMove(ev) {
+        if (!activeResizeSlot) return;
+        const dy = (ev.clientY - slotStartY) / (posterState.zoom || 1);
+        const newH = Math.max(40, Math.min(650, Math.round(slotStartH + dy)));
+        activeResizeSlot.style.height = newH + 'px';
+      }
+
+      function onMouseUp() {
+        if (activeResizeSlot) {
+          const finalH = activeResizeSlot.style.height;
+          updateSlotConfig(slotId, { height: finalH });
+          activeResizeSlot = null;
+          autoSaveDebounced();
+        }
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    function addNewPhotoSlot(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const body = card.querySelector('.card-body');
+      const addBtn = card.querySelector('.card-add-photo-btn');
+      
+      const newId = 'slot-custom-' + Date.now();
+      const wrapId = 'wrap-' + newId;
+      const inputId = 'input-' + newId;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'photo-slot-wrapper';
+      wrap.id = wrapId;
+      wrap.innerHTML = `
+        <div class="photo-slot" id="${newId}" onclick="triggerUpload('${inputId}')">
+          <input type="file" id="${inputId}" style="display:none;" accept="image/*" onchange="processUpload(event, '${newId}')">
+          <div class="slot-controls">
+            <button class="slot-btn" onclick="adjustSlotH(event, '${newId}', -20)">-H</button>
+            <button class="slot-btn" onclick="adjustSlotH(event, '${newId}', 20)">+H</button>
+            <button class="slot-btn" onclick="toggleSlotFit(event, '${newId}')">Fit</button>
+            <button class="slot-btn" onclick="toggleSlotPos(event, '${newId}')">Pos</button>
+            <button class="slot-btn danger" onclick="deletePhotoSlot(event, '${wrapId}')">🗑</button>
+          </div>
+          <div class="slot-empty-view">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <div class="slot-empty-title">+ Add Photo / Diagram</div>
+            <div class="slot-empty-sub">Click, drag &amp; drop or Ctrl+V</div>
+          </div>
+          <div class="slot-resize-handle" onmousedown="initSlotResize(event, '${newId}')"></div>
+        </div>
+        <div class="photo-caption" contenteditable="true">Figure: Custom Visual / Graph</div>
+      `;
+
+      body.insertBefore(wrap, addBtn);
+      setupDragDropSlot(newId);
+      
+      updateSlotConfig(newId, { cardId: cardId, isCustom: true, wrapId: wrapId });
+      autoSaveDebounced();
+      showToast('Photo window added');
+    }
+
+    function deletePhotoSlot(e, wrapId) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (!confirm('Delete this photo window?')) return;
+      const wrap = document.getElementById(wrapId);
+      if (wrap) {
+        const slot = wrap.querySelector('.photo-slot');
+        if (slot) delete posterState.photoSlots[slot.id];
+        wrap.remove();
+        autoSaveDebounced();
+        showToast('Photo window deleted');
+      }
+    }
+
+    function setupDragDropSlot(slotId) {
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      slot.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        slot.classList.add('dragover');
+      });
+      slot.addEventListener('dragleave', () => {
+        slot.classList.remove('dragover');
+      });
+      slot.addEventListener('drop', (e) => {
+        e.preventDefault();
+        slot.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          const reader = new FileReader();
+          reader.onload = (ev) => setSlotImage(slotId, ev.target.result);
+          reader.readAsDataURL(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    // Global Clipboard Paste Support (Ctrl+V / Cmd+V)
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const hovered = document.querySelector('.photo-slot:hover') || document.querySelector('.photo-slot');
+            if (hovered) {
+              setSlotImage(hovered.id, ev.target.result);
+              showToast('Image pasted from clipboard!');
+            }
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    });
+
+    // ── PERSISTENCE ENGINE (DISK JSON + INDEXEDDB + LOCALSTORAGE) ──
+    let saveTimeout = null;
+    function autoSaveDebounced() {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => saveAllPosterData(false), 700);
+    }
+
+    function harvestTextEdits() {
+      // Harvest all contenteditable elements
+      document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+        if (el.id) {
+          posterState.textEdits[el.id] = el.innerHTML;
+        }
+      });
+    }
+
+    async function saveAllPosterData(showSuccessToast = true) {
+      harvestTextEdits();
+
+      // 1. Save to LocalStorage
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'state', JSON.stringify({
+          cardSizes: posterState.cardSizes,
+          cardAlignments: posterState.cardAlignments,
+          cardSpans: posterState.cardSpans,
+          cardFontSizes: posterState.cardFontSizes,
+          textEdits: posterState.textEdits,
+          sheetFormat: posterState.sheetFormat,
+          globalTextScale: posterState.globalTextScale,
+          zoom: posterState.zoom
+        }));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+
+      // 2. Save payload to Disk Server via POST /api/save
+      try {
+        const response = await fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(posterState)
+        });
+        if (response.ok) {
+          if (showSuccessToast) showToast('Saved to Disk & Browser!');
+        } else {
+          if (showSuccessToast) showToast('Saved to Browser Storage');
+        }
+      } catch (err) {
+        await dbSet(STORAGE_PREFIX + 'full_state', posterState);
+        if (showSuccessToast) showToast('Saved Locally');
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('saveToast');
+      if (!toast) return;
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // ── RESTORE / LOAD POSTER STATE ──
+    async function loadPosterState() {
+      let state = null;
+
+      // 1. Try loading from server disk
+      try {
+        const res = await fetch('/api/load');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.exists) {
+            state = data;
+            console.log('[Poster] Loaded state from disk JSON (saved at ' + (data.saved_at || '') + ')');
+          }
+        }
+      } catch (e) {
+        console.log('[Poster] Server API unavailable, loading from local cache.');
+      }
+
+      // 2. Fallback to LocalStorage & IndexedDB
+      if (!state) {
+        try {
+          const ls = localStorage.getItem(STORAGE_PREFIX + 'state');
+          if (ls) state = JSON.parse(ls);
+        } catch (e) {}
+      }
+
+      if (!state) {
+        state = await dbGet(STORAGE_PREFIX + 'full_state');
+      }
+
+      if (state) {
+        applyLoadedState(state);
+      }
+
+      // Initialize drag-drop handlers on all existing slots
+      document.querySelectorAll('.photo-slot').forEach(slot => {
+        setupDragDropSlot(slot.id);
+      });
+
+      // Text input listeners for auto-save
+      document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+        el.addEventListener('input', autoSaveDebounced);
+      });
+    }
+
+    function applyLoadedState(state) {
+      posterState = Object.assign(posterState, state);
+
+      // Card Sizes
+      if (state.cardSizes) {
+        for (const [cardId, s] of Object.entries(state.cardSizes)) {
+          const card = document.getElementById(cardId);
+          if (card && s.height) {
+            card.style.height = s.height;
+            card.style.flex = s.flex || ('0 0 ' + s.height);
+          }
+        }
+      }
+
+      // Card Alignments
+      if (state.cardAlignments) {
+        for (const [cardId, align] of Object.entries(state.cardAlignments)) {
+          const card = document.getElementById(cardId);
+          if (card) {
+            card.classList.remove('text-left', 'text-center', 'text-justify');
+            if (align) card.classList.add('text-' + align);
+          }
+        }
+      }
+
+      // Card Spans
+      if (state.cardSpans) {
+        for (const [cardId, span] of Object.entries(state.cardSpans)) {
+          const card = document.getElementById(cardId);
+          if (card) {
+            card.classList.remove('span-1', 'span-2', 'span-3');
+            if (span) card.classList.add(span);
+          }
+        }
+      }
+
+      // Card Font Sizes
+      if (state.cardFontSizes) {
+        for (const [cardId, fSize] of Object.entries(state.cardFontSizes)) {
+          const card = document.getElementById(cardId);
+          if (card) {
+            const body = card.querySelector('.card-body');
+            if (body) body.style.fontSize = fSize;
+            const ind = document.getElementById('font-ind-' + cardId);
+            if (ind) ind.innerText = fSize;
+          }
+        }
+      }
+
+      // Global Text Scale
+      if (state.globalTextScale) {
+        setGlobalTextScale(state.globalTextScale);
+        const slider = document.getElementById('globalTextScale');
+        if (slider) slider.value = state.globalTextScale;
+      }
+
+      // Text Edits
+      if (state.textEdits) {
+        for (const [id, html] of Object.entries(state.textEdits)) {
+          const el = document.getElementById(id);
+          if (el && html) el.innerHTML = html;
+        }
+      }
+
+      // Photo Slots & Images
+      if (state.photoSlots) {
+        for (const [slotId, s] of Object.entries(state.photoSlots)) {
+          const slot = document.getElementById(slotId);
+          if (slot) {
+            if (s.height) slot.style.height = s.height;
+            if (s.fit) {
+              slot.classList.remove('fit-cover', 'fit-contain', 'fit-fill');
+              slot.classList.add('fit-' + s.fit);
+            }
+            if (s.pos) {
+              slot.classList.remove('pos-top', 'pos-center', 'pos-bottom');
+              slot.classList.add('pos-' + s.pos);
+            }
+            if (s.src) {
+              let img = slot.querySelector('img');
+              if (!img) {
+                img = document.createElement('img');
+                slot.appendChild(img);
+              }
+              img.src = s.src;
+              slot.classList.add('has-image');
+            }
+          }
+        }
+      }
+
+      // Sheet Format
+      if (state.sheetFormat) {
+        setPosterFormat(state.sheetFormat);
+      }
+    }
+
+    // ── BACKUP & RESTORE JSON ──
+    function downloadBackupJSON() {
+      harvestTextEdits();
+      const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(posterState, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", str);
+      a.setAttribute("download", `horizontal_poster_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function triggerRestoreJSON() {
+      document.getElementById('inputRestoreJSON').click();
+    }
+
+    function restoreBackupJSON(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          applyLoadedState(data);
+          saveAllPosterData(true);
+          showToast('JSON Backup restored!');
+        } catch (err) {
+          alert('Invalid JSON file format: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function resetToFactoryDefault() {
+      if (!confirm('Reset entire poster layout and all customizations to factory template default?')) return;
+      try {
+        await fetch('/api/reset', { method: 'POST' });
+      } catch (e) {}
+      localStorage.clear();
+      location.reload();
+    }
+
+    function triggerPrint() {
+      window.print();
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPosterState();
+    });
+  </script>
+</body>
+</html>
